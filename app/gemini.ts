@@ -81,6 +81,12 @@ export async function parseQuestions(
   env: Env
 ): Promise<Record<string, Question>> {
   try {
+    console.log("[parseQuestions] invoked, env present:", !!env, "has GEMINI_API_KEY:", !!(env?.GEMINI_API_KEY));
+    if (!env?.GEMINI_API_KEY) {
+      throw new Error(
+        "GEMINI_API_KEY is not configured. Add it in Cloudflare: Workers & Pages → trivia-jam → Settings → Variables and Secrets."
+      );
+    }
     const preprocessedContent = preprocessDocument(documentContent);
     console.log("Starting question parsing with preprocessed input:", preprocessedContent);
     
@@ -122,7 +128,7 @@ export async function parseQuestions(
     };
 
     const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash",
+      model: "gemini-2.5-flash",
       generationConfig: {
         responseMimeType: "application/json",
         responseSchema: schema,
@@ -195,10 +201,13 @@ export async function parseQuestions(
       }
     });
 
-    const processedQuestions = parsedQuestions.map((q: { questionType: string; correctAnswer: string }) => ({
-      ...q,
-      correctAnswer: q.questionType === "numeric" ? Number(q.correctAnswer) : q.correctAnswer
-    }));
+    const processedQuestions = parsedQuestions.map((q: { questionType: string; correctAnswer: string }) => {
+      const num = q.questionType === "numeric" ? Number(q.correctAnswer) : NaN;
+      return {
+        ...q,
+        correctAnswer: !isNaN(num) ? num : q.correctAnswer
+      };
+    });
     console.log("Processed questions with numeric conversion:", processedQuestions);
 
     const validatedQuestions = QuestionsResponseSchema.parse(processedQuestions);

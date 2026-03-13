@@ -633,6 +633,15 @@ const LobbyControls = ({
               should be followed by its answer.
             </p>
             <div className="bg-gray-900/30 rounded-xl p-6 border border-gray-700/50">
+              {gameState.parsingErrorMessage && (
+                <div
+                  className="mb-4 p-3 rounded-lg bg-red-500/20 border border-red-500/50 text-red-200 text-sm"
+                  role="alert"
+                >
+                  <strong>Could not parse questions:</strong>{" "}
+                  {gameState.parsingErrorMessage}
+                </div>
+              )}
               {isParsingDocument ? (
                 <div className="flex flex-col items-center justify-center py-8">
                   <Loader2

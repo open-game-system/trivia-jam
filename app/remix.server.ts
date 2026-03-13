@@ -12,6 +12,7 @@ import {
   createSessionToken,
   getCookie,
   verifyOneTimeToken,
+  verifyRefreshToken,
   verifySessionToken,
 } from "./utils";
 
@@ -69,16 +70,37 @@ export class Remix extends DurableObject<Env> {
         userId = payload.userId;
         sessionId = payload.sessionId;
       } else {
-        const newSession = await createNewUserSession({
-          secret: this.env.SESSION_JWT_SECRET,
-        });
-        userId = newSession.userId;
-        sessionId = newSession.sessionId;
-        sessionToken = newSession.sessionToken;
-        newRefreshToken = newSession.refreshToken;
+        // Session expired: try refresh token so we keep the same user (e.g. host stays host)
+        const refreshPayload = refreshToken
+          ? await verifyRefreshToken({
+              token: refreshToken,
+              secret: this.env.SESSION_JWT_SECRET,
+            })
+          : null;
+        if (refreshPayload) {
+          userId = refreshPayload.userId;
+          sessionId = crypto.randomUUID();
+          sessionToken = await createSessionToken({
+            userId,
+            sessionId,
+            secret: this.env.SESSION_JWT_SECRET,
+          });
+          newRefreshToken = await createRefreshToken({
+            userId,
+            secret: this.env.SESSION_JWT_SECRET,
+          });
+        } else {
+          const newSession = await createNewUserSession({
+            secret: this.env.SESSION_JWT_SECRET,
+          });
+          userId = newSession.userId;
+          sessionId = newSession.sessionId;
+          sessionToken = newSession.sessionToken;
+          newRefreshToken = newSession.refreshToken;
+        }
       }
     } else if (refreshToken) {
-      const payload = await verifySessionToken({
+      const payload = await verifyRefreshToken({
         token: refreshToken,
         secret: this.env.SESSION_JWT_SECRET,
       });
@@ -125,7 +147,7 @@ export class Remix extends DurableObject<Env> {
     if (sessionToken) {
       response.headers.append(
         "Set-Cookie",
-        `${SESSION_TOKEN_COOKIE_KEY}=${sessionToken}; HttpOnly; Secure; SameSite=Strict; Max-Age=900; Path=/`
+        `${SESSION_TOKEN_COOKIE_KEY}=${sessionToken}; HttpOnly; Secure; SameSite=Strict; Max-Age=604800; Path=/`
       );
     }
     if (newRefreshToken) {
