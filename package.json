@@ -13,7 +13,10 @@
     "test:coverage": "vitest run --coverage",
     "test:ui": "vitest --ui",
     "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui"
+    "test:e2e:ui": "playwright test --ui",
+    "storybook": "storybook dev -p 6006",
+    "build-storybook": "storybook build",
+    "test-storybook": "test-storybook"
   },
   "keywords": [
     "trivia"
@@ -62,6 +65,17 @@
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20240925.0",
     "@playwright/test": "^1.58.2",
+    "@storybook/addon-coverage": "^1.0.5",
+    "@storybook/addon-essentials": "^8.6.14",
+    "@storybook/addon-interactions": "^8.6.14",
+    "@storybook/addon-links": "^8.6.18",
+    "@storybook/blocks": "^8.6.14",
+    "@storybook/builder-vite": "^8.6.18",
+    "@storybook/react": "^8.6.18",
+    "@storybook/react-vite": "^8.6.18",
+    "@storybook/test": "^8.6.15",
+    "@storybook/test-runner": "^0.20.1",
+    "@storybook/testing-library": "^0.2.2",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.2.0",
     "@types/canvas-confetti": "^1.6.4",
@@ -69,14 +83,18 @@
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^5.1.4",
     "autoprefixer": "^10.4.20",
+    "concurrently": "^9.2.1",
     "daisyui": "^4.12.14",
+    "http-server": "^14.1.1",
     "jsdom": "^26.0.0",
     "postcss": "^8.4.47",
+    "storybook": "^8.6.18",
     "tailwindcss": "^3.4.14",
     "typescript": "^5.7.2",
     "vite": "^7.3.1",
     "vite-tsconfig-paths": "^6.1.1",
     "vitest": "^3.0.5",
+    "wait-on": "^8.0.5",
     "wrangler": "^4.72.0"
   },
   "pnpm": {

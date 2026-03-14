@@ -22,20 +22,19 @@ export const Route = createFileRoute("/")({
 });
 
 function Index() {
-  const { gameId } = Route.useLoaderData();
+  const { gameId, deviceType } = Route.useLoaderData();
   const [$showHelp] = useState(() => atom<boolean>(false));
 
-  return <HomePageContent newGameId={gameId} $showHelp={$showHelp} />;
+  return <HomePageContent newGameId={gameId} deviceType={deviceType} $showHelp={$showHelp} />;
 }
 
-type HomePageContentProps = {
+export type HomePageContentProps = {
   newGameId: string;
+  deviceType?: string;
   $showHelp: ReturnType<typeof atom<boolean>>;
 };
 
-function HomePageContent({ newGameId, $showHelp }: HomePageContentProps) {
-  const { deviceType } = Route.useLoaderData();
-  const isMobile = deviceType === "mobile";
+export function HomePageContent({ newGameId, deviceType, $showHelp }: HomePageContentProps) {
   const showHelp = useStore($showHelp);
 
   return (

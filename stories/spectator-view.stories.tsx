@@ -3,11 +3,11 @@ import { expect } from "@storybook/test";
 import { withActorKit } from "actor-kit/storybook";
 import { createActorKitMockClient } from "actor-kit/test";
 import React from "react";
-import { SpectatorView } from "../app/components/spectator-view";
-import { GameContext } from "../app/game.context";
-import type { GameMachine } from "../app/game.machine";
-import { SessionContext } from "../app/session.context";
-import type { SessionMachine } from "../app/session.machine";
+import { SpectatorView } from "../src/components/spectator-view";
+import { GameContext } from "../src/game.context";
+import type { GameMachine } from "../src/game.machine";
+import { SessionContext } from "../src/session.context";
+import type { SessionMachine } from "../src/session.machine";
 import { defaultGameSnapshot, defaultSessionSnapshot } from "./utils";
 
 const meta = {

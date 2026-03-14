@@ -1,0 +1,44 @@
+name: Storybook Tests
+on: push
+
+jobs:
+  test:
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps
+
+      - name: Build Storybook
+        run: pnpm build-storybook
+        env:
+          NODE_ENV: production
+
+      - name: Run Storybook tests
+        run: |
+          mkdir -p coverage/storybook
+          npx concurrently -k -s first -n "SB,TEST" -c "magenta,blue" \
+            "npx http-server storybook-static --port 6006 --silent" \
+            "npx wait-on tcp:127.0.0.1:6006 && pnpm test-storybook -- --maxWorkers=2 --testTimeout=60000 --coverage --coverageDirectory=coverage/storybook"
+
+      - name: Upload coverage reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: storybook-coverage
+          path: coverage/storybook/
+          if-no-files-found: warn

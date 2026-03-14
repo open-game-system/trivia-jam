@@ -1,5 +1,5 @@
 import type { Preview } from "@storybook/react";
-import "../app/styles.css"; // Update the path to match your CSS file
+import "../src/styles.css";
 
 const preview: Preview = {
   parameters: {
