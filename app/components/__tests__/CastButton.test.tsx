@@ -1,38 +1,61 @@
-import { describe, it, expect } from "vitest";
-import { render, screen } from "@testing-library/react";
+import React from "react";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { CastButton } from "../CastButton";
-import { createMockCastClient } from "@open-game-system/cast-kit/mock";
-import { CastKit } from "~/bridge/cast";
+import {
+  CastProvider,
+} from "@open-game-system/cast-kit-react";
+import {
+  CAST_INITIAL_STATE,
+  _resetBridge,
+  getCastBridge,
+} from "@open-game-system/cast-kit-core";
+import type { CastState } from "@open-game-system/cast-kit-core";
 
-function renderCastButton(
-  overrides?: Partial<Parameters<typeof createMockCastClient>[0]["initialState"]>
-) {
-  const client = createMockCastClient({
-    initialState: {
-      isAvailable: false,
-      isCasting: false,
-      isConnecting: false,
-      isScanning: false,
-      deviceName: null,
-      deviceId: null,
-      sessionId: null,
-      devices: [],
-      error: null,
-      ...overrides,
+function initCastStore(data: CastState) {
+  getCastBridge();
+  window.dispatchEvent(
+    new MessageEvent("message", {
+      data: JSON.stringify({
+        type: "STATE_INIT",
+        storeKey: "cast",
+        data,
+      }),
+    })
+  );
+}
+
+function renderCastButton(overrides?: Partial<CastState>) {
+  const state: CastState = {
+    ...CAST_INITIAL_STATE,
+    ...overrides,
+    session: {
+      ...CAST_INITIAL_STATE.session,
+      ...(overrides?.session ?? {}),
     },
-  });
-
-  return {
-    client,
-    ...render(
-      <CastKit.ProviderFromClient client={client}>
-        <CastButton />
-      </CastKit.ProviderFromClient>
-    ),
   };
+
+  initCastStore(state);
+
+  return render(
+    <CastProvider>
+      <CastButton />
+    </CastProvider>
+  );
 }
 
 describe("CastButton", () => {
+  beforeEach(() => {
+    _resetBridge();
+    vi.stubGlobal("ReactNativeWebView", {
+      postMessage: vi.fn(),
+    });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   it("renders nothing when no devices are available", () => {
     renderCastButton();
     expect(screen.queryByRole("button")).toBeNull();
@@ -42,7 +65,7 @@ describe("CastButton", () => {
     renderCastButton({
       isAvailable: true,
       devices: [
-        { id: "device-1", name: "Living Room TV", type: "chromecast", isConnected: false },
+        { id: "device-1", name: "Living Room TV", type: "chromecast" },
       ],
     });
 
@@ -54,13 +77,16 @@ describe("CastButton", () => {
   it("shows connected state when casting", () => {
     renderCastButton({
       isAvailable: true,
-      isCasting: true,
-      deviceName: "Living Room TV",
-      deviceId: "device-1",
-      sessionId: "session-1",
       devices: [
-        { id: "device-1", name: "Living Room TV", type: "chromecast", isConnected: true },
+        { id: "device-1", name: "Living Room TV", type: "chromecast" },
       ],
+      session: {
+        status: "connected",
+        deviceId: "device-1",
+        deviceName: "Living Room TV",
+        sessionId: "session-1",
+        streamSessionId: null,
+      },
     });
 
     expect(screen.getByText("Connected")).toBeDefined();
@@ -69,10 +95,16 @@ describe("CastButton", () => {
   it("shows connecting state", () => {
     renderCastButton({
       isAvailable: true,
-      isConnecting: true,
       devices: [
-        { id: "device-1", name: "Living Room TV", type: "chromecast", isConnected: false },
+        { id: "device-1", name: "Living Room TV", type: "chromecast" },
       ],
+      session: {
+        status: "connecting",
+        deviceId: null,
+        deviceName: null,
+        sessionId: null,
+        streamSessionId: null,
+      },
     });
 
     expect(screen.getByText("Connecting")).toBeDefined();
@@ -81,13 +113,62 @@ describe("CastButton", () => {
   it("disables button when connecting", () => {
     renderCastButton({
       isAvailable: true,
-      isConnecting: true,
       devices: [
-        { id: "device-1", name: "Living Room TV", type: "chromecast", isConnected: false },
+        { id: "device-1", name: "Living Room TV", type: "chromecast" },
       ],
+      session: {
+        status: "connecting",
+        deviceId: null,
+        deviceName: null,
+        sessionId: null,
+        streamSessionId: null,
+      },
     });
 
     const button = screen.getByRole("button");
     expect(button.hasAttribute("disabled")).toBe(true);
+  });
+
+  it("dispatches STOP_CASTING when connected and clicked", () => {
+    renderCastButton({
+      isAvailable: true,
+      devices: [
+        { id: "device-1", name: "Living Room TV", type: "chromecast" },
+      ],
+      session: {
+        status: "connected",
+        deviceId: "device-1",
+        deviceName: "Living Room TV",
+        sessionId: "session-1",
+        streamSessionId: null,
+      },
+    });
+
+    const button = screen.getByRole("button");
+    fireEvent.click(button);
+
+    const postMessage = (window as any).ReactNativeWebView.postMessage;
+    const lastCall =
+      postMessage.mock.calls[postMessage.mock.calls.length - 1][0];
+    const parsed = JSON.parse(lastCall);
+    expect(parsed.event.type).toBe("STOP_CASTING");
+  });
+
+  it("dispatches SHOW_CAST_PICKER when available and clicked", () => {
+    renderCastButton({
+      isAvailable: true,
+      devices: [
+        { id: "device-1", name: "Living Room TV", type: "chromecast" },
+      ],
+    });
+
+    const button = screen.getByRole("button");
+    fireEvent.click(button);
+
+    const postMessage = (window as any).ReactNativeWebView.postMessage;
+    const lastCall =
+      postMessage.mock.calls[postMessage.mock.calls.length - 1][0];
+    const parsed = JSON.parse(lastCall);
+    expect(parsed.event.type).toBe("SHOW_CAST_PICKER");
   });
 });
