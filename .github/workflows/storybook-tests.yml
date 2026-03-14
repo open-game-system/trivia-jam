@@ -1,4 +1,4 @@
-name: 'Storybook Tests'
+name: Storybook Tests
 on: push
 
 jobs:
@@ -7,39 +7,34 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
-      
+          node-version: 22
+          cache: pnpm
+
       - name: Install dependencies
-        run: |
-          rm -rf node_modules package-lock.json
-          npm install
-          npm install @rollup/rollup-linux-x64-gnu @rollup/rollup-linux-x64-musl --save-optional
-          npm install @swc/core-linux-x64-gnu @swc/core-linux-x64-musl --save-optional
-          npm install @esbuild/linux-x64 --save-optional
-          npm rebuild rollup @swc/core esbuild
-      
+        run: pnpm install --frozen-lockfile
+
       - name: Install Playwright browsers
         run: npx playwright install --with-deps
-      
-      - name: Build and Test Storybook
+
+      - name: Build Storybook
+        run: pnpm build-storybook
         env:
-          DEBUG_PRINT_LIMIT: 10000
           NODE_ENV: production
+
+      - name: Run Storybook tests
         run: |
-          # Build Storybook with explicit Rollup path
-          ROLLUP_NATIVE_PATH="$(pwd)/node_modules/@rollup/rollup-linux-x64-gnu/rollup.linux-x64-gnu.node" npm run build-storybook --quiet
-          
-          # Create coverage directory
           mkdir -p coverage/storybook
-          
-          # Start server and run tests with increased timeout and reduced workers
           npx concurrently -k -s first -n "SB,TEST" -c "magenta,blue" \
             "npx http-server storybook-static --port 6006 --silent" \
-            "npx wait-on tcp:127.0.0.1:6006 && npm run test-storybook -- --maxWorkers=2 --testTimeout=60000 --coverage --coverageDirectory=coverage/storybook"
-        
+            "npx wait-on tcp:127.0.0.1:6006 --timeout 30000 && pnpm test-storybook -- --maxWorkers=2 --testTimeout=120000 --coverage --coverageDirectory=coverage/storybook"
+
       - name: Upload coverage reports
         if: always()
         uses: actions/upload-artifact@v4

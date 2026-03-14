@@ -12,32 +12,46 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
       - uses: actions/setup-node@v4
         with:
-          node-version: "20"
-          cache: "npm"
+          node-version: 22
+          cache: pnpm
 
       - name: Install dependencies
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps
 
-      - name: Build Remix
-        run: npm run build
+      - name: Build
+        run: pnpm build
         env:
           NODE_ENV: production
 
-      - name: Start app (wrangler dev)
+      - name: Create .dev.vars for local secrets
         run: |
-          npx wrangler dev --port 8787 --local &
+          printf 'ACTOR_KIT_SECRET=%s\nSESSION_JWT_SECRET=%s\nGEMINI_API_KEY=%s\nNODE_ENV=production\n' \
+            "$ACTOR_KIT_SECRET" "$SESSION_JWT_SECRET" "$GEMINI_API_KEY" \
+            > .output/server/.dev.vars
+        env:
+          ACTOR_KIT_SECRET: ${{ secrets.ACTOR_KIT_SECRET }}
+          SESSION_JWT_SECRET: ${{ secrets.SESSION_JWT_SECRET }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+
+      - name: Start app
+        run: |
+          npx wrangler dev -c .output/server/wrangler.json --port 8787 --inspector-port 0 &
           echo "Waiting for app on http://127.0.0.1:8787..."
           npx wait-on tcp:127.0.0.1:8787 --timeout 60000
         env:
           NODE_ENV: production
 
       - name: Run E2E tests
-        run: npm run test:e2e
+        run: pnpm test:e2e
         env:
           PLAYWRIGHT_BASE_URL: http://127.0.0.1:8787
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}

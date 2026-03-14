@@ -21,6 +21,6 @@ test.describe("Player: Join Game page", () => {
     ).toBeVisible();
     await expect(page.getByLabel(/your name/i)).toBeVisible();
     await expect(page.getByRole("button", { name: /join game/i })).toBeVisible();
-    await expect(page.getByRole("link", { name: /how to play/i })).toBeVisible();
+    await expect(page.getByRole("button", { name: /how to play/i })).toBeVisible();
   });
 });

@@ -18,11 +18,17 @@ export default defineConfig({
     screenshot: "only-on-failure",
     video: "on-first-retry",
   },
-  projects: [
-    { name: "chromium", use: { ...devices["Desktop Chrome"] } },
-    { name: "firefox", use: { ...devices["Desktop Firefox"] } },
-    { name: "webkit", use: { ...devices["Desktop Safari"] } },
-  ],
+  projects: process.env.CI
+    ? [
+        // Webkit is flaky in headless CI (GPU driver errors crash the server)
+        { name: "chromium", use: { ...devices["Desktop Chrome"] } },
+        { name: "firefox", use: { ...devices["Desktop Firefox"] } },
+      ]
+    : [
+        { name: "chromium", use: { ...devices["Desktop Chrome"] } },
+        { name: "firefox", use: { ...devices["Desktop Firefox"] } },
+        { name: "webkit", use: { ...devices["Desktop Safari"] } },
+      ],
   timeout: 30_000,
   expect: { timeout: 10_000 },
 });

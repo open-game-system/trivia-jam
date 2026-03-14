@@ -12,8 +12,7 @@ import {
 import type { LinksFunction, LoaderFunctionArgs } from "@remix-run/cloudflare";
 import { createAccessToken, createActorFetch } from "actor-kit/server";
 
-import { bridge, BridgeContext } from "./bridge/client";
-import { CastKit } from "./bridge/cast";
+import { bridge, BridgeContext, CastContext } from "./bridge/client";
 import { SessionProvider } from "./session.context";
 import { SessionMachine } from "./session.machine";
 import styles from "./styles.css";
