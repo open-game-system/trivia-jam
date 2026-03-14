@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { withActorKit } from "actor-kit/storybook";
 import React from "react";
 import { atom } from "nanostores";
-import { HomePageContent } from "../src/routes/index";
+import { HomePageContent } from "../src/components/homepage-content";
 import { SessionContext } from "../src/session.context";
 import type { SessionMachine } from "../src/session.machine";
 import { withRouter } from "./utils";

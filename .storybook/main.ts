@@ -44,26 +44,31 @@ const config: StorybookConfig = {
     builder: "@storybook/builder-vite",
   },
   async viteFinal(config) {
-    return mergeConfig(config, {
-      plugins: castKitStub ? [castKitStub] : [],
-      resolve: {
-        alias: {
-          "~": path.resolve(__dirname, "../src"),
-          // Deduplicate React for actor-kit and other packages
-          react: path.resolve(__dirname, "../node_modules/react"),
-          "react-dom": path.resolve(__dirname, "../node_modules/react-dom"),
-          "react/jsx-runtime": path.resolve(
-            __dirname,
-            "../node_modules/react/jsx-runtime"
-          ),
-          "react/jsx-dev-runtime": path.resolve(
-            __dirname,
-            "../node_modules/react/jsx-dev-runtime"
-          ),
-        },
-        dedupe: ["react", "react-dom"],
-      },
+    // Remove Nitro and TanStack Start plugins that come from the project's
+    // vite.config.ts — they break Storybook's preview build.
+    const filteredPlugins = (config.plugins || []).filter((plugin) => {
+      const name =
+        (plugin as any)?.name ||
+        (Array.isArray(plugin) ? (plugin[0] as any)?.name : "");
+      return (
+        !name.includes("nitro") &&
+        !name.includes("tanstack") &&
+        !name.includes("tsr")
+      );
     });
+
+    return mergeConfig(
+      { ...config, plugins: filteredPlugins },
+      {
+        plugins: castKitStub ? [castKitStub] : [],
+        resolve: {
+          alias: {
+            "~": path.resolve(__dirname, "../src"),
+          },
+          dedupe: ["react", "react-dom"],
+        },
+      }
+    );
   },
 };
 
