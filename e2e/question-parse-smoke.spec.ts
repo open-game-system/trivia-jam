@@ -7,6 +7,7 @@ import { expect, test } from "@playwright/test";
 test("host can import a simple questions document and see parsed questions @smoke", async ({
   page,
 }) => {
+  test.setTimeout(60_000);
   await page.goto("/");
 
   await page.getByRole("link", { name: /create new game/i }).click();
@@ -17,8 +18,13 @@ test("host can import a simple questions document and see parsed questions @smok
 
   const doc = `What is 2 + 2?\n4\n\nWhat color is the sky on a clear day?\na) Red b) Blue c) Green d) Yellow\nCorrect answer: B`;
 
-  await page.locator("textarea").fill(doc);
-  await page.getByRole("button", { name: /submit/i }).click();
+  const textarea = page.locator("textarea");
+  await textarea.click();
+  await textarea.fill(doc);
+  // Ensure React state updates — wait for button to become enabled
+  const submitBtn = page.getByRole("button", { name: /submit/i });
+  await expect(submitBtn).toBeEnabled({ timeout: 5_000 });
+  await submitBtn.click();
 
   // Wait for at least one parsed question to appear (Gemini + parsing pipeline).
   const firstParsed = page.getByTestId("parsed-question-1");
