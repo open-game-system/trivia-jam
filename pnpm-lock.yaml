@@ -17,18 +17,6 @@ importers:
       '@nanostores/react':
         specifier: ^0.8.0
         version: 0.8.4(nanostores@0.11.4)(react@19.2.4)
-      '@open-game-system/app-bridge-react':
-        specifier: 0.20250411.3
-        version: 0.20250411.3(react@19.2.4)(typescript@5.9.3)
-      '@open-game-system/app-bridge-types':
-        specifier: 0.20250411.3
-        version: 0.20250411.3(typescript@5.9.3)
-      '@open-game-system/app-bridge-web':
-        specifier: 0.20250411.3
-        version: 0.20250411.3(typescript@5.9.3)
-      '@open-game-system/cast-kit':
-        specifier: link:../open-game-system/packages/cast-kit
-        version: link:../open-game-system/packages/cast-kit
       '@opentelemetry/api':
         specifier: ^1.9.0
         version: 1.9.0
@@ -1329,22 +1317,6 @@ packages:
   '@oozcitak/util@10.0.0':
     resolution: {integrity: sha512-hAX0pT/73190NLqBPPWSdBVGtbY6VOhWYK3qqHqtXQ1gK7kS2yz4+ivsN07hpJ6I3aeMtKP6J6npsEKOAzuTLA==}
     engines: {node: '>=20.0'}
-
-  '@open-game-system/app-bridge-react@0.20250411.3':
-    resolution: {integrity: sha512-CmW0yEhlWo7dPiPZVg7y8kW5rYCuUy/ZH00h3TmeOO2E+DIYroNmZcJeCsHgz/gq1kr08BgAIMmPTU3zH3Tl5A==}
-    peerDependencies:
-      react: ^18.2.0
-      typescript: '>=4.5.0'
-
-  '@open-game-system/app-bridge-types@0.20250411.3':
-    resolution: {integrity: sha512-tF2/a+Ycnx8FF+hDy7PBA7fFYoOW1o5aXVn0kOF2VxyS+N79emFMuKyzF9El1JFCmNP2H/bl6Kl3GvX3fucDiQ==}
-    peerDependencies:
-      typescript: '>=4.5.0'
-
-  '@open-game-system/app-bridge-web@0.20250411.3':
-    resolution: {integrity: sha512-ElwdUi8LEQPfkiLNYY0BwlU/oMKc/XaFkMaPDzgXF7pYcOR8vUg84dxuxOzNeKaVyet3dGvi9SdGUnvAotab1g==}
-    peerDependencies:
-      typescript: '>=4.5.0'
 
   '@opentelemetry/api@1.9.0':
     resolution: {integrity: sha512-3giAOQvZiH5F9bMlMiv8+GSPMeqg0dbaeo58/0SlA9sxSqZhnUtxzX9/2FzyhS9sWQf5S0GJE0AKBrFqjpeYcg==}
@@ -6643,24 +6615,6 @@ snapshots:
       '@oozcitak/util': 10.0.0
 
   '@oozcitak/util@10.0.0': {}
-
-  '@open-game-system/app-bridge-react@0.20250411.3(react@19.2.4)(typescript@5.9.3)':
-    dependencies:
-      '@open-game-system/app-bridge-types': 0.20250411.3(typescript@5.9.3)
-      '@open-game-system/app-bridge-web': 0.20250411.3(typescript@5.9.3)
-      react: 19.2.4
-      typescript: 5.9.3
-
-  '@open-game-system/app-bridge-types@0.20250411.3(typescript@5.9.3)':
-    dependencies:
-      fast-json-patch: 3.1.1
-      typescript: 5.9.3
-
-  '@open-game-system/app-bridge-web@0.20250411.3(typescript@5.9.3)':
-    dependencies:
-      '@open-game-system/app-bridge-types': 0.20250411.3(typescript@5.9.3)
-      fast-json-patch: 3.1.1
-      typescript: 5.9.3
 
   '@opentelemetry/api@1.9.0': {}
 

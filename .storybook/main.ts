@@ -1,26 +1,6 @@
 import type { StorybookConfig } from "@storybook/react-vite";
-import { existsSync } from "fs";
 import path from "path";
-import type { PluginOption } from "vite";
 import { mergeConfig } from "vite";
-
-// Stub cast-kit when the symlink doesn't exist (CI)
-const castKitAvailable = existsSync(
-  path.resolve(__dirname, "../node_modules/@open-game-system/cast-kit")
-);
-
-const castKitStub: PluginOption | null = !castKitAvailable
-  ? {
-      name: "stub-cast-kit",
-      resolveId(id: string) {
-        if (id.startsWith("@open-game-system/cast-kit")) return "\0cast-kit-stub";
-      },
-      load(id: string) {
-        if (id === "\0cast-kit-stub")
-          return "export const createCastKitContext = () => ({ Provider: () => null, useState: () => ({}), useSend: () => () => {}, useStatus: () => 'idle', useDevices: () => [], ProviderFromClient: () => null });";
-      },
-    }
-  : null;
 
 const config: StorybookConfig = {
   stories: [
@@ -60,7 +40,6 @@ const config: StorybookConfig = {
     return mergeConfig(
       { ...config, plugins: filteredPlugins },
       {
-        plugins: castKitStub ? [castKitStub] : [],
         resolve: {
           alias: {
             "~": path.resolve(__dirname, "../src"),

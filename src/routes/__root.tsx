@@ -8,7 +8,6 @@ import {
 import { createServerFn } from "@tanstack/react-start";
 import { createAccessToken, createActorFetch } from "actor-kit/server";
 import type { SessionMachine } from "../session.machine";
-import { bridge, BridgeContext } from "../bridge/client";
 import { SessionProvider } from "../session.context";
 import { getServerEnv, tryGetActorRuntimeEnv } from "../server-env";
 import type { Caller } from "actor-kit";
@@ -153,16 +152,14 @@ function RootComponent() {
   const { host, sessionId, accessToken, payload } = Route.useLoaderData();
 
   return (
-    <BridgeContext.Provider bridge={bridge}>
-      <SessionProvider
-        host={host}
-        actorId={sessionId}
-        checksum={payload.checksum}
-        accessToken={accessToken}
-        initialSnapshot={payload.snapshot}
-      >
-        <Outlet />
-      </SessionProvider>
-    </BridgeContext.Provider>
+    <SessionProvider
+      host={host}
+      actorId={sessionId}
+      checksum={payload.checksum}
+      accessToken={accessToken}
+      initialSnapshot={payload.snapshot}
+    >
+      <Outlet />
+    </SessionProvider>
   );
 }
