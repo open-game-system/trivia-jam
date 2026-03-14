@@ -27,21 +27,19 @@ type Story = StoryObj<typeof Scoreboard>;
 
 function createMockGameClient(
   snapshot: CallerSnapshotFrom<GameMachine>,
-  onSend: (event: ClientEventFrom<GameMachine>) => void
+  onSend?: (event: ClientEventFrom<GameMachine>) => void
 ): ActorKitClient<GameMachine> {
   return createActorKitMockClient<GameMachine>({
-    snapshot,
-    onSend,
+    initialSnapshot: snapshot,
   });
 }
 
 function createMockSessionClient(
   snapshot: CallerSnapshotFrom<SessionMachine>,
-  onSend: (event: ClientEventFrom<SessionMachine>) => void
+  onSend?: (event: ClientEventFrom<SessionMachine>) => void
 ): ActorKitClient<SessionMachine> {
   return createActorKitMockClient<SessionMachine>({
-    snapshot,
-    onSend,
+    initialSnapshot: snapshot,
   });
 }
 
