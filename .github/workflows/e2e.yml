@@ -32,6 +32,15 @@ jobs:
         env:
           NODE_ENV: production
 
+      - name: Create .dev.vars for local secrets
+        run: |
+          cat <<EOF > .output/server/.dev.vars
+          ACTOR_KIT_SECRET=${{ secrets.ACTOR_KIT_SECRET }}
+          SESSION_JWT_SECRET=${{ secrets.SESSION_JWT_SECRET }}
+          GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
+          NODE_ENV=production
+          EOF
+
       - name: Start app
         run: |
           npx wrangler dev -c .output/server/wrangler.json --port 8787 --inspector-port 0 &
