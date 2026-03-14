@@ -12,3 +12,7 @@ npm-debug.log*
 .wrangler/
 *storybook.log
 storybook-static/
+# Playwright
+test-results/
+playwright-report/
+playwright/.cache/

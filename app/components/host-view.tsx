@@ -16,7 +16,7 @@ import type { Answer, Question, QuestionResult } from "~/game.types";
 import { SessionContext } from "~/session.context";
 import { QuestionProgress } from "./question-progress";
 import { CastButton } from './CastButton';
-import { BridgeContext, CastContext } from '~/bridge/client';
+import { BridgeContext } from '~/bridge/client';
 
 type GameSettings = {
   maxPlayers: number;
@@ -605,9 +605,7 @@ const LobbyControls = ({
           </h1>
           <div className="flex items-center gap-2">
             <BridgeContext.Supported>
-              <CastContext.Provider>
-                <CastButton />
-              </CastContext.Provider>
+              <CastButton />
             </BridgeContext.Supported>
             <motion.button
               onClick={() => setShowSettings(true)}

@@ -7,6 +7,3 @@ export const bridge = createWebBridge<AppStores>();
 
 // Create and export the main bridge context
 export const BridgeContext = createBridgeContext<AppStores>();
-
-// Create and export a specific context for the castKit store
-export const CastContext = BridgeContext.createStoreContext("castKit"); 
