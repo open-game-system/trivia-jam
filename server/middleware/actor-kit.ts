@@ -1,4 +1,4 @@
-import { getActorRuntimeEnv } from "../../src/server-env";
+import { tryGetActorRuntimeEnv } from "../../src/server-env";
 import { actorKitRouter } from "../../src/game.server";
 import {
   SESSION_TOKEN_COOKIE_KEY,
@@ -24,9 +24,14 @@ export default async function middleware(event: MiddlewareEvent) {
     return new Response("ok");
   }
 
-  // Route /api/* to actor-kit
+  // Route /api/* to actor-kit (only in Cloudflare runtime where DOs are available)
   if (url.pathname.startsWith("/api/")) {
-    return actorKitRouter(event.req, getActorRuntimeEnv());
+    const runtimeEnv = tryGetActorRuntimeEnv();
+    if (runtimeEnv) {
+      return actorKitRouter(event.req, runtimeEnv);
+    }
+    // In dev, actor-kit routes are handled by the dev server's own DO emulation
+    return undefined;
   }
 
   // Skip static assets
@@ -40,8 +45,12 @@ export default async function middleware(event: MiddlewareEvent) {
   }
 
   // Session auth for page requests
-  const env = getActorRuntimeEnv();
-  const secret = env.SESSION_JWT_SECRET;
+  // Can't use getServerEnv() here — it calls getRequestHost() which needs
+  // the h3 event from AsyncLocalStorage, but this middleware runs before
+  // TanStack Start sets that up. Read secrets directly from __env__ or process.env.
+  const runtimeEnv = tryGetActorRuntimeEnv();
+  const secret = runtimeEnv?.SESSION_JWT_SECRET
+    ?? (process.env.SESSION_JWT_SECRET || "dev-session-secret");
 
   const accessToken = getCookie(event.req, SESSION_TOKEN_COOKIE_KEY);
   const refreshToken = getCookie(event.req, REFRESH_TOKEN_COOKIE_KEY);
@@ -57,7 +66,6 @@ export default async function middleware(event: MiddlewareEvent) {
       userId = payload.userId;
       sessionId = payload.sessionId;
     } else {
-      // Session expired: try refresh token
       const refreshPayload = refreshToken
         ? await verifyRefreshToken({ token: refreshToken, secret })
         : null;
@@ -100,10 +108,8 @@ export default async function middleware(event: MiddlewareEvent) {
     newRefreshToken = newSession.refreshToken;
   }
 
-  // Store session data for server functions to read
   globalThis.__session__ = { userId, sessionId };
 
-  // Store new cookies to be set on the response
   if (newSessionToken || newRefreshToken) {
     globalThis.__sessionCookies__ = {
       sessionToken: newSessionToken,
@@ -113,6 +119,5 @@ export default async function middleware(event: MiddlewareEvent) {
     globalThis.__sessionCookies__ = undefined;
   }
 
-  // Pass through to TanStack Start
   return undefined;
 }
