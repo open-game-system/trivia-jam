@@ -65,6 +65,9 @@ importers:
       h3:
         specifier: ^2.0.1-rc.16
         version: 2.0.1-rc.16(crossws@0.4.4(srvx@0.11.9))
+      immer:
+        specifier: ^11.1.4
+        version: 11.1.4
       jose:
         specifier: ^5.2.0
         version: 5.10.0
