@@ -1,19 +1,17 @@
 import React from 'react';
-import { CastContext } from '~/bridge/client';
-import { CastState } from '~/bridge/types';
+import { useCastSession, useCastAvailable, useCastDispatch } from '@open-game-system/cast-kit-react';
 import { Cast, Loader2 } from 'lucide-react';
 
 export function CastButton() {
-  const store = CastContext.useStore();
-  const castState = CastContext.useSelector((state) => state.castState);
-  const devicesAvailable = CastContext.useSelector((state) => state.devicesAvailable);
-  const sessionState = CastContext.useSelector((state) => state.sessionState);
+  const session = useCastSession();
+  const isAvailable = useCastAvailable();
+  const dispatch = useCastDispatch();
 
   const handleClick = () => {
-    if (sessionState === 'CONNECTED') {
-      store.dispatch({ type: 'SESSION_ENDED' });
-    } else if (devicesAvailable) {
-      store.dispatch({ type: 'SHOW_CAST_PICKER' });
+    if (session.status === 'connected') {
+      dispatch({ type: 'STOP_CASTING' });
+    } else if (isAvailable) {
+      dispatch({ type: 'SHOW_CAST_PICKER' });
     }
   };
 
@@ -22,20 +20,20 @@ export function CastButton() {
   let buttonClass = "inline-flex items-center gap-2 p-2 rounded-lg transition-all duration-200";
   let title = "Cast not available";
   let isDisabled = true;
-  let statusText = null;
+  let statusText: string | null = null;
 
-  if (sessionState === 'CONNECTED') {
+  if (session.status === 'connected') {
     buttonClass = "inline-flex items-center gap-2 p-2 rounded-lg bg-green-500/20 border border-green-500/30 text-green-400 hover:bg-green-500/30 transition-all duration-200";
     title = "Connected to Cast - Click to disconnect";
     statusText = "Connected";
     isDisabled = false;
-  } else if (castState === CastState.CONNECTING) {
+  } else if (session.status === 'connecting') {
     IconComponent = Loader2;
     buttonClass = "inline-flex items-center gap-2 p-2 rounded-lg bg-yellow-500/20 border border-yellow-500/30 text-yellow-400 animate-pulse transition-all duration-200";
     title = "Connecting to Cast device...";
     statusText = "Connecting";
     isDisabled = true;
-  } else if (devicesAvailable) {
+  } else if (isAvailable) {
     buttonClass = "inline-flex items-center gap-2 p-2 rounded-lg bg-indigo-500/20 border border-indigo-500/30 text-indigo-400 hover:bg-indigo-500/30 transition-all duration-200";
     title = "Cast to device";
     statusText = "Available";
@@ -46,8 +44,8 @@ export function CastButton() {
     isDisabled = true;
   }
 
-  // Don't render if bridge isn't supported
-  if (castState === CastState.NO_DEVICES_AVAILABLE) {
+  // Don't render if not available
+  if (!isAvailable) {
     return null;
   }
 
@@ -64,6 +62,3 @@ export function CastButton() {
     </button>
   );
 }
-
-// Note: Added Loader2 assumption, might need import if not already available
-// import { Loader2 } from 'lucide-react'; 

@@ -12,7 +12,6 @@ import {
 import type { LinksFunction, LoaderFunctionArgs } from "@remix-run/cloudflare";
 import { createAccessToken, createActorFetch } from "actor-kit/server";
 
-import { bridge, BridgeContext, CastContext } from "./bridge/client";
 import { SessionProvider } from "./session.context";
 import { SessionMachine } from "./session.machine";
 import styles from "./styles.css";
@@ -76,17 +75,15 @@ export default function App() {
         <Links />
       </head>
       <body>
-        <BridgeContext.Provider bridge={bridge}>
-          <SessionProvider
-            host={host}
-            actorId={sessionId}
-            checksum={payload.checksum}
-            accessToken={accessToken}
-            initialSnapshot={payload.snapshot}
-          >
-            <Outlet />
-          </SessionProvider>
-        </BridgeContext.Provider>
+        <SessionProvider
+          host={host}
+          actorId={sessionId}
+          checksum={payload.checksum}
+          accessToken={accessToken}
+          initialSnapshot={payload.snapshot}
+        >
+          <Outlet />
+        </SessionProvider>
         <ScrollRestoration />
         <Scripts />
         {isDevelopment && <LiveReload />}

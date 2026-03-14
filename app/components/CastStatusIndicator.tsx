@@ -1,16 +1,13 @@
 import React from 'react';
-import { CastContext } from '~/bridge/client'; // Assuming ~ maps to app/
-import { CastState } from '~/bridge/types';
+import { useCastSession, useCastAvailable } from '@open-game-system/cast-kit-react';
 import { Cast, Loader2 } from 'lucide-react';
 
 export function CastStatusIndicator() {
-  // Use selectors to get specific state slices
-  const castState = CastContext.useSelector((state) => state.castState);
-  const devicesAvailable = CastContext.useSelector((state) => state.devicesAvailable);
-  const sessionState = CastContext.useSelector((state) => state.sessionState);
+  const session = useCastSession();
+  const isAvailable = useCastAvailable();
 
   const getStatusDetails = () => {
-    if (sessionState === 'CONNECTED') {
+    if (session.status === 'connected') {
       return {
         text: 'Connected to Cast Device',
         bgColor: 'bg-green-500/10',
@@ -20,7 +17,7 @@ export function CastStatusIndicator() {
       };
     }
 
-    if (sessionState === 'CONNECTING' || castState === CastState.CONNECTING) {
+    if (session.status === 'connecting') {
       return {
         text: 'Connecting to Cast...',
         bgColor: 'bg-yellow-500/10',
@@ -30,7 +27,7 @@ export function CastStatusIndicator() {
       };
     }
 
-    if (devicesAvailable || castState === CastState.NOT_CONNECTED) {
+    if (isAvailable) {
       return {
         text: 'Cast Available',
         bgColor: 'bg-indigo-500/10',
@@ -48,7 +45,7 @@ export function CastStatusIndicator() {
   if (!status) return null;
 
   return (
-    <div 
+    <div
       className={`
         inline-flex items-center gap-2 px-3 py-1.5 rounded-full
         ${status.bgColor} ${status.borderColor} border
@@ -62,21 +59,3 @@ export function CastStatusIndicator() {
     </div>
   );
 }
-
-// Optional: Add some basic styles if needed, or use Tailwind classes
-/*
-.cast-indicator {
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 0.8em;
-}
-.connecting {
-  background-color: #f0f0f0;
-}
-.connected {
-  background-color: #e0f0ff;
-}
-.available {
-  background-color: #e0ffe0;
-}
-*/ 
