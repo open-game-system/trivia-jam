@@ -49,7 +49,19 @@ const config: StorybookConfig = {
       resolve: {
         alias: {
           "~": path.resolve(__dirname, "../src"),
+          // Deduplicate React for actor-kit and other packages
+          react: path.resolve(__dirname, "../node_modules/react"),
+          "react-dom": path.resolve(__dirname, "../node_modules/react-dom"),
+          "react/jsx-runtime": path.resolve(
+            __dirname,
+            "../node_modules/react/jsx-runtime"
+          ),
+          "react/jsx-dev-runtime": path.resolve(
+            __dirname,
+            "../node_modules/react/jsx-dev-runtime"
+          ),
         },
+        dedupe: ["react", "react-dom"],
       },
     });
   },
