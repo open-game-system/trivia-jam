@@ -17,7 +17,6 @@ import { SessionContext } from "~/session.context";
 import { QuestionProgress } from "./question-progress";
 import { CastButton } from './CastButton';
 import { CastProvider } from '@open-game-system/cast-kit-react';
-import { BridgeContext } from '~/bridge/client';
 
 type GameSettings = {
   maxPlayers: number;
