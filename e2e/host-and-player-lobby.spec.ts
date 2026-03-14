@@ -36,9 +36,9 @@ test.describe("Host creates game, player joins lobby", () => {
         playerPage.getByText(/waiting for host|players|empty slot/i)
       ).toBeVisible({ timeout: 15_000 });
 
-      // Host: should see at least 1 player (themselves or the joiner)
+      // Host: should see the player count in the lobby
       await expect(
-        hostPage.getByText(/\d+\/\d+\s*players?/i)
+        hostPage.getByText(/Players\s*\(\d+\/\d+\)/i)
       ).toBeVisible({ timeout: 10_000 });
     } finally {
       await hostContext.close();
