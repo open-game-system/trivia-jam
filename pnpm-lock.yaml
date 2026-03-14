@@ -56,9 +56,15 @@ importers:
       class-variance-authority:
         specifier: ^0.7.0
         version: 0.7.1
+      cloudflare:
+        specifier: ^5.2.0
+        version: 5.2.0
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
+      fast-json-patch:
+        specifier: ^3.1.1
+        version: 3.1.1
       framer-motion:
         specifier: ^11.11.11
         version: 11.18.2(react-dom@19.2.4(react@19.2.4))(react@19.2.4)
@@ -107,6 +113,9 @@ importers:
       xstate:
         specifier: ^5.18.2
         version: 5.28.0
+      xstate-migrate:
+        specifier: ^0.0.5
+        version: 0.0.5(xstate@5.28.0)
       zod:
         specifier: ^3.23.8
         version: 3.25.76
@@ -3351,6 +3360,11 @@ packages:
   xmlchars@2.2.0:
     resolution: {integrity: sha512-JZnDKK8B0RCDw84FNdDAIpZK+JuJw+s7Lz8nksI7SIuU3UXJJslUthsi+uWBUYOwPFwW7W7PRLRfUKpxjtjFCw==}
 
+  xstate-migrate@0.0.5:
+    resolution: {integrity: sha512-9cbdBh7gNLQHYabqAbl7m9iggfzRtu2eHpysVs67Rp1qsa7Weaca1v8az1Rhhz5ILgNzOM6esgpuCuAIT5xhkQ==}
+    peerDependencies:
+      xstate: ^5.15.0
+
   xstate@5.28.0:
     resolution: {integrity: sha512-Iaqq6ZrUzqeUtA3hC5LQKZfR8ZLzEFTImMHJM3jWEdVvXWdKvvVLXZEiNQWm3SCA9ZbEou/n5rcsna1wb9t28A==}
 
@@ -6351,6 +6365,11 @@ snapshots:
       js-yaml: 4.1.1
 
   xmlchars@2.2.0: {}
+
+  xstate-migrate@0.0.5(xstate@5.28.0):
+    dependencies:
+      fast-json-patch: 3.1.1
+      xstate: 5.28.0
 
   xstate@5.28.0: {}
 
