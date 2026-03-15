@@ -398,9 +398,13 @@ export const gameMachine = setup({
             SUBMIT_ANSWER: [
               {
                 guard: ({ context, event }: { context: GameServerContext; event: GameEvent }) => {
-                  return !!(context.public.currentQuestion && 
-                    context.public.players.length > 0 &&
-                    context.public.currentQuestion.answers.length + 1 === context.public.players.length);
+                  if (!context.public.currentQuestion || context.public.players.length === 0) return false;
+                  const answeredPlayerIds = new Set(
+                    context.public.currentQuestion.answers.map((a) => a.playerId)
+                  );
+                  // Add the current submitter
+                  answeredPlayerIds.add(event.caller.id);
+                  return answeredPlayerIds.size === context.public.players.length;
                 },
                 target: "questionPrep",
                 actions: ["submitAnswer", "processQuestionResults"]
