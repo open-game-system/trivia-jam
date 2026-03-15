@@ -244,6 +244,23 @@ export const gameMachine = setup({
               guard: "isHost",
               target: "parsingDocument",
             },
+            QUESTIONS_PARSED: {
+              guard: "isHost",
+              target: "ready",
+              actions: [
+                "clearParsingError",
+                {
+                  type: "assignParsedQuestions",
+                  params: ({
+                    event,
+                  }: {
+                    event: Extract<GameEvent, { type: "QUESTIONS_PARSED" }>;
+                  }) => ({
+                    questions: event.questions,
+                  }),
+                },
+              ],
+            },
           },
         },
         parsingDocument: {

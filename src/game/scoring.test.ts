@@ -53,7 +53,7 @@ describe('calculateScores', () => {
       ]
 
       const scores = calculateScores(answers, question, startTime)
-      
+
       expect(scores.find(s => s.playerId === 'p1')?.points).toBe(4) // Earlier submission
       expect(scores.find(s => s.playerId === 'p2')?.points).toBe(3) // Later submission
     })
@@ -129,7 +129,7 @@ describe('calculateScores', () => {
       expect(p2Score.points).toBe(4); // First exact match
       expect(p1Score.points).toBe(3); // Second exact match
       expect(p3Score.points).toBe(2); // Close but not exact
-      
+
       expect(p2Score.position).toBe(1);
       expect(p1Score.position).toBe(2);
       expect(p3Score.position).toBe(3);
@@ -151,4 +151,4 @@ describe('calculateScores', () => {
       expect(scores.find(s => s.playerId === 'p3')?.points).toBe(3);
     });
   })
-}) 
+})

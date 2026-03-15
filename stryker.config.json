@@ -1,0 +1,23 @@
+{
+  "$schema": "https://raw.githubusercontent.com/stryker-mutator/stryker/master/packages/core/schema/stryker-core.json",
+  "testRunner": "vitest",
+  "checkers": ["typescript"],
+  "tsconfigFile": "tsconfig.json",
+  "mutate": [
+    "src/game/**/*.ts",
+    "src/game.machine.ts",
+    "!src/**/*.test.ts",
+    "!src/**/*.spec.ts",
+    "!src/**/*.stories.tsx"
+  ],
+  "incremental": true,
+  "incrementalFile": ".stryker-incremental.json",
+  "reporters": ["html", "clear-text", "progress"],
+  "thresholds": {
+    "high": 95,
+    "low": 80,
+    "break": 60
+  },
+  "concurrency": 4,
+  "timeoutMS": 30000
+}
