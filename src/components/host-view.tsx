@@ -13,6 +13,7 @@ import * as Drawer from "vaul";
 import { GameContext } from "~/game.context";
 import type { GamePublicContext } from "~/game.machine";
 import type { Answer, Question, QuestionResult } from "~/game.types";
+import { useQuestionTimer } from "~/hooks/use-question-timer";
 import { SessionContext } from "~/session.context";
 import { QuestionProgress } from "./question-progress";
 import { CastButton } from "./CastButton";
@@ -942,39 +943,9 @@ const QuestionControls = ({
     return results[results.length - 1];
   });
   const isLastQuestion = questionNumber >= Object.keys(questions).length;
-
-  // Add timer state
-  const [timeLeft, setTimeLeft] = useState(0);
-
-  // Add timer effect
-  useEffect(() => {
-    if (!currentQuestion) return;
-
-    const calculateTimeLeft = () => {
-      return Math.max(
-        0,
-        Math.ceil(
-          (currentQuestion.startTime +
-            answerTimeWindow * 1000 -
-            Date.now()) /
-            1000
-        )
-      );
-    };
-
-    setTimeLeft(calculateTimeLeft());
-
-    const timer = setInterval(() => {
-      const newTimeLeft = calculateTimeLeft();
-      setTimeLeft(newTimeLeft);
-
-      if (newTimeLeft <= 0) {
-        clearInterval(timer);
-      }
-    }, 100);
-
-    return () => clearInterval(timer);
-  }, [currentQuestion, answerTimeWindow]);
+  const isActive = GameContext.useMatches("active");
+  const isQuestionActive = isActive && currentQuestion !== null;
+  const timeLeft = useQuestionTimer(currentQuestion, answerTimeWindow, isQuestionActive);
 
   // Get the current question text from questions collection
   const currentQuestionText = currentQuestion
