@@ -1,8 +1,9 @@
 {
   "$schema": "https://raw.githubusercontent.com/stryker-mutator/stryker/master/packages/core/schema/stryker-core.json",
   "testRunner": "vitest",
-  "checkers": ["typescript"],
-  "tsconfigFile": "tsconfig.json",
+  "plugins": [
+    "@stryker-mutator/vitest-runner"
+  ],
   "mutate": [
     "src/game/**/*.ts",
     "src/game.machine.ts",

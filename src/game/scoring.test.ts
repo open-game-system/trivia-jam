@@ -151,4 +151,100 @@ describe('calculateScores', () => {
       expect(scores.find(s => s.playerId === 'p3')?.points).toBe(3);
     });
   })
+
+  describe('multiple choice with mixed correct and incorrect answers', () => {
+    const question: Question = {
+      id: 'q1',
+      text: 'What is the capital of France?',
+      correctAnswer: 'Paris',
+      questionType: 'multiple-choice',
+      options: ['London', 'Paris', 'Berlin', 'Madrid']
+    }
+
+    it('assigns correct positions when mixing correct and incorrect answers', () => {
+      const answers: Answer[] = [
+        { playerId: 'p1', playerName: 'Player 1', value: 'Paris', timestamp: startTime + 1000 },
+        { playerId: 'p2', playerName: 'Player 2', value: 'London', timestamp: startTime + 500 },
+        { playerId: 'p3', playerName: 'Player 3', value: 'Paris', timestamp: startTime + 2000 }
+      ]
+
+      const scores = calculateScores(answers, question, startTime)
+
+      const p1 = scores.find(s => s.playerId === 'p1')!
+      const p2 = scores.find(s => s.playerId === 'p2')!
+      const p3 = scores.find(s => s.playerId === 'p3')!
+
+      // Correct answers get position based on speed among correct answers only
+      expect(p1.points).toBe(4) // First correct
+      expect(p1.position).toBe(1)
+      expect(p3.points).toBe(3) // Second correct
+      expect(p3.position).toBe(2)
+      // Incorrect answer gets 0 points and last position
+      expect(p2.points).toBe(0)
+      expect(p2.position).toBe(3) // After all correct answers
+    })
+
+    it('gives 1 point to 4th-and-beyond correct answers', () => {
+      const answers: Answer[] = [
+        { playerId: 'p1', playerName: 'Player 1', value: 'Paris', timestamp: startTime + 1000 },
+        { playerId: 'p2', playerName: 'Player 2', value: 'Paris', timestamp: startTime + 2000 },
+        { playerId: 'p3', playerName: 'Player 3', value: 'Paris', timestamp: startTime + 3000 },
+        { playerId: 'p4', playerName: 'Player 4', value: 'Paris', timestamp: startTime + 4000 },
+        { playerId: 'p5', playerName: 'Player 5', value: 'Paris', timestamp: startTime + 5000 }
+      ]
+
+      const scores = calculateScores(answers, question, startTime)
+
+      expect(scores.find(s => s.playerId === 'p1')!.points).toBe(4)
+      expect(scores.find(s => s.playerId === 'p2')!.points).toBe(3)
+      expect(scores.find(s => s.playerId === 'p3')!.points).toBe(2)
+      expect(scores.find(s => s.playerId === 'p4')!.points).toBe(1)
+      // 5th place: mutation `true ? 5 - 5 : 1` would give 0, but correct is 1
+      expect(scores.find(s => s.playerId === 'p5')!.points).toBe(1)
+    })
+  })
+
+  describe('numeric scoring edge cases', () => {
+    const question: Question = {
+      id: 'q2',
+      text: 'How many bones in the human body?',
+      correctAnswer: '206',
+      questionType: 'numeric'
+    }
+
+    it('ranks exact match above closer-by-difference non-exact answer', () => {
+      const answers: Answer[] = [
+        { playerId: 'p1', playerName: 'Player 1', value: '205', timestamp: startTime + 500 },  // diff=1, fast
+        { playerId: 'p2', playerName: 'Player 2', value: '206', timestamp: startTime + 3000 }   // exact, slow
+      ]
+
+      const scores = calculateScores(answers, question, startTime)
+
+      const p1 = scores.find(s => s.playerId === 'p1')!
+      const p2 = scores.find(s => s.playerId === 'p2')!
+
+      // Exact match should always rank first regardless of time
+      expect(p2.points).toBe(4)
+      expect(p2.position).toBe(1)
+      expect(p1.points).toBe(3)
+      expect(p1.position).toBe(2)
+    })
+
+    it('non-exact match does not leapfrog exact match even when faster', () => {
+      const answers: Answer[] = [
+        { playerId: 'p1', playerName: 'Player 1', value: '206', timestamp: startTime + 5000 },  // exact, very slow
+        { playerId: 'p2', playerName: 'Player 2', value: '207', timestamp: startTime + 100 }     // diff=1, very fast
+      ]
+
+      const scores = calculateScores(answers, question, startTime)
+
+      const p1 = scores.find(s => s.playerId === 'p1')!
+      const p2 = scores.find(s => s.playerId === 'p2')!
+
+      expect(p1.position).toBe(1)
+      expect(p1.points).toBe(4)
+      expect(p2.position).toBe(2)
+      expect(p2.points).toBe(3)
+    })
+  })
 })
