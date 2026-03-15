@@ -1018,6 +1018,7 @@ const QuestionControls = ({
               </h2>
               <motion.div
                 className="text-3xl font-bold text-indigo-400"
+                data-testid="question-timer"
                 animate={{
                   scale: timeLeft <= 5 ? [1, 1.1, 1] : 1,
                   color:
