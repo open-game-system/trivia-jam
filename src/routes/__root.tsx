@@ -13,7 +13,7 @@ import { getServerEnv, tryGetActorRuntimeEnv } from "../server-env";
 import type { Caller } from "actor-kit";
 import appCss from "../styles.css?url";
 
-const loadSession = createServerFn({ method: "GET" }).handler(async () => {
+export const loadSession = createServerFn({ method: "GET" }).handler(async () => {
   const env = getServerEnv();
   const session = globalThis.__session__;
   if (!session) {
@@ -104,6 +104,7 @@ async function getSessionSnapshotFromRuntimeEnv(
 }
 
 export const Route = createRootRoute({
+  ssr: "data-only",
   head: () => ({
     meta: [
       { charSet: "utf-8" },

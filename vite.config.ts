@@ -10,7 +10,11 @@ const config = defineConfig({
     alias: {
       // Prevent dual React from linked @open-game-system packages
       react: path.resolve(__dirname, "node_modules/react"),
+      "react/jsx-runtime": path.resolve(__dirname, "node_modules/react/jsx-runtime"),
+      "react/jsx-dev-runtime": path.resolve(__dirname, "node_modules/react/jsx-dev-runtime"),
       "react-dom": path.resolve(__dirname, "node_modules/react-dom"),
+      "react-dom/server": path.resolve(__dirname, "node_modules/react-dom/server"),
+      "react-dom/client": path.resolve(__dirname, "node_modules/react-dom/client"),
     },
   },
   plugins: [
@@ -23,6 +27,17 @@ const config = defineConfig({
     tanstackStart(),
     viteReact(),
   ],
+  build: {
+    minify: false,
+    sourcemap: true,
+    rollupOptions: {
+      // Force development React in dev builds
+      onwarn(warning, warn) { warn(warning); },
+    },
+  },
+  define: {
+    'process.env.NODE_ENV': JSON.stringify('development'),
+  },
   css: {
     postcss: "./postcss.config.js",
   },
