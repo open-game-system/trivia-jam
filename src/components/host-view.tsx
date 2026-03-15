@@ -11,6 +11,7 @@ import {
 import { useEffect, useState } from "react";
 import * as Drawer from "vaul";
 import { GameContext } from "~/game.context";
+import { createCountdown } from "~/timer";
 import type { GamePublicContext } from "~/game.machine";
 import type { Answer, Question, QuestionResult } from "~/game.types";
 import { SessionContext } from "~/session.context";
@@ -943,37 +944,16 @@ const QuestionControls = ({
   });
   const isLastQuestion = questionNumber >= Object.keys(questions).length;
 
-  // Add timer state
+  // Timer state using local countdown to avoid server-client clock skew
   const [timeLeft, setTimeLeft] = useState(0);
 
-  // Add timer effect
   useEffect(() => {
-    if (!currentQuestion) return;
+    if (!currentQuestion) {
+      setTimeLeft(0);
+      return;
+    }
 
-    const calculateTimeLeft = () => {
-      return Math.max(
-        0,
-        Math.ceil(
-          (currentQuestion.startTime +
-            answerTimeWindow * 1000 -
-            Date.now()) /
-            1000
-        )
-      );
-    };
-
-    setTimeLeft(calculateTimeLeft());
-
-    const timer = setInterval(() => {
-      const newTimeLeft = calculateTimeLeft();
-      setTimeLeft(newTimeLeft);
-
-      if (newTimeLeft <= 0) {
-        clearInterval(timer);
-      }
-    }, 100);
-
-    return () => clearInterval(timer);
+    return createCountdown(answerTimeWindow, setTimeLeft, () => {});
   }, [currentQuestion, answerTimeWindow]);
 
   // Get the current question text from questions collection

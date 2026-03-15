@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { GameContext } from "~/game.context";
 import { GamePublicContext } from "~/game.types";
 import { SessionContext } from "~/session.context";
+import { createCountdown } from "~/timer";
 import { HelpModal } from "./help-modal";
 import { QuestionProgress } from "./question-progress";
 
@@ -43,33 +44,7 @@ export const PlayerView = () => {
       return;
     }
 
-    const calculateTimeLeft = () => {
-      return Math.max(
-        0,
-        Math.ceil(
-          (currentQuestion.startTime +
-            settings.answerTimeWindow * 1000 -
-            Date.now()) /
-            1000
-        )
-      );
-    };
-
-    setTimeLeft(calculateTimeLeft());
-
-    const timer = setInterval(() => {
-      const newTimeLeft = calculateTimeLeft();
-      setTimeLeft(newTimeLeft);
-
-      if (newTimeLeft <= 0) {
-        clearInterval(timer);
-      }
-    }, 100); // Update every 100ms for smooth countdown
-
-    return () => {
-      clearInterval(timer);
-      setTimeLeft(0);
-    };
+    return createCountdown(settings.answerTimeWindow, setTimeLeft, () => {});
   }, [currentQuestion, settings.answerTimeWindow]);
 
   useEffect(() => {
