@@ -20,6 +20,250 @@ const focusInput = (inputId: string) => {
   }, 100);
 };
 
+const MultipleChoiceAnswerInput = ({
+  options,
+  isSubmitting,
+  onSubmit,
+}: {
+  options: string[];
+  isSubmitting: boolean;
+  onSubmit: (value: string) => void;
+}) => (
+  <div className="space-y-3">
+    <div className="text-lg font-medium text-indigo-300 mb-2">
+      Choose your answer
+    </div>
+    <div className="grid grid-cols-1 gap-3">
+      {options.map((option, index) => (
+        <motion.button
+          key={option}
+          onClick={() => onSubmit(option)}
+          disabled={isSubmitting}
+          className="w-full bg-gray-800/50 hover:bg-gray-700/50 text-white font-medium py-4 px-6 rounded-xl border border-gray-700/50 transition-all"
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+        >
+          <div className="flex items-start gap-4">
+            <span className="text-indigo-400 font-bold">
+              {String.fromCharCode(65 + index)}
+            </span>
+            <span className="text-base sm:text-lg text-left">{option}</span>
+          </div>
+        </motion.button>
+      ))}
+    </div>
+  </div>
+);
+
+const NumericAnswerInput = ({
+  answerInput,
+  setAnswerInput,
+  isSubmitting,
+  hasAnswered,
+  onSubmit,
+}: {
+  answerInput: string;
+  setAnswerInput: (value: string) => void;
+  isSubmitting: boolean;
+  hasAnswered: boolean;
+  onSubmit: () => void;
+}) => (
+  <div>
+    <label
+      htmlFor="answer"
+      className="block text-lg font-medium text-indigo-300 mb-2"
+    >
+      Your Answer
+    </label>
+    <input
+      id="answer"
+      type="tel"
+      inputMode="numeric"
+      pattern="[0-9]*"
+      value={answerInput}
+      onChange={(e) => {
+        const value = e.target.value.replace(/[^\d.-]/g, "");
+        setAnswerInput(value);
+      }}
+      className="w-full bg-gray-800/50 rounded-xl p-4 text-white text-xl"
+      placeholder="Enter your answer..."
+      autoComplete="off"
+      ref={(input) => {
+        if (input && !hasAnswered) {
+          focusInput("answer");
+        }
+      }}
+    />
+    <motion.button
+      onClick={onSubmit}
+      disabled={isSubmitting || !answerInput}
+      className={`w-full mt-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold py-4 px-8 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2
+        ${
+          !isSubmitting && answerInput
+            ? "hover:from-indigo-500 hover:to-purple-500"
+            : "opacity-50 cursor-not-allowed"
+        }`}
+      whileHover={!isSubmitting && answerInput ? { scale: 1.02 } : {}}
+      whileTap={!isSubmitting && answerInput ? { scale: 0.98 } : {}}
+    >
+      {isSubmitting ? (
+        <>
+          <Loader2 className="w-5 h-5 animate-spin" />
+          Submitting...
+        </>
+      ) : (
+        "Submit Answer"
+      )}
+    </motion.button>
+  </div>
+);
+
+const AnswerSubmittedDisplay = ({
+  currentQuestion,
+  userId,
+}: {
+  currentQuestion: NonNullable<GamePublicContext["currentQuestion"]>;
+  userId: string;
+}) => {
+  const playerAnswer = currentQuestion.answers.find(
+    (a) => a.playerId === userId
+  );
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="text-center"
+      data-testid="answer-submitted"
+    >
+      <div className="text-lg sm:text-2xl font-bold text-indigo-400 mb-2">
+        Answer Submitted!
+      </div>
+      <div className="text-2xl sm:text-4xl font-bold text-white mb-4">
+        {playerAnswer?.value}
+      </div>
+      <div className="text-xl text-white/60">
+        {((playerAnswer?.timestamp || 0) - currentQuestion.startTime) / 1000}s
+      </div>
+    </motion.div>
+  );
+};
+
+const ActiveQuestionDisplay = ({
+  currentQuestion,
+  questions,
+  hasAnswered,
+  userId,
+  timeLeft,
+  answerInput,
+  setAnswerInput,
+  isSubmitting,
+  setIsSubmitting,
+  onSubmitNumeric,
+}: {
+  currentQuestion: NonNullable<GamePublicContext["currentQuestion"]>;
+  questions: GamePublicContext["questions"];
+  hasAnswered: boolean;
+  userId: string;
+  timeLeft: number;
+  answerInput: string;
+  setAnswerInput: (value: string) => void;
+  isSubmitting: boolean;
+  setIsSubmitting: (value: boolean) => void;
+  onSubmitNumeric: () => void;
+}) => {
+  const question = questions[currentQuestion.questionId];
+  const questionText = question ? question.text : "Loading question...";
+  const isMultipleChoice = question?.questionType === "multiple-choice";
+  const send = GameContext.useSend();
+
+  const handleMultipleChoiceSubmit = (value: string) => {
+    setIsSubmitting(true);
+    send({ type: "SUBMIT_ANSWER", value });
+    setIsSubmitting(false);
+  };
+
+  return (
+    <div className="min-h-screen flex flex-col items-center justify-center pt-16 p-8 relative">
+      {/* Background Animation */}
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute inset-0 opacity-10">
+          <motion.div
+            className="absolute inset-0 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500"
+            animate={{
+              rotate: [0, 360],
+              scale: [1, 1.2, 1],
+            }}
+            transition={{
+              duration: 20,
+              repeat: Infinity,
+              ease: "linear",
+            }}
+          />
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="relative z-10 w-full max-w-xl">
+        {/* Timer */}
+        <motion.div
+          className="text-5xl sm:text-7xl font-bold text-center text-indigo-400 mb-8"
+          data-testid="question-timer"
+          animate={{
+            scale: timeLeft <= 5 ? [1, 1.1, 1] : 1,
+            color:
+              timeLeft <= 5
+                ? ["#818CF8", "#EF4444", "#818CF8"]
+                : "#818CF8",
+          }}
+          transition={{
+            duration: 1,
+            repeat: timeLeft <= 5 ? Infinity : 0,
+          }}
+        >
+          {timeLeft}s
+        </motion.div>
+
+        {/* Question */}
+        <div className="text-center mb-8">
+          <h1 className="text-2xl sm:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">
+            {questionText}
+          </h1>
+        </div>
+
+        {/* Answer Input */}
+        {!hasAnswered ? (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="space-y-4"
+          >
+            {isMultipleChoice ? (
+              <MultipleChoiceAnswerInput
+                options={question?.options || []}
+                isSubmitting={isSubmitting}
+                onSubmit={handleMultipleChoiceSubmit}
+              />
+            ) : (
+              <NumericAnswerInput
+                answerInput={answerInput}
+                setAnswerInput={setAnswerInput}
+                isSubmitting={isSubmitting}
+                hasAnswered={hasAnswered}
+                onSubmit={onSubmitNumeric}
+              />
+            )}
+          </motion.div>
+        ) : (
+          <AnswerSubmittedDisplay
+            currentQuestion={currentQuestion}
+            userId={userId}
+          />
+        )}
+      </div>
+    </div>
+  );
+};
+
 export const PlayerView = () => {
   const gameState = GameContext.useSelector((state) => state);
   const sessionState = SessionContext.useSelector((state) => state.public);
@@ -103,191 +347,18 @@ export const PlayerView = () => {
             )}
 
             {currentQuestion && (
-              <div className="min-h-screen flex flex-col items-center justify-center pt-16 p-8 relative">
-                {/* Background Animation */}
-                <div className="absolute inset-0 overflow-hidden">
-                  <div className="absolute inset-0 opacity-10">
-                    <motion.div
-                      className="absolute inset-0 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500"
-                      animate={{
-                        rotate: [0, 360],
-                        scale: [1, 1.2, 1],
-                      }}
-                      transition={{
-                        duration: 20,
-                        repeat: Infinity,
-                        ease: "linear",
-                      }}
-                    />
-                  </div>
-                </div>
-
-                {/* Main Content */}
-                <div className="relative z-10 w-full max-w-xl">
-                  {/* Timer */}
-                  <motion.div
-                    className="text-5xl sm:text-7xl font-bold text-center text-indigo-400 mb-8"
-                    data-testid="question-timer"
-                    animate={{
-                      scale: timeLeft <= 5 ? [1, 1.1, 1] : 1,
-                      color:
-                        timeLeft <= 5
-                          ? ["#818CF8", "#EF4444", "#818CF8"]
-                          : "#818CF8",
-                    }}
-                    transition={{
-                      duration: 1,
-                      repeat: timeLeft <= 5 ? Infinity : 0,
-                    }}
-                  >
-                    {timeLeft}s
-                  </motion.div>
-
-                  {/* Question */}
-                  <div className="text-center mb-8">
-                    <h1 className="text-2xl sm:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">
-                      {currentQuestion && questions[currentQuestion.questionId]
-                        ? questions[currentQuestion.questionId].text
-                        : "Loading question..."}
-                    </h1>
-                  </div>
-
-                  {/* Answer Input */}
-                  {!hasAnswered ? (
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="space-y-4"
-                    >
-                      {currentQuestion &&
-                      questions[currentQuestion.questionId]?.questionType ===
-                        "multiple-choice" ? (
-                        <div className="space-y-3">
-                          <div className="text-lg font-medium text-indigo-300 mb-2">
-                            Choose your answer
-                          </div>
-                          <div className="grid grid-cols-1 gap-3">
-                            {questions[
-                              currentQuestion.questionId
-                            ]?.options?.map((option, index) => (
-                              <motion.button
-                                key={option}
-                                onClick={() => {
-                                  setIsSubmitting(true);
-                                  send({
-                                    type: "SUBMIT_ANSWER",
-                                    value: option,
-                                  });
-                                  setIsSubmitting(false);
-                                }}
-                                disabled={isSubmitting}
-                                className="w-full bg-gray-800/50 hover:bg-gray-700/50 text-white font-medium py-4 px-6 rounded-xl border border-gray-700/50 transition-all"
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                              >
-                                <div className="flex items-start gap-4">
-                                  <span className="text-indigo-400 font-bold">
-                                    {String.fromCharCode(65 + index)}
-                                  </span>
-                                  <span className="text-base sm:text-lg text-left">
-                                    {option}
-                                  </span>
-                                </div>
-                              </motion.button>
-                            ))}
-                          </div>
-                        </div>
-                      ) : (
-                        <div>
-                          <label
-                            htmlFor="answer"
-                            className="block text-lg font-medium text-indigo-300 mb-2"
-                          >
-                            Your Answer
-                          </label>
-                          <input
-                            id="answer"
-                            type="tel"
-                            inputMode="numeric"
-                            pattern="[0-9]*"
-                            value={answerInput}
-                            onChange={(e) => {
-                              const value = e.target.value.replace(
-                                /[^\d.-]/g,
-                                ""
-                              );
-                              setAnswerInput(value);
-                            }}
-                            className="w-full bg-gray-800/50 rounded-xl p-4 text-white text-xl"
-                            placeholder="Enter your answer..."
-                            autoComplete="off"
-                            ref={(input) => {
-                              if (input && !hasAnswered) {
-                                focusInput("answer");
-                              }
-                            }}
-                          />
-                          <motion.button
-                            onClick={handleSubmitAnswer}
-                            disabled={isSubmitting || !answerInput}
-                            className={`w-full mt-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold py-4 px-8 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2
-                              ${
-                                !isSubmitting && answerInput
-                                  ? "hover:from-indigo-500 hover:to-purple-500"
-                                  : "opacity-50 cursor-not-allowed"
-                              }`}
-                            whileHover={
-                              !isSubmitting && answerInput
-                                ? { scale: 1.02 }
-                                : {}
-                            }
-                            whileTap={
-                              !isSubmitting && answerInput
-                                ? { scale: 0.98 }
-                                : {}
-                            }
-                          >
-                            {isSubmitting ? (
-                              <>
-                                <Loader2 className="w-5 h-5 animate-spin" />
-                                Submitting...
-                              </>
-                            ) : (
-                              "Submit Answer"
-                            )}
-                          </motion.button>
-                        </div>
-                      )}
-                    </motion.div>
-                  ) : (
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="text-center"
-                      data-testid="answer-submitted"
-                    >
-                      <div className="text-lg sm:text-2xl font-bold text-indigo-400 mb-2">
-                        Answer Submitted!
-                      </div>
-                      <div className="text-2xl sm:text-4xl font-bold text-white mb-4">
-                        {
-                          currentQuestion.answers.find(
-                            (a) => a.playerId === sessionState.userId
-                          )?.value
-                        }
-                      </div>
-                      <div className="text-xl text-white/60">
-                        {((currentQuestion.answers.find(
-                          (a) => a.playerId === sessionState.userId
-                        )?.timestamp || 0) -
-                          currentQuestion.startTime) /
-                          1000}
-                        s
-                      </div>
-                    </motion.div>
-                  )}
-                </div>
-              </div>
+              <ActiveQuestionDisplay
+                currentQuestion={currentQuestion}
+                questions={questions}
+                hasAnswered={!!hasAnswered}
+                userId={sessionState.userId}
+                timeLeft={timeLeft}
+                answerInput={answerInput}
+                setAnswerInput={setAnswerInput}
+                isSubmitting={isSubmitting}
+                setIsSubmitting={setIsSubmitting}
+                onSubmitNumeric={handleSubmitAnswer}
+              />
             )}
           </>
         )}
