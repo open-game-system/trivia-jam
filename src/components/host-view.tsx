@@ -492,28 +492,165 @@ const SettingsModal = ({
   );
 };
 
-const LobbyControls = ({
-  players,
-  onStartGame,
-  host,
+const QuestionImportForm = ({
+  documentContent,
+  onDocumentContentChange,
+  onParseDocument,
+  parsingErrorMessage,
+  isParsing,
 }: {
-  players: Array<{ id: string; name: string; score: number }>;
-  onStartGame: () => void;
-  host: string;
-}) => {
-  const gameState = GameContext.useSelector((state) => state.public);
-  const send = GameContext.useSend();
-  const isParsingDocument = GameContext.useMatches({
-    lobby: "parsingDocument",
-  });
-  const hasEnoughPlayers = players.length > 0;
-  const [copied, setCopied] = useState(false);
-  const [isStarting, setIsStarting] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
-  const [isEditingQuestions, setIsEditingQuestions] = useState(false);
-  const [documentContent, setDocumentContent] = useState("");
+  documentContent: string;
+  onDocumentContentChange: (content: string) => void;
+  onParseDocument: () => void;
+  parsingErrorMessage?: string;
+  isParsing: boolean;
+}) => (
+  <div className="mb-8">
+    <h2 className="text-xl font-bold text-indigo-300 mb-2">
+      Import Questions
+    </h2>
+    <p className="text-indigo-300/70 text-sm mb-4">
+      Add your trivia questions below. You can use numeric questions
+      (with exact answers) or multiple choice questions. Each question
+      should be followed by its answer.
+    </p>
+    <div className="bg-gray-900/30 rounded-xl p-6 border border-gray-700/50">
+      {parsingErrorMessage && (
+        <div
+          className="mb-4 p-3 rounded-lg bg-red-500/20 border border-red-500/50 text-red-200 text-sm"
+          role="alert"
+        >
+          <strong>Could not parse questions:</strong>{" "}
+          {parsingErrorMessage}
+        </div>
+      )}
+      {isParsing ? (
+        <div className="flex flex-col items-center justify-center py-8">
+          <Loader2
+            className="w-8 h-8 animate-spin text-indigo-400 mb-4"
+            data-testid="parsing-spinner"
+            role="status"
+          />
+          <p className="text-lg text-white/70">
+            Processing questions...
+          </p>
+          <p className="text-sm text-white/50 mt-2">
+            This may take a few moments
+          </p>
+        </div>
+      ) : (
+        <>
+          <textarea
+            value={documentContent}
+            onChange={(e) => onDocumentContentChange(e.target.value)}
+            placeholder={`Paste your questions below using this format:
 
-  const gameUrl = `https://${host}/games/${gameState.id}`;
+Question?
+Answer
+
+For multiple choice questions:
+Question?
+a) Option 1 b) Option 2 c) Option 3 d) Option 4
+Correct answer: B
+
+Example:
+How many bones in human body?
+206
+
+What major canal opened in 1914?
+a) Suez Canal b) Panama Canal c) Erie Canal d) English Channel
+Correct answer: B`}
+            className="w-full bg-gray-800/50 rounded-xl p-4 text-white placeholder-white/50 border border-gray-700/50 mb-4 text-sm font-mono"
+            rows={8}
+          />
+          <button
+            onClick={onParseDocument}
+            disabled={!documentContent.trim()}
+            className={`w-full bg-indigo-500/20 border border-indigo-500/30 hover:bg-indigo-500/30 text-white font-bold py-3 px-4 rounded-xl transition-all flex items-center justify-center gap-2 ${
+              !documentContent.trim()
+                ? "opacity-50 cursor-not-allowed"
+                : ""
+            }`}
+          >
+            Submit
+          </button>
+        </>
+      )}
+    </div>
+  </div>
+);
+
+const QuestionListDisplay = ({
+  questions,
+  onEditQuestions,
+}: {
+  questions: Record<string, Question>;
+  onEditQuestions: () => void;
+}) => (
+  <div className="mb-8">
+    <div className="flex justify-between items-center mb-4">
+      <h3 className="text-lg font-bold text-indigo-300">
+        {Object.keys(questions).length} Questions
+      </h3>
+      <button
+        onClick={onEditQuestions}
+        className="text-indigo-400 hover:text-indigo-300 text-sm"
+      >
+        Edit Questions
+      </button>
+    </div>
+    <div className="space-y-2 max-h-48 overflow-y-auto">
+      {Object.entries(questions).map(
+        ([id, question], index) => (
+          <div
+            key={id}
+            data-testid={`parsed-question-${index + 1}`}
+            className="bg-gray-800/50 rounded-lg p-3 text-sm"
+          >
+            <div className="flex justify-between items-start gap-4">
+              <div>
+                <span className="text-indigo-400 font-medium">
+                  Q{index + 1}:
+                </span>{" "}
+                {question.text}
+                {question.questionType === "multiple-choice" &&
+                  question.options && (
+                    <div className="mt-1 ml-4 text-gray-400">
+                      {question.options.map((option, optIndex) => (
+                        <div
+                          key={optIndex}
+                          className={
+                            option === question.correctAnswer
+                              ? "text-green-400"
+                              : "text-gray-400"
+                          }
+                        >
+                          {String.fromCharCode(97 + optIndex)}) {option}
+                          {option === question.correctAnswer && " ✓"}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+              </div>
+              <div className="text-green-400 font-medium whitespace-nowrap">
+                {question.questionType === "numeric" && (
+                  <>Answer: {question.correctAnswer}</>
+                )}
+              </div>
+            </div>
+          </div>
+        )
+      )}
+    </div>
+  </div>
+);
+
+const GameLinkSection = ({
+  gameUrl,
+}: {
+  gameUrl: string;
+}) => {
+  const [copied, setCopied] = useState(false);
 
   const copyGameLink = async () => {
     await navigator.clipboard.writeText(gameUrl);
@@ -533,12 +670,161 @@ const LobbyControls = ({
       copyGameLink();
     }
   };
-  const client = GameContext.useClient();
+
+  return (
+    <div className="mb-8">
+      <h2 className="text-xl font-bold text-indigo-300 text-center mb-4">
+        Share Game Link
+      </h2>
+      <div className="space-y-3">
+        <motion.button
+          onClick={copyGameLink}
+          className="w-full relative group"
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          aria-label={gameUrl}
+          data-testid="game-link-button"
+        >
+          <div className="absolute inset-0 bg-indigo-500/20 rounded-xl blur-xl group-hover:bg-indigo-500/30 transition-all" />
+          <div className="relative bg-gray-800/50 backdrop-blur-sm border border-indigo-500/30 rounded-xl p-4 sm:p-6 flex items-center justify-between gap-3">
+            <div className="flex-1 min-w-0">
+              <span className="text-sm sm:text-lg font-medium tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400 truncate block">
+                {gameUrl}
+              </span>
+            </div>
+            <div className="flex-shrink-0">
+              <AnimatePresence mode="wait">
+                {copied ? (
+                  <motion.div
+                    key="check"
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    exit={{ scale: 0 }}
+                    className="text-green-400"
+                    data-testid="copy-success-icon"
+                  >
+                    <Check className="w-5 h-5 sm:w-6 sm:h-6" />
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="copy"
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    exit={{ scale: 0 }}
+                    className="text-indigo-400 group-hover:text-indigo-300 transition-colors"
+                    data-testid="copy-icon"
+                  >
+                    <Copy className="w-5 h-5 sm:w-6 sm:h-6" />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
+        </motion.button>
+
+        {/* Share button - always shown */}
+        <motion.button
+          onClick={shareGameLink}
+          className="w-full bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-500/30 rounded-xl p-4 sm:p-6 flex items-center justify-center gap-2 transition-colors"
+        >
+          <svg
+            className="w-5 h-5 sm:w-6 sm:h-6"
+            fill="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92zM18 4c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zM6 13c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm12 7.02c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z" />
+          </svg>
+          Share Game
+        </motion.button>
+      </div>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="text-center mt-2 text-indigo-300/60 text-sm"
+      >
+        Click to copy or share game link
+      </motion.div>
+    </div>
+  );
+};
+
+const StartGameSection = ({
+  canStartGame,
+  hasEnoughPlayers,
+  onStartGame,
+}: {
+  canStartGame: boolean;
+  hasEnoughPlayers: boolean;
+  onStartGame: () => void;
+}) => {
+  const [isStarting, setIsStarting] = useState(false);
 
   const handleStartGame = () => {
     setIsStarting(true);
     onStartGame();
   };
+
+  return (
+    <div className="space-y-3">
+      <motion.button
+        onClick={handleStartGame}
+        disabled={!canStartGame || isStarting}
+        className={`w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold py-4 px-8 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2
+          ${
+            canStartGame && !isStarting
+              ? "hover:from-indigo-500 hover:to-purple-500 opacity-100"
+              : "opacity-50 cursor-not-allowed"
+          }`}
+        whileHover={canStartGame && !isStarting ? { scale: 1.02 } : {}}
+        whileTap={canStartGame && !isStarting ? { scale: 0.98 } : {}}
+      >
+        {isStarting ? (
+          <>
+            <Loader2
+              className="w-5 h-5 animate-spin"
+              data-testid="loading-spinner"
+            />
+            Starting Game...
+          </>
+        ) : (
+          "Start Game"
+        )}
+      </motion.button>
+
+      {!hasEnoughPlayers && (
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="text-center text-indigo-300/70 text-sm"
+        >
+          Waiting for at least one player to join...
+        </motion.p>
+      )}
+    </div>
+  );
+};
+
+const LobbyControls = ({
+  players,
+  onStartGame,
+  host,
+}: {
+  players: Array<{ id: string; name: string; score: number }>;
+  onStartGame: () => void;
+  host: string;
+}) => {
+  const gameState = GameContext.useSelector((state) => state.public);
+  const send = GameContext.useSend();
+  const isParsingDocument = GameContext.useMatches({
+    lobby: "parsingDocument",
+  });
+  const hasEnoughPlayers = players.length > 0;
+  const [showSettings, setShowSettings] = useState(false);
+  const [isEditingQuestions, setIsEditingQuestions] = useState(false);
+  const [documentContent, setDocumentContent] = useState("");
+
+  const gameUrl = `https://${host}/games/${gameState.id}`;
+  const client = GameContext.useClient();
 
   const handleParseDocument = async () => {
     if (!documentContent.trim()) return;
@@ -620,243 +906,27 @@ const LobbyControls = ({
           </div>
         </div>
 
-        {/* Question Import Section */}
         {(!hasQuestions || isEditingQuestions) && (
-          <div className="mb-8">
-            <h2 className="text-xl font-bold text-indigo-300 mb-2">
-              Import Questions
-            </h2>
-            <p className="text-indigo-300/70 text-sm mb-4">
-              Add your trivia questions below. You can use numeric questions
-              (with exact answers) or multiple choice questions. Each question
-              should be followed by its answer.
-            </p>
-            <div className="bg-gray-900/30 rounded-xl p-6 border border-gray-700/50">
-              {gameState.parsingErrorMessage && (
-                <div
-                  className="mb-4 p-3 rounded-lg bg-red-500/20 border border-red-500/50 text-red-200 text-sm"
-                  role="alert"
-                >
-                  <strong>Could not parse questions:</strong>{" "}
-                  {gameState.parsingErrorMessage}
-                </div>
-              )}
-              {isParsingDocument ? (
-                <div className="flex flex-col items-center justify-center py-8">
-                  <Loader2
-                    className="w-8 h-8 animate-spin text-indigo-400 mb-4"
-                    data-testid="parsing-spinner"
-                    role="status"
-                  />
-                  <p className="text-lg text-white/70">
-                    Processing questions...
-                  </p>
-                  <p className="text-sm text-white/50 mt-2">
-                    This may take a few moments
-                  </p>
-                </div>
-              ) : (
-                <>
-                  <textarea
-                    value={documentContent}
-                    onChange={(e) => setDocumentContent(e.target.value)}
-                    placeholder={`Paste your questions below using this format:
-
-Question?
-Answer
-
-For multiple choice questions:
-Question?
-a) Option 1 b) Option 2 c) Option 3 d) Option 4
-Correct answer: B
-
-Example:
-How many bones in human body?
-206
-
-What major canal opened in 1914?
-a) Suez Canal b) Panama Canal c) Erie Canal d) English Channel
-Correct answer: B`}
-                    className="w-full bg-gray-800/50 rounded-xl p-4 text-white placeholder-white/50 border border-gray-700/50 mb-4 text-sm font-mono"
-                    rows={8}
-                  />
-                  <button
-                    onClick={handleParseDocument}
-                    disabled={!documentContent.trim()}
-                    className={`w-full bg-indigo-500/20 border border-indigo-500/30 hover:bg-indigo-500/30 text-white font-bold py-3 px-4 rounded-xl transition-all flex items-center justify-center gap-2 ${
-                      !documentContent.trim()
-                        ? "opacity-50 cursor-not-allowed"
-                        : ""
-                    }`}
-                  >
-                    Submit
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
+          <QuestionImportForm
+            documentContent={documentContent}
+            onDocumentContentChange={setDocumentContent}
+            onParseDocument={handleParseDocument}
+            parsingErrorMessage={gameState.parsingErrorMessage}
+            isParsing={isParsingDocument}
+          />
         )}
 
         {hasQuestions && !isEditingQuestions && (
-          <div className="mb-8">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold text-indigo-300">
-                {Object.keys(gameState.questions).length} Questions
-              </h3>
-              <button
-                onClick={() => {
-                  const formattedText = Object.values(gameState.questions)
-                    .map((q) => {
-                      if (q.questionType === "numeric") {
-                        return `${q.text}\n${q.correctAnswer}\n`;
-                      } else {
-                        const options =
-                          q.options
-                            ?.map(
-                              (opt, i) =>
-                                `${String.fromCharCode(97 + i)}) ${opt}`
-                            )
-                            .join(" ") || "";
-                        const correctIndex =
-                          q.options?.findIndex(
-                            (opt) => opt === q.correctAnswer
-                          ) || 0;
-                        return `${
-                          q.text
-                        }\n${options}\nCorrect answer: ${String.fromCharCode(
-                          65 + correctIndex
-                        )}\n`;
-                      }
-                    })
-                    .join("\n");
-                  setDocumentContent(formattedText);
-                  setIsEditingQuestions(true);
-                }}
-                className="text-indigo-400 hover:text-indigo-300 text-sm"
-              >
-                Edit Questions
-              </button>
-            </div>
-            <div className="space-y-2 max-h-48 overflow-y-auto">
-              {Object.entries(gameState.questions).map(
-                ([id, question], index) => (
-                  <div
-                    key={id}
-                    data-testid={`parsed-question-${index + 1}`}
-                    className="bg-gray-800/50 rounded-lg p-3 text-sm"
-                  >
-                    <div className="flex justify-between items-start gap-4">
-                      <div>
-                        <span className="text-indigo-400 font-medium">
-                          Q{index + 1}:
-                        </span>{" "}
-                        {question.text}
-                        {question.questionType === "multiple-choice" &&
-                          question.options && (
-                            <div className="mt-1 ml-4 text-gray-400">
-                              {question.options.map((option, optIndex) => (
-                                <div
-                                  key={optIndex}
-                                  className={
-                                    option === question.correctAnswer
-                                      ? "text-green-400"
-                                      : "text-gray-400"
-                                  }
-                                >
-                                  {String.fromCharCode(97 + optIndex)}) {option}
-                                  {option === question.correctAnswer && " ✓"}
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                      </div>
-                      <div className="text-green-400 font-medium whitespace-nowrap">
-                        {question.questionType === "numeric" && (
-                          <>Answer: {question.correctAnswer}</>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )
-              )}
-            </div>
-          </div>
+          <QuestionListDisplay
+            questions={gameState.questions}
+            onEditQuestions={() => {
+              setDocumentContent(formatQuestionsToText(gameState.questions));
+              setIsEditingQuestions(true);
+            }}
+          />
         )}
 
-        {/* Game Link Section */}
-        <div className="mb-8">
-          <h2 className="text-xl font-bold text-indigo-300 text-center mb-4">
-            Share Game Link
-          </h2>
-          <div className="space-y-3">
-            <motion.button
-              onClick={copyGameLink}
-              className="w-full relative group"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              aria-label={gameUrl}
-              data-testid="game-link-button"
-            >
-              <div className="absolute inset-0 bg-indigo-500/20 rounded-xl blur-xl group-hover:bg-indigo-500/30 transition-all" />
-              <div className="relative bg-gray-800/50 backdrop-blur-sm border border-indigo-500/30 rounded-xl p-4 sm:p-6 flex items-center justify-between gap-3">
-                <div className="flex-1 min-w-0">
-                  <span className="text-sm sm:text-lg font-medium tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400 truncate block">
-                    {gameUrl}
-                  </span>
-                </div>
-                <div className="flex-shrink-0">
-                  <AnimatePresence mode="wait">
-                    {copied ? (
-                      <motion.div
-                        key="check"
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        exit={{ scale: 0 }}
-                        className="text-green-400"
-                        data-testid="copy-success-icon"
-                      >
-                        <Check className="w-5 h-5 sm:w-6 sm:h-6" />
-                      </motion.div>
-                    ) : (
-                      <motion.div
-                        key="copy"
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        exit={{ scale: 0 }}
-                        className="text-indigo-400 group-hover:text-indigo-300 transition-colors"
-                        data-testid="copy-icon"
-                      >
-                        <Copy className="w-5 h-5 sm:w-6 sm:h-6" />
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              </div>
-            </motion.button>
-
-            {/* Share button - always shown */}
-            <motion.button
-              onClick={shareGameLink}
-              className="w-full bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-500/30 rounded-xl p-4 sm:p-6 flex items-center justify-center gap-2 transition-colors"
-            >
-              <svg
-                className="w-5 h-5 sm:w-6 sm:h-6"
-                fill="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92zM18 4c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zM6 13c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm12 7.02c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z" />
-              </svg>
-              Share Game
-            </motion.button>
-          </div>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-center mt-2 text-indigo-300/60 text-sm"
-          >
-            Click to copy or share game link
-          </motion.div>
-        </div>
+        <GameLinkSection gameUrl={gameUrl} />
 
         {/* Player List */}
         <div className="mb-8">
@@ -869,43 +939,11 @@ Correct answer: B`}
           />
         </div>
 
-        {/* Start Game Button */}
-        <div className="space-y-3">
-          <motion.button
-            onClick={handleStartGame}
-            disabled={!canStartGame || isStarting}
-            className={`w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold py-4 px-8 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2
-              ${
-                canStartGame && !isStarting
-                  ? "hover:from-indigo-500 hover:to-purple-500 opacity-100"
-                  : "opacity-50 cursor-not-allowed"
-              }`}
-            whileHover={canStartGame && !isStarting ? { scale: 1.02 } : {}}
-            whileTap={canStartGame && !isStarting ? { scale: 0.98 } : {}}
-          >
-            {isStarting ? (
-              <>
-                <Loader2
-                  className="w-5 h-5 animate-spin"
-                  data-testid="loading-spinner"
-                />
-                Starting Game...
-              </>
-            ) : (
-              "Start Game"
-            )}
-          </motion.button>
-
-          {!hasEnoughPlayers && (
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-center text-indigo-300/70 text-sm"
-            >
-              Waiting for at least one player to join...
-            </motion.p>
-          )}
-        </div>
+        <StartGameSection
+          canStartGame={canStartGame}
+          hasEnoughPlayers={hasEnoughPlayers}
+          onStartGame={onStartGame}
+        />
 
         <AnimatePresence>
           {showSettings && (
