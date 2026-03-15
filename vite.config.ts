@@ -27,17 +27,6 @@ const config = defineConfig({
     tanstackStart(),
     viteReact(),
   ],
-  build: {
-    minify: false,
-    sourcemap: true,
-    rollupOptions: {
-      // Force development React in dev builds
-      onwarn(warning, warn) { warn(warning); },
-    },
-  },
-  define: {
-    'process.env.NODE_ENV': JSON.stringify('development'),
-  },
   css: {
     postcss: "./postcss.config.js",
   },

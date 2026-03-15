@@ -15,6 +15,8 @@ import type { GamePublicContext } from "~/game.machine";
 import type { Answer, Question, QuestionResult } from "~/game.types";
 import { SessionContext } from "~/session.context";
 import { QuestionProgress } from "./question-progress";
+import { CastButton } from "./CastButton";
+import { CastProvider } from "@open-game-system/cast-kit-react";
 
 type GameSettings = {
   maxPlayers: number;
@@ -602,6 +604,9 @@ const LobbyControls = ({
             Game Setup
           </h1>
           <div className="flex items-center gap-2">
+            <CastProvider>
+              <CastButton />
+            </CastProvider>
             <motion.button
               onClick={() => setShowSettings(true)}
               className="p-2 rounded-lg bg-gray-900/30 border border-gray-700/30 text-indigo-300 hover:text-indigo-200 transition-colors"
