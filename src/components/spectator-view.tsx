@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { GameContext } from "~/game.context";
 import type { Answer, GamePublicContext, PlayerAnswer, PlayerScore, Question } from "~/game.types";
 import { useQuestionTimer } from "~/hooks/use-question-timer";
+import { GameBackground, TimerDisplay, FinalScoresList, WinnerAnnouncement } from "./game";
 
 const SOUND_EFFECTS = {
   // Classic game show buzzer sound
@@ -222,13 +223,11 @@ const ActiveGameContent = ({
 };
 
 export const SpectatorView = ({ host }: { host: string }) => {
-  const {
-    currentQuestion,
-    players,
-    questionResults,
-    questions,
-    questionNumber,
-  } = GameContext.useSelector((state) => state.public);
+  const currentQuestion = GameContext.useSelector((state) => state.public.currentQuestion);
+  const players = GameContext.useSelector((state) => state.public.players);
+  const questionResults = GameContext.useSelector((state) => state.public.questionResults);
+  const questions = GameContext.useSelector((state) => state.public.questions);
+  const questionNumber = GameContext.useSelector((state) => state.public.questionNumber);
   const isFinished = GameContext.useMatches("finished");
   const isLobby = GameContext.useMatches("lobby");
   const isActive = GameContext.useMatches("active");
@@ -268,18 +267,12 @@ const LobbyDisplay = ({
   host: string;
 }) => {
   const maxPlayers = 10;
-  const {
-    players: currentPlayers,
-    hostId,
-    id,
-  } = GameContext.useSelector((state) => ({
-    players: state.public.players,
-    hostId: state.public.hostId,
-    id: state.public.id,
-  }));
+  const currentPlayers = GameContext.useSelector((state) => state.public.players);
+  const hostId = GameContext.useSelector((state) => state.public.hostId);
+  const gameId = GameContext.useSelector((state) => state.public.id);
 
   // Construct the game URL using the host prop
-  const gameUrl = `https://${host}/games/${id}`;
+  const gameUrl = `https://${host}/games/${gameId}`;
 
   // Create array of length maxPlayers filled with players or undefined
   const slots = Array(maxPlayers)
@@ -288,23 +281,7 @@ const LobbyDisplay = ({
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 relative">
-      {/* Background Animation */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <motion.div
-            className="absolute inset-0 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500"
-            animate={{
-              rotate: [0, 360],
-              scale: [1, 1.2, 1],
-            }}
-            transition={{
-              duration: 20,
-              repeat: Infinity,
-              ease: "linear",
-            }}
-          />
-        </div>
-      </div>
+      <GameBackground />
 
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
@@ -467,26 +444,7 @@ const CelebrationDisplay = ({
   );
 };
 
-const TimerDisplay = ({ remainingTime }: { remainingTime: number }) => {
-  const isUrgent = remainingTime <= 5;
-
-  return (
-    <motion.div
-      className="text-7xl font-bold text-indigo-400 mb-8"
-      data-testid="question-timer"
-      animate={{
-        scale: isUrgent ? [1, 1.1, 1] : 1,
-        color: isUrgent ? ["#818CF8", "#EF4444", "#818CF8"] : "#818CF8",
-      }}
-      transition={{
-        duration: 1,
-        repeat: isUrgent ? Infinity : 0,
-      }}
-    >
-      {remainingTime}s
-    </motion.div>
-  );
-};
+// TimerDisplay is now imported from ./game
 
 const MultipleChoiceOptionsDisplay = ({
   options,
@@ -586,10 +544,10 @@ const GameplayDisplay = ({
   players: Array<{ id: string; name: string; score: number }>;
   questions: Record<string, Question>;
 }) => {
-  const gameState = GameContext.useSelector((state) => state.public);
+  const answerTimeWindow = GameContext.useSelector((state) => state.public.settings.answerTimeWindow);
   const isActive = GameContext.useMatches("active");
   const isQuestionActive = isActive && currentQuestion !== null;
-  const remainingTime = useQuestionTimer(currentQuestion, gameState.settings.answerTimeWindow, isQuestionActive);
+  const remainingTime = useQuestionTimer(currentQuestion, answerTimeWindow, isQuestionActive);
 
   if (!currentQuestion) return null;
 
@@ -604,23 +562,7 @@ const GameplayDisplay = ({
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center pt-16 p-8 relative">
-      {/* Background Animation */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <motion.div
-            className="absolute inset-0 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500"
-            animate={{
-              rotate: [0, 360],
-              scale: [1, 1.2, 1],
-            }}
-            transition={{
-              duration: 20,
-              repeat: Infinity,
-              ease: "linear",
-            }}
-          />
-        </div>
-      </div>
+      <GameBackground />
 
       {/* Main Content */}
       <div className="relative z-10 w-full max-w-4xl">
@@ -692,29 +634,12 @@ const GameFinishedDisplay = ({
 }: {
   players: Array<{ id: string; name: string; score: number }>;
 }) => {
-  // Create a copy before sorting
   const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
-  const winner = sortedPlayers[0]; // Get the player with highest score
+  const winner = sortedPlayers[0];
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 relative">
-      {/* Background Animation */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <motion.div
-            className="absolute inset-0 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500"
-            animate={{
-              rotate: [0, 360],
-              scale: [1, 1.2, 1],
-            }}
-            transition={{
-              duration: 20,
-              repeat: Infinity,
-              ease: "linear",
-            }}
-          />
-        </div>
-      </div>
+      <GameBackground />
 
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
@@ -726,56 +651,8 @@ const GameFinishedDisplay = ({
           Game Over!
         </h1>
 
-        {/* Winner announcement section */}
-        <div className="text-center mb-12" data-testid="winner-announcement">
-          <div className="text-8xl mb-6">👑</div>
-          <h2 className="text-4xl font-bold text-indigo-300 mb-4">
-            {winner.name} Wins!
-          </h2>
-          <p className="text-2xl text-indigo-300/70">
-            with {winner.score} points
-          </p>
-        </div>
-
-        {/* Final Scores Section */}
-        <div className="space-y-4">
-          <h2 className="text-2xl font-bold text-indigo-300 flex items-center justify-center gap-3 mb-6" data-testid="final-scores-heading">
-            <Trophy className="w-6 h-6" /> Final Scores
-          </h2>
-          <div className="space-y-3 max-h-[400px] overflow-y-auto custom-scrollbar pr-2">
-            {sortedPlayers.map((player, index) => (
-              <motion.div
-                key={player.id}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className={`flex justify-between items-center p-4 rounded-xl border ${
-                  index === 0
-                    ? "bg-yellow-500/10 border-yellow-500/30"
-                    : index === 1
-                    ? "bg-gray-400/10 border-gray-400/30"
-                    : index === 2
-                    ? "bg-amber-600/10 border-amber-600/30"
-                    : "bg-gray-800/30 border-gray-700/30"
-                }`}
-                data-testid={`player-score-${player.id}`}
-              >
-                <div className="flex items-center gap-4">
-                  <span className="text-2xl font-bold min-w-[40px]">
-                    {index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : `#${index + 1}`}
-                  </span>
-                  <span className="font-medium text-xl">{player.name}</span>
-                </div>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-2xl font-bold text-indigo-400">
-                    {player.score}
-                  </span>
-                  <span className="text-indigo-400/70 text-sm">pts</span>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
+        <WinnerAnnouncement winner={winner} />
+        <FinalScoresList players={players} />
       </motion.div>
     </div>
   );
@@ -943,23 +820,7 @@ const QuestionResultsDisplay = ({
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center pt-16 p-8 relative">
-      {/* Background Animation */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <motion.div
-            className="absolute inset-0 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500"
-            animate={{
-              rotate: [0, 360],
-              scale: [1, 1.2, 1],
-            }}
-            transition={{
-              duration: 20,
-              repeat: Infinity,
-              ease: "linear",
-            }}
-          />
-        </div>
-      </div>
+      <GameBackground />
 
       {/* Main Content */}
       <div className="relative z-10 w-full max-w-4xl">
@@ -992,23 +853,7 @@ const WaitingForQuestionDisplay = ({
 }) => {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-8 relative">
-      {/* Background Animation */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <motion.div
-            className="absolute inset-0 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500"
-            animate={{
-              rotate: [0, 360],
-              scale: [1, 1.2, 1],
-            }}
-            transition={{
-              duration: 20,
-              repeat: Infinity,
-              ease: "linear",
-            }}
-          />
-        </div>
-      </div>
+      <GameBackground />
 
       {/* Main Content */}
       <div className="relative z-10">

@@ -6,13 +6,13 @@ import confetti from 'canvas-confetti'
 import { useEffect } from 'react'
 
 export function PlayerResults() {
-  const gameState = GameContext.useSelector((state) => state.public);
-  const sessionState = SessionContext.useSelector((state) => state.public);
+  const players = GameContext.useSelector((state) => state.public.players);
+  const userId = SessionContext.useSelector((state) => state.public.userId);
   const sendGameEvent = GameContext.useSend();
 
-  const currentPlayer = gameState.players.find(p => p.id === sessionState.userId);
-  const sortedPlayers = [...gameState.players].sort((a, b) => b.score - a.score);
-  const position = sortedPlayers.findIndex(p => p.id === sessionState.userId) + 1;
+  const currentPlayer = players.find(p => p.id === userId);
+  const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
+  const position = sortedPlayers.findIndex(p => p.id === userId) + 1;
   const isWinner = position === 1;
 
   useEffect(() => {
@@ -114,7 +114,7 @@ export function PlayerResults() {
                   You placed {position}<sup>{getPositionSuffix(position)}</sup>
                 </p>
                 <p className="text-gray-400">
-                  out of {gameState.players.length} players
+                  out of {players.length} players
                 </p>
               </motion.div>
 
@@ -132,7 +132,7 @@ export function PlayerResults() {
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: index * 0.1 }}
                         className={`flex justify-between items-center p-4 rounded-xl border ${
-                          player.id === sessionState.userId
+                          player.id === userId
                             ? 'bg-indigo-500/20 border-indigo-500/30'
                             : index === 0
                             ? 'bg-yellow-500/10 border-yellow-500/30'

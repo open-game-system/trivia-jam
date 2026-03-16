@@ -19,6 +19,7 @@ import { AnswerProgress } from "./answer-progress";
 import { QuestionProgress } from "./question-progress";
 import { CastButton } from "./CastButton";
 import { CastProvider } from "@open-game-system/cast-kit-react";
+import { GameBackground, FinalScoresList, WinnerAnnouncement } from "./game";
 
 type GameSettings = {
   maxPlayers: number;
@@ -60,10 +61,14 @@ export const HostView = ({
 }: {
   host: string;
 }) => {
-  const gameState = GameContext.useSelector((state) => state.public);
-  const sessionState = SessionContext.useSelector((state) => state.public);
-  const { currentQuestion, players, hostId, id, questions, questionResults } =
-    gameState;
+  const currentQuestion = GameContext.useSelector((state) => state.public.currentQuestion);
+  const players = GameContext.useSelector((state) => state.public.players);
+  const hostId = GameContext.useSelector((state) => state.public.hostId);
+  const id = GameContext.useSelector((state) => state.public.id);
+  const questions = GameContext.useSelector((state) => state.public.questions);
+  const questionResults = GameContext.useSelector((state) => state.public.questionResults);
+  const questionNumber = GameContext.useSelector((state) => state.public.questionNumber);
+  const userId = SessionContext.useSelector((state) => state.public.userId);
   const send = GameContext.useSend();
   const isActive = GameContext.useMatches("active");
   const isFinished = GameContext.useMatches("finished");
@@ -71,7 +76,7 @@ export const HostView = ({
 
   const lastQuestionResult = questionResults[questionResults.length - 1];
 
-  if (sessionState.userId !== hostId) {
+  if (userId !== hostId) {
     return (
       <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center p-4">
         <motion.div
@@ -93,22 +98,7 @@ export const HostView = ({
   if (!id) {
     return (
       <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center p-4 relative">
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute inset-0 opacity-10">
-            <motion.div
-              className="absolute inset-0 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500"
-              animate={{
-                rotate: [0, 360],
-                scale: [1, 1.2, 1],
-              }}
-              transition={{
-                duration: 20,
-                repeat: Infinity,
-                ease: "linear",
-              }}
-            />
-          </div>
-        </div>
+        <GameBackground />
 
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
@@ -131,8 +121,8 @@ export const HostView = ({
     <div className="min-h-screen bg-gray-900 text-white">
       {isActive && (
         <QuestionProgress
-          current={gameState.questionNumber}
-          total={Object.keys(gameState.questions).length}
+          current={questionNumber}
+          total={Object.keys(questions).length}
         />
       )}
       <AnimatePresence mode="wait">
@@ -822,7 +812,11 @@ const LobbyControls = ({
   onStartGame: () => void;
   host: string;
 }) => {
-  const gameState = GameContext.useSelector((state) => state.public);
+  const gameId = GameContext.useSelector((state) => state.public.id);
+  const questions = GameContext.useSelector((state) => state.public.questions);
+  const hostId = GameContext.useSelector((state) => state.public.hostId);
+  const settings = GameContext.useSelector((state) => state.public.settings);
+  const parsingErrorMessage = GameContext.useSelector((state) => state.public.parsingErrorMessage);
   const send = GameContext.useSend();
   const isParsingDocument = GameContext.useMatches({
     lobby: "parsingDocument",
@@ -832,7 +826,7 @@ const LobbyControls = ({
   const [isEditingQuestions, setIsEditingQuestions] = useState(false);
   const [documentContent, setDocumentContent] = useState("");
 
-  const gameUrl = `https://${host}/games/${gameState.id}`;
+  const gameUrl = `https://${host}/games/${gameId}`;
   const client = GameContext.useClient();
 
   const handleParseDocument = async () => {
@@ -865,28 +859,12 @@ const LobbyControls = ({
     });
   };
 
-  const hasQuestions = Object.keys(gameState.questions).length > 0;
+  const hasQuestions = Object.keys(questions).length > 0;
   const canStartGame = hasEnoughPlayers && hasQuestions;
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 relative">
-      {/* Background Animation */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <motion.div
-            className="absolute inset-0 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500"
-            animate={{
-              rotate: [0, 360],
-              scale: [1, 1.2, 1],
-            }}
-            transition={{
-              duration: 20,
-              repeat: Infinity,
-              ease: "linear",
-            }}
-          />
-        </div>
-      </div>
+      <GameBackground />
 
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
@@ -920,16 +898,16 @@ const LobbyControls = ({
             documentContent={documentContent}
             onDocumentContentChange={setDocumentContent}
             onParseDocument={handleParseDocument}
-            parsingErrorMessage={gameState.parsingErrorMessage}
+            parsingErrorMessage={parsingErrorMessage}
             isParsing={isParsingDocument}
           />
         )}
 
         {hasQuestions && !isEditingQuestions && (
           <QuestionListDisplay
-            questions={gameState.questions}
+            questions={questions}
             onEditQuestions={() => {
-              setDocumentContent(formatQuestionsToText(gameState.questions));
+              setDocumentContent(formatQuestionsToText(questions));
               setIsEditingQuestions(true);
             }}
           />
@@ -941,7 +919,7 @@ const LobbyControls = ({
         <div className="mb-8">
           <PlayerList
             players={players}
-            hostId={gameState.hostId}
+            hostId={hostId}
             onRemovePlayer={(playerId) =>
               send({ type: "REMOVE_PLAYER", playerId })
             }
@@ -959,7 +937,7 @@ const LobbyControls = ({
             <SettingsModal
               isOpen={showSettings}
               onClose={() => setShowSettings(false)}
-              currentSettings={gameState.settings}
+              currentSettings={settings}
               onSave={handleSaveSettings}
             />
           )}
@@ -1248,23 +1226,7 @@ const QuestionControls = ({
 
   return (
     <div className="min-h-screen flex flex-col items-center pt-16 p-4 relative">
-      {/* Background Animation */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <motion.div
-            className="absolute inset-0 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500"
-            animate={{
-              rotate: [0, 360],
-              scale: [1, 1.2, 1],
-            }}
-            transition={{
-              duration: 20,
-              repeat: Infinity,
-              ease: "linear",
-            }}
-          />
-        </div>
-      </div>
+      <GameBackground />
 
       <div className="relative z-10 w-full max-w-xl mx-auto space-y-4">
         {currentQuestion && (
@@ -1337,23 +1299,7 @@ const GameFinishedDisplay = ({
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 relative">
-      {/* Background Animation */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <motion.div
-            className="absolute inset-0 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500"
-            animate={{
-              rotate: [0, 360],
-              scale: [1, 1.2, 1],
-            }}
-            transition={{
-              duration: 20,
-              repeat: Infinity,
-              ease: "linear",
-            }}
-          />
-        </div>
-      </div>
+      <GameBackground />
 
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}

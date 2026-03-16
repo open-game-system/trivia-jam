@@ -4,13 +4,13 @@ import { SessionContext } from '../session.context'
 import { Trophy, Medal, Award, Star, Crown } from 'lucide-react'
 
 export function Scoreboard() {
-  const gameState = GameContext.useSelector((state) => state.public);
-  const sessionState = SessionContext.useSelector((state) => state.public);
+  const players = GameContext.useSelector((state) => state.public.players);
+  const userId = SessionContext.useSelector((state) => state.public.userId);
 
-  const sortedPlayers = [...gameState.players].sort((a, b) => b.score - a.score);
+  const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
   const maxScore = Math.max(...sortedPlayers.map(p => p.score));
-  const currentPlayer = gameState.players.find(p => p.id === sessionState.userId);
-  const currentPlayerRank = sortedPlayers.findIndex(p => p.id === sessionState.userId) + 1;
+  const currentPlayer = players.find(p => p.id === userId);
+  const currentPlayerRank = sortedPlayers.findIndex(p => p.id === userId) + 1;
 
   const getPositionIcon = (position: number) => {
     switch (position) {
@@ -76,7 +76,7 @@ export function Scoreboard() {
                 exit={{ opacity: 0, x: 20 }}
                 transition={{ duration: 0.3, delay: index * 0.1 }}
                 className={`relative overflow-hidden ${
-                  player.id === sessionState.userId
+                  player.id === userId
                     ? 'bg-indigo-500/20 border-indigo-500/30'
                     : index === 0
                     ? 'bg-yellow-500/10 border-yellow-500/30'
@@ -102,7 +102,7 @@ export function Scoreboard() {
                     </div>
                     <span className="text-xl font-medium">
                       {player.name}
-                      {player.id === sessionState.userId && (
+                      {player.id === userId && (
                         <span className="ml-2 text-indigo-400/60 text-sm">(You)</span>
                       )}
                     </span>
