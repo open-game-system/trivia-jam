@@ -148,82 +148,109 @@ const Scoreboard = ({
   );
 };
 
-export const SpectatorView = ({ host }: { host: string }) => {
-  const gameState = GameContext.useSelector((state) => state);
-  const {
-    currentQuestion,
-    players,
-    questionResults,
-    questions,
-    settings,
-    questionNumber,
-  } = gameState.public;
+const useQuestionSoundEffects = (
+  currentQuestion: GamePublicContext["currentQuestion"],
+  questions: GamePublicContext["questions"]
+) => {
   const playSound = useSoundEffects();
   const prevQuestionRef = useRef<typeof currentQuestion>(null);
-  const isFinished = GameContext.useMatches("finished");
-  const isLobby = GameContext.useMatches("lobby");
-  const isActive = GameContext.useMatches("active");
 
-  // Update sound effect logic
   useEffect(() => {
     const isQuestionEnding = prevQuestionRef.current && !currentQuestion;
     const isQuestionStarting = !prevQuestionRef.current && currentQuestion;
 
     if (isQuestionEnding && prevQuestionRef.current) {
-      // Check if any player got the exact answer
-      const question =
-        gameState.public.questions[prevQuestionRef.current.questionId];
+      const question = questions[prevQuestionRef.current.questionId];
       const hasCorrectAnswer = prevQuestionRef.current.answers.some(
         (answer) => answer.value === question.correctAnswer
       );
-
-      // Play correct sound if someone got it right, incorrect sound if not
       playSound(hasCorrectAnswer ? "CORRECT" : "INCORRECT");
     } else if (isQuestionStarting) {
-      // Play start sound when new question appears
       playSound("QUESTION");
     }
 
     prevQuestionRef.current = currentQuestion;
-  }, [currentQuestion, playSound, gameState.public.questions]);
+  }, [currentQuestion, playSound, questions]);
+};
+
+const ActiveGameContent = ({
+  currentQuestion,
+  players,
+  questionResults,
+  questions,
+  questionNumber,
+}: {
+  currentQuestion: GamePublicContext["currentQuestion"];
+  players: GamePublicContext["players"];
+  questionResults: GamePublicContext["questionResults"];
+  questions: GamePublicContext["questions"];
+  questionNumber: number;
+}) => {
+  if (currentQuestion) {
+    return (
+      <>
+        <QuestionProgress
+          current={questionNumber}
+          total={Object.keys(questions).length}
+        />
+        <GameplayDisplay
+          currentQuestion={currentQuestion}
+          players={players}
+          questions={questions}
+        />
+      </>
+    );
+  }
+
+  if (questionResults.length > 0) {
+    return (
+      <>
+        <QuestionProgress
+          current={questionNumber}
+          total={Object.keys(questions).length}
+        />
+        <QuestionResultsDisplay
+          players={players}
+          questionResults={questionResults}
+          questions={questions}
+        />
+      </>
+    );
+  }
+
+  return <WaitingForQuestionDisplay players={players} />;
+};
+
+export const SpectatorView = ({ host }: { host: string }) => {
+  const {
+    currentQuestion,
+    players,
+    questionResults,
+    questions,
+    questionNumber,
+  } = GameContext.useSelector((state) => state.public);
+  const isFinished = GameContext.useMatches("finished");
+  const isLobby = GameContext.useMatches("lobby");
+  const isActive = GameContext.useMatches("active");
+
+  useQuestionSoundEffects(currentQuestion, questions);
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
-      {/* Show scoreboard only during active gameplay */}
       {isActive && <Scoreboard players={players} />}
 
-      {/* Adjust main content area to account for scoreboard */}
       <div className={`${isActive ? "mr-80" : ""}`}>
         <AnimatePresence mode="wait">
           {isLobby && <LobbyDisplay players={players} host={host} />}
 
           {isActive && (
-            <>
-              <QuestionProgress
-                current={questionNumber}
-                total={Object.keys(questions).length}
-              />
-
-              {currentQuestion && (
-                <GameplayDisplay
-                  currentQuestion={currentQuestion}
-                  players={players}
-                  questions={questions}
-                />
-              )}
-
-              {!currentQuestion && questionResults.length > 0 && (
-                <QuestionResultsDisplay
-                  players={players}
-                  questionResults={questionResults}
-                  questions={questions}
-                />
-              )}
-
-              {!currentQuestion && questionResults.length === 0 && (
-                <WaitingForQuestionDisplay players={players} />
-              )}
-            </>
+            <ActiveGameContent
+              currentQuestion={currentQuestion}
+              players={players}
+              questionResults={questionResults}
+              questions={questions}
+              questionNumber={questionNumber}
+            />
           )}
 
           {isFinished && <GameFinishedDisplay players={players} />}
