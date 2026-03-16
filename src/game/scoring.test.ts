@@ -46,6 +46,51 @@ describe('calculateScores', () => {
       expect(scores[1].points).toBe(0)
     })
 
+    it('places incorrect answers at the end of the ranking', () => {
+      const answers: Answer[] = [
+        { playerId: 'p1', playerName: 'Player 1', value: 'London', timestamp: startTime + 1000 },
+        { playerId: 'p2', playerName: 'Player 2', value: 'Paris', timestamp: startTime + 2000 },
+      ]
+
+      const scores = calculateScores(answers, question, startTime)
+
+      const p1 = scores.find(s => s.playerId === 'p1')!
+      const p2 = scores.find(s => s.playerId === 'p2')!
+      expect(p1.points).toBe(0)
+      expect(p2.points).toBe(4)
+      expect(p1.position).toBeGreaterThan(p2.position)
+    })
+
+    it('correctly calculates MC timeTaken in seconds', () => {
+      const answers: Answer[] = [
+        { playerId: 'p1', playerName: 'Player 1', value: 'Paris', timestamp: startTime + 3500 }
+      ]
+
+      const scores = calculateScores(answers, question, startTime)
+
+      expect(scores[0].timeTaken).toBe(3.5)
+    })
+
+    it('gives 1 point to 4th+ correct MC answers', () => {
+      const answers: Answer[] = [
+        { playerId: 'p1', playerName: 'P1', value: 'Paris', timestamp: startTime + 1000 },
+        { playerId: 'p2', playerName: 'P2', value: 'Paris', timestamp: startTime + 2000 },
+        { playerId: 'p3', playerName: 'P3', value: 'Paris', timestamp: startTime + 3000 },
+        { playerId: 'p4', playerName: 'P4', value: 'Paris', timestamp: startTime + 4000 },
+        { playerId: 'p5', playerName: 'P5', value: 'Paris', timestamp: startTime + 5000 },
+      ]
+
+      const scores = calculateScores(answers, question, startTime)
+
+      expect(scores.find(s => s.playerId === 'p4')?.points).toBe(1) // 4th correct = 1pt
+      expect(scores.find(s => s.playerId === 'p5')?.points).toBe(1) // 5th correct = 1pt
+    })
+
+    it('returns empty array for no answers', () => {
+      const scores = calculateScores([], question, startTime)
+      expect(scores).toEqual([])
+    })
+
     it('maintains correct order based on submission time', () => {
       const answers: Answer[] = [
         { playerId: 'p2', playerName: 'Player 2', value: 'Paris', timestamp: startTime + 2000 },
@@ -134,6 +179,66 @@ describe('calculateScores', () => {
       expect(p1Score.position).toBe(2);
       expect(p3Score.position).toBe(3);
     });
+
+    it('gives 0 points for answers beyond 3rd place', () => {
+      const answers: Answer[] = [
+        { playerId: 'p1', playerName: 'P1', value: '8', timestamp: startTime + 1000 },
+        { playerId: 'p2', playerName: 'P2', value: '8.1', timestamp: startTime + 2000 },
+        { playerId: 'p3', playerName: 'P3', value: '8.2', timestamp: startTime + 3000 },
+        { playerId: 'p4', playerName: 'P4', value: '8.3', timestamp: startTime + 4000 },
+        { playerId: 'p5', playerName: 'P5', value: '8.4', timestamp: startTime + 5000 },
+      ]
+
+      const scores = calculateScores(answers, question, startTime)
+
+      expect(scores.find(s => s.playerId === 'p1')?.points).toBe(4)
+      expect(scores.find(s => s.playerId === 'p2')?.points).toBe(3)
+      expect(scores.find(s => s.playerId === 'p3')?.points).toBe(2)
+      expect(scores.find(s => s.playerId === 'p4')?.points).toBe(0)
+      expect(scores.find(s => s.playerId === 'p5')?.points).toBe(0)
+    })
+
+    it('correctly calculates timeTaken in seconds', () => {
+      const answers: Answer[] = [
+        { playerId: 'p1', playerName: 'P1', value: '8', timestamp: startTime + 2500 }
+      ]
+
+      const scores = calculateScores(answers, question, startTime)
+
+      expect(scores[0].timeTaken).toBe(2.5) // 2500ms = 2.5s
+    })
+
+    it('handles Infinity answers as invalid', () => {
+      const answers: Answer[] = [
+        { playerId: 'p1', playerName: 'P1', value: 'Infinity', timestamp: startTime + 1000 },
+        { playerId: 'p2', playerName: 'P2', value: '8', timestamp: startTime + 2000 }
+      ]
+
+      const scores = calculateScores(answers, question, startTime)
+
+      expect(scores.find(s => s.playerId === 'p1')?.points).toBe(0)
+      expect(scores.find(s => s.playerId === 'p2')?.points).toBe(4)
+    })
+
+    it('returns empty array for no answers', () => {
+      const scores = calculateScores([], question, startTime)
+      expect(scores).toEqual([])
+    })
+
+    it('does not tie answers with same difference but different times beyond 100ms', () => {
+      const answers: Answer[] = [
+        { playerId: 'p1', playerName: 'P1', value: '9', timestamp: startTime + 1000 },  // diff = 1
+        { playerId: 'p2', playerName: 'P2', value: '7', timestamp: startTime + 2000 },  // diff = 1
+      ]
+
+      const scores = calculateScores(answers, question, startTime)
+
+      // Same difference (1) but >100ms apart, so not tied
+      expect(scores.find(s => s.playerId === 'p1')?.points).toBe(4) // First
+      expect(scores.find(s => s.playerId === 'p2')?.points).toBe(3) // Second
+      expect(scores.find(s => s.playerId === 'p1')?.position).toBe(1)
+      expect(scores.find(s => s.playerId === 'p2')?.position).toBe(2)
+    })
 
     it('handles multiple exact matches with some within time window', () => {
       const answers: Answer[] = [
