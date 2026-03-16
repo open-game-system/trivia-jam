@@ -15,6 +15,7 @@ import type { GamePublicContext } from "~/game.machine";
 import type { Answer, Question, QuestionResult } from "~/game.types";
 import { useQuestionTimer } from "~/hooks/use-question-timer";
 import { SessionContext } from "~/session.context";
+import { AnswerProgress } from "./answer-progress";
 import { QuestionProgress } from "./question-progress";
 import { CastButton } from "./CastButton";
 import { CastProvider } from "@open-game-system/cast-kit-react";
@@ -1062,9 +1063,10 @@ const QuestionControls = ({
             {/* Answer submissions display */}
             {currentQuestion.answers.length > 0 && (
               <div className="mt-4">
-                <h3 className="text-lg font-bold text-indigo-300 mb-2">
-                  Answers Submitted: {currentQuestion.answers.length}
-                </h3>
+                <AnswerProgress
+                  answersCount={currentQuestion.answers.length}
+                  playersCount={players.length}
+                />
                 <div className="space-y-2">
                   {currentQuestion.answers.map((answer) => {
                     const question = questions[currentQuestion.questionId];
