@@ -97,7 +97,7 @@ describe("game machine — PARSE_QUESTIONS flow", () => {
     expect(actor.getSnapshot().value).toEqual({ lobby: "waitingForQuestions" });
   });
 
-  it("parse error transitions back to waitingForQuestions", async () => {
+  it("parse error transitions back to waitingForQuestions with error message", async () => {
     const { parseQuestions } = await import("./gemini");
     vi.mocked(parseQuestions).mockRejectedValueOnce(
       new Error("API rate limit exceeded")
@@ -111,15 +111,43 @@ describe("game machine — PARSE_QUESTIONS flow", () => {
     });
 
     await vi.waitFor(() => {
-      // Verify we're back in waitingForQuestions (not stuck in parsingDocument)
       expect(actor.getSnapshot().value).toEqual({
         lobby: "waitingForQuestions",
       });
     });
 
-    // NOTE: parsingErrorMessage is cleared by the entry action on waitingForQuestions.
-    // This is a known issue — see NOTICED.md. The error is set by onError's
-    // setParsingError action, but then immediately cleared by entry: "clearParsingError".
+    // Error message should be preserved for the user to see
+    expect(
+      actor.getSnapshot().context.public.parsingErrorMessage
+    ).toBe("API rate limit exceeded");
+  });
+
+  it("error message is cleared when re-attempting parse", async () => {
+    const { parseQuestions } = await import("./gemini");
+    vi.mocked(parseQuestions).mockRejectedValueOnce(
+      new Error("First attempt failed")
+    );
+
+    const actor = createTestActor();
+
+    // First attempt fails
+    hostSend(actor, {
+      type: "PARSE_QUESTIONS",
+      documentContent: "Test questions",
+    });
+
+    await vi.waitFor(() => {
+      expect(
+        actor.getSnapshot().context.public.parsingErrorMessage
+      ).toBe("First attempt failed");
+    });
+
+    // Second attempt — clearParsingError should run on PARSE_QUESTIONS transition
+    hostSend(actor, {
+      type: "PARSE_QUESTIONS",
+      documentContent: "Retry",
+    });
+
     expect(
       actor.getSnapshot().context.public.parsingErrorMessage
     ).toBeUndefined();

@@ -200,11 +200,11 @@ export const gameMachine = setup({
       initial: "waitingForQuestions",
       states: {
         waitingForQuestions: {
-          entry: "clearParsingError",
           on: {
             PARSE_QUESTIONS: {
               guard: "isHost",
               target: "parsingDocument",
+              actions: "clearParsingError",
             },
             QUESTIONS_PARSED: {
               guard: "isHost",
