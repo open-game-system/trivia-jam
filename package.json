@@ -40,7 +40,7 @@
     "@tanstack/react-router": "1.166.7",
     "@tanstack/react-start": "1.166.7",
     "@tanstack/router-plugin": "1.166.7",
-    "actor-kit": "^0.52.1",
+    "actor-kit": "file:../actor-kit",
     "canvas-confetti": "^1.9.3",
     "class-variance-authority": "^0.7.0",
     "cloudflare": "^5.2.0",
