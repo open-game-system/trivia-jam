@@ -519,4 +519,93 @@ describe("game machine", () => {
       expect(actor.getSnapshot().context.public.players).toHaveLength(2);
     });
   });
+
+  describe("guard edge cases", () => {
+    it("START_GAME in ready state with empty questions is blocked", () => {
+      const actor = createTestActor();
+      // Send QUESTIONS_PARSED with empty questions to reach ready state
+      hostSend(actor, { type: "QUESTIONS_PARSED", questions: {} });
+      expect(actor.getSnapshot().value).toEqual({ lobby: "ready" });
+
+      // START_GAME should be blocked because questions.length === 0
+      hostSend(actor, { type: "START_GAME" });
+      expect(actor.getSnapshot().value).toEqual({ lobby: "ready" });
+    });
+
+    it("NEXT_QUESTION from non-host is rejected", () => {
+      const actor = createTestActor();
+      hostSend(actor, { type: "QUESTIONS_PARSED", questions: TWO_QUESTIONS });
+      playerSend(actor, "player-1", {
+        type: "JOIN_GAME",
+        playerName: "Alice",
+      });
+      hostSend(actor, { type: "START_GAME" });
+      expect(actor.getSnapshot().value).toEqual({ active: "questionPrep" });
+
+      // Non-host sends NEXT_QUESTION — should be rejected
+      playerSend(actor, "player-1", { type: "NEXT_QUESTION" });
+      expect(actor.getSnapshot().value).toEqual({ active: "questionPrep" });
+      expect(actor.getSnapshot().context.public.currentQuestion).toBeNull();
+    });
+
+    it("winner is null after first question when more questions remain", () => {
+      const actor = createTestActor();
+      hostSend(actor, { type: "QUESTIONS_PARSED", questions: TWO_QUESTIONS });
+      playerSend(actor, "player-1", {
+        type: "JOIN_GAME",
+        playerName: "Alice",
+      });
+      hostSend(actor, { type: "START_GAME" });
+
+      // Answer question 1
+      hostSend(actor, { type: "NEXT_QUESTION" });
+      playerSend(actor, "player-1", { type: "SUBMIT_ANSWER", value: 4 });
+
+      // After Q1 of 2, game should NOT have ended
+      expect(actor.getSnapshot().context.public.winner).toBeNull();
+      expect(actor.getSnapshot().context.public.questionResults).toHaveLength(1);
+    });
+
+    it("game ends exactly when last question is processed", () => {
+      const actor = createTestActor();
+      hostSend(actor, { type: "QUESTIONS_PARSED", questions: TWO_QUESTIONS });
+      playerSend(actor, "player-1", {
+        type: "JOIN_GAME",
+        playerName: "Alice",
+      });
+      hostSend(actor, { type: "START_GAME" });
+
+      // Q1 — no winner yet
+      hostSend(actor, { type: "NEXT_QUESTION" });
+      playerSend(actor, "player-1", { type: "SUBMIT_ANSWER", value: 4 });
+      expect(actor.getSnapshot().context.public.winner).toBeNull();
+
+      // Q2 — game should end now (questionNumber 2 >= questions.length 2)
+      hostSend(actor, { type: "NEXT_QUESTION" });
+      playerSend(actor, "player-1", { type: "SUBMIT_ANSWER", value: 6 });
+      expect(actor.getSnapshot().context.public.winner).toBe("player-1");
+    });
+
+    it("processQuestionResults does nothing when currentQuestion is null", () => {
+      const actor = createTestActor();
+      hostSend(actor, { type: "QUESTIONS_PARSED", questions: TWO_QUESTIONS });
+      playerSend(actor, "player-1", {
+        type: "JOIN_GAME",
+        playerName: "Alice",
+      });
+      hostSend(actor, { type: "START_GAME" });
+      hostSend(actor, { type: "NEXT_QUESTION" });
+
+      // Answer triggers auto-advance (1 player), processes results
+      playerSend(actor, "player-1", { type: "SUBMIT_ANSWER", value: 4 });
+      expect(actor.getSnapshot().context.public.currentQuestion).toBeNull();
+
+      // Results should have exactly 1 entry, scores updated once
+      expect(actor.getSnapshot().context.public.questionResults).toHaveLength(1);
+      const player = actor.getSnapshot().context.public.players.find(
+        (p) => p.id === "player-1"
+      );
+      expect(player!.score).toBeGreaterThan(0);
+    });
+  });
 });
