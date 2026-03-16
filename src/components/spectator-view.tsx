@@ -3,7 +3,7 @@ import { Trophy, Users } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { useEffect, useRef, useState } from "react";
 import { GameContext } from "~/game.context";
-import type { Answer, GamePublicContext, Question } from "~/game.types";
+import type { Answer, GamePublicContext, PlayerAnswer, PlayerScore, Question } from "~/game.types";
 import { useQuestionTimer } from "~/hooks/use-question-timer";
 
 const SOUND_EFFECTS = {
@@ -781,6 +781,152 @@ const GameFinishedDisplay = ({
   );
 };
 
+const MultipleChoiceOptionsList = ({
+  options,
+  correctAnswer,
+}: {
+  options: string[];
+  correctAnswer: string | number;
+}) => (
+  <div className="space-y-4 mb-6">
+    {options.map((option, index) => (
+      <div
+        key={option}
+        className={`p-4 rounded-xl ${
+          option === correctAnswer
+            ? "bg-green-500/10 border border-green-500/30"
+            : "bg-gray-800/30 border border-gray-700/30"
+        }`}
+      >
+        <div className="flex items-start gap-4">
+          <span className="text-indigo-400 font-bold">
+            {String.fromCharCode(65 + index)}
+          </span>
+          <span className="text-xl">{option}</span>
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
+const getResultRowStyle = (
+  points: number,
+  isClose: boolean
+): string => {
+  if (points > 0) return "bg-green-500/10 border border-green-500/30";
+  if (isClose) return "bg-yellow-500/10 border border-yellow-500/30";
+  return "bg-gray-900/50";
+};
+
+const isCloseNumericAnswer = (
+  question: Question,
+  answerValue: string | number
+): boolean => {
+  if (question.questionType !== "numeric") return false;
+  if (typeof answerValue !== "number" || typeof question.correctAnswer !== "number") return false;
+  return Math.abs(answerValue - question.correctAnswer) / question.correctAnswer < 0.1;
+};
+
+const ResultScoreRow = ({
+  answer,
+  score,
+  question,
+}: {
+  answer: PlayerAnswer;
+  score: PlayerScore;
+  question: Question;
+}) => {
+  const isClose = isCloseNumericAnswer(question, answer.value);
+
+  return (
+    <motion.div
+      key={answer.playerId}
+      data-testid={`player-result-${answer.playerId}`}
+      className={`${getResultRowStyle(score.points, isClose)} rounded-2xl p-6 flex items-center gap-6`}
+    >
+      <div className="text-2xl font-bold text-indigo-400 w-12 text-center">
+        {score.points > 0 ? `#${score.position}` : "―"}
+      </div>
+      <div className="flex-1">
+        <div className="text-xl font-medium">{answer.playerName}</div>
+        <div className="text-sm text-gray-400">
+          {answer.value} • {score.timeTaken.toFixed(1)}s
+        </div>
+      </div>
+      {score.points > 0 && (
+        <div className="text-2xl font-bold text-indigo-400">
+          {score.points} <span className="text-indigo-400/70">pts</span>
+        </div>
+      )}
+    </motion.div>
+  );
+};
+
+const QuestionAnswerHeader = ({ question }: { question: Question }) => (
+  <div className="mb-12">
+    <h1 className="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400 mb-6">
+      {question.text}
+    </h1>
+    {question.questionType === "multiple-choice" && question.options ? (
+      <MultipleChoiceOptionsList
+        options={question.options}
+        correctAnswer={question.correctAnswer}
+      />
+    ) : null}
+    <div
+      className="text-4xl font-bold text-green-400"
+      data-testid="correct-answer"
+    >
+      {question.correctAnswer}
+    </div>
+  </div>
+);
+
+const ResultsScoreList = ({
+  answers,
+  scores,
+  question,
+}: {
+  answers: PlayerAnswer[];
+  scores: PlayerScore[];
+  question: Question;
+}) => {
+  const sortedScores = [...scores].sort((a, b) => a.position - b.position);
+
+  if (answers.length === 0) {
+    return (
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="text-center py-8"
+      >
+        <div className="text-4xl mb-4">😴</div>
+        <div className="text-xl text-white/70">
+          No one answered this question
+        </div>
+      </motion.div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {sortedScores.map((score) => {
+        const answer = answers.find((a) => a.playerId === score.playerId);
+        if (!answer) return null;
+
+        return (
+          <ResultScoreRow
+            key={answer.playerId}
+            answer={answer}
+            score={score}
+            question={question}
+          />
+        );
+      })}
+    </div>
+  );
+};
+
 const QuestionResultsDisplay = ({
   players,
   questionResults,
@@ -794,11 +940,6 @@ const QuestionResultsDisplay = ({
   const question = latestResult ? questions[latestResult.questionId] : null;
 
   if (!latestResult || !question) return null;
-
-  // Sort scores by position (ascending) since position already accounts for points and time
-  const sortedScores = [...latestResult.scores].sort(
-    (a, b) => a.position - b.position
-  );
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center pt-16 p-8 relative">
@@ -827,107 +968,16 @@ const QuestionResultsDisplay = ({
           animate={{ opacity: 1, y: 0 }}
           className="text-center"
         >
-          {/* Question & Answer */}
-          <div className="mb-12">
-            <h1 className="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400 mb-6">
-              {question.text}
-            </h1>
-            {question.questionType === "multiple-choice" && question.options ? (
-              <div className="space-y-4 mb-6">
-                {question.options.map((option, index) => (
-                  <div
-                    key={option}
-                    className={`p-4 rounded-xl ${
-                      option === question.correctAnswer
-                        ? "bg-green-500/10 border border-green-500/30"
-                        : "bg-gray-800/30 border border-gray-700/30"
-                    }`}
-                  >
-                    <div className="flex items-start gap-4">
-                      <span className="text-indigo-400 font-bold">
-                        {String.fromCharCode(65 + index)}
-                      </span>
-                      <span className="text-xl">{option}</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : null}
-            <div
-              className="text-4xl font-bold text-green-400"
-              data-testid="correct-answer"
-            >
-              {question.correctAnswer}
-            </div>
-          </div>
+          <QuestionAnswerHeader question={question} />
 
           {/* Results */}
           <div className="bg-gray-800/30 backdrop-blur-sm rounded-2xl p-8 border border-gray-700/50">
             <h2 className="text-2xl font-bold text-indigo-300 mb-6">Results</h2>
-
-            {latestResult.answers.length === 0 ? (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="text-center py-8"
-              >
-                <div className="text-4xl mb-4">😴</div>
-                <div className="text-xl text-white/70">
-                  No one answered this question
-                </div>
-              </motion.div>
-            ) : (
-              <div className="space-y-4">
-                {sortedScores.map((score) => {
-                  const answer = latestResult.answers.find(
-                    (a) => a.playerId === score.playerId
-                  );
-                  if (!answer) return null;
-
-                  const isExact = answer.value === question.correctAnswer;
-                  const isClose =
-                    question.questionType === "numeric" &&
-                    typeof answer.value === "number" &&
-                    typeof question.correctAnswer === "number"
-                      ? Math.abs(answer.value - question.correctAnswer) /
-                          question.correctAnswer <
-                        0.1
-                      : false; // Within 10%
-
-                  return (
-                    <motion.div
-                      key={answer.playerId}
-                      data-testid={`player-result-${answer.playerId}`}
-                      className={`${
-                        score && score.points > 0
-                          ? "bg-green-500/10 border border-green-500/30"
-                          : isClose
-                          ? "bg-yellow-500/10 border border-yellow-500/30"
-                          : "bg-gray-900/50"
-                      } rounded-2xl p-6 flex items-center gap-6`}
-                    >
-                      <div className="text-2xl font-bold text-indigo-400 w-12 text-center">
-                        {score && score.points > 0 ? `#${score.position}` : "―"}
-                      </div>
-                      <div className="flex-1">
-                        <div className="text-xl font-medium">
-                          {answer.playerName}
-                        </div>
-                        <div className="text-sm text-gray-400">
-                          {answer.value} • {score.timeTaken.toFixed(1)}s
-                        </div>
-                      </div>
-                      {score.points > 0 && (
-                        <div className="text-2xl font-bold text-indigo-400">
-                          {score.points}{" "}
-                          <span className="text-indigo-400/70">pts</span>
-                        </div>
-                      )}
-                    </motion.div>
-                  );
-                })}
-              </div>
-            )}
+            <ResultsScoreList
+              answers={latestResult.answers}
+              scores={latestResult.scores}
+              question={question}
+            />
           </div>
         </motion.div>
       </div>
