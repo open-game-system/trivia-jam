@@ -1,16 +1,17 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { GameContext } from '../game.context'
 import { SessionContext } from '../session.context'
-import { Trophy, Medal, Award, Star, Crown } from 'lucide-react'
+import { Trophy, Medal, Award, Star } from 'lucide-react'
+import { GameBackground } from './game'
 
 export function Scoreboard() {
-  const gameState = GameContext.useSelector((state) => state.public);
-  const sessionState = SessionContext.useSelector((state) => state.public);
+  const players = GameContext.useSelector((state) => state.public.players);
+  const userId = SessionContext.useSelector((state) => state.public.userId);
 
-  const sortedPlayers = [...gameState.players].sort((a, b) => b.score - a.score);
+  const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
   const maxScore = Math.max(...sortedPlayers.map(p => p.score));
-  const currentPlayer = gameState.players.find(p => p.id === sessionState.userId);
-  const currentPlayerRank = sortedPlayers.findIndex(p => p.id === sessionState.userId) + 1;
+  const currentPlayer = players.find(p => p.id === userId);
+  const currentPlayerRank = sortedPlayers.findIndex(p => p.id === userId) + 1;
 
   const getPositionIcon = (position: number) => {
     switch (position) {
@@ -23,23 +24,7 @@ export function Scoreboard() {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-8 relative">
-      {/* Background Animation */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <motion.div
-            className="absolute inset-0 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500"
-            animate={{
-              rotate: [0, 360],
-              scale: [1, 1.2, 1],
-            }}
-            transition={{
-              duration: 20,
-              repeat: Infinity,
-              ease: "linear",
-            }}
-          />
-        </div>
-      </div>
+      <GameBackground />
 
       <div className="relative z-10 max-w-4xl mx-auto">
         <h1 className="text-5xl font-bold text-center mb-12 bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">
@@ -76,7 +61,7 @@ export function Scoreboard() {
                 exit={{ opacity: 0, x: 20 }}
                 transition={{ duration: 0.3, delay: index * 0.1 }}
                 className={`relative overflow-hidden ${
-                  player.id === sessionState.userId
+                  player.id === userId
                     ? 'bg-indigo-500/20 border-indigo-500/30'
                     : index === 0
                     ? 'bg-yellow-500/10 border-yellow-500/30'
@@ -102,7 +87,7 @@ export function Scoreboard() {
                     </div>
                     <span className="text-xl font-medium">
                       {player.name}
-                      {player.id === sessionState.userId && (
+                      {player.id === userId && (
                         <span className="ml-2 text-indigo-400/60 text-sm">(You)</span>
                       )}
                     </span>

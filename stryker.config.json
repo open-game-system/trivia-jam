@@ -1,0 +1,24 @@
+{
+  "$schema": "https://raw.githubusercontent.com/stryker-mutator/stryker/master/packages/core/schema/stryker-core.json",
+  "testRunner": "vitest",
+  "plugins": ["@stryker-mutator/vitest-runner"],
+  "mutate": [
+    "src/game/**/*.ts",
+    "src/game.machine.ts",
+    "!src/**/*.test.ts",
+    "!src/**/*.spec.ts",
+    "!src/**/*.stories.tsx"
+  ],
+  "incremental": true,
+  "incrementalFile": ".stryker-incremental.json",
+  "reporters": ["html", "clear-text", "progress"],
+  "thresholds": {
+    "high": 95,
+    "low": 80,
+    "break": 60
+  },
+  "concurrency": 1,
+  "timeoutMS": 30000,
+  "ignorePatterns": [".swarm", ".claude", "e2e", "app", ".storybook", "reports", ".output", "node_modules", "anchor"],
+  "disableTypeChecks": false
+}

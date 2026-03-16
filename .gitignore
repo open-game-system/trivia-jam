@@ -19,3 +19,14 @@ src/routeTree.gen.ts
 test-results/
 playwright-report/
 playwright/.cache/
+# Coverage
+coverage/
+# Stryker
+.stryker-incremental.json
+.stryker-tmp/
+reports/
+# Swarm
+.swarm/
+
+# Nightshift agent data
+.nightshift/

@@ -4,19 +4,21 @@ import {
   Copy,
   Loader2,
   Settings,
-  Trophy,
   Users,
   X
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import * as Drawer from "vaul";
 import { GameContext } from "~/game.context";
 import type { GamePublicContext } from "~/game.machine";
 import type { Answer, Question, QuestionResult } from "~/game.types";
+import { useQuestionTimer } from "~/hooks/use-question-timer";
 import { SessionContext } from "~/session.context";
+import { AnswerProgress } from "./answer-progress";
 import { QuestionProgress } from "./question-progress";
 import { CastButton } from "./CastButton";
 import { CastProvider } from "@open-game-system/cast-kit-react";
+import { GameBackground, FinalScoresList, WinnerAnnouncement } from "./game";
 
 type GameSettings = {
   maxPlayers: number;
@@ -55,30 +57,14 @@ const formatQuestionsToText = (questions: Record<string, Question>): string => {
 
 export const HostView = ({
   host,
-  initialDocumentContent = "",
 }: {
   host: string;
-  initialDocumentContent?: string;
 }) => {
-  const gameState = GameContext.useSelector((state) => state.public);
-  const sessionState = SessionContext.useSelector((state) => state.public);
-  const { currentQuestion, players, hostId, id, questions, questionResults } =
-    gameState;
-  const send = GameContext.useSend();
-  const isActive = GameContext.useMatches("active");
-  const isFinished = GameContext.useMatches("finished");
-  const isLobby = GameContext.useMatches("lobby");
+  const hostId = GameContext.useSelector((state) => state.public.hostId);
+  const id = GameContext.useSelector((state) => state.public.id);
+  const userId = SessionContext.useSelector((state) => state.public.userId);
 
-  const lastQuestionResult = questionResults[questionResults.length - 1];
-
-  const [documentContent, setDocumentContent] = useState(
-    initialDocumentContent
-  );
-  const [isParsingDocument, setIsParsingDocument] = useState(false);
-  const [isEditingQuestions, setIsEditingQuestions] = useState(false);
-  const client = GameContext.useClient();
-
-  if (sessionState.userId !== hostId) {
+  if (userId !== hostId) {
     return (
       <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center p-4">
         <motion.div
@@ -100,22 +86,7 @@ export const HostView = ({
   if (!id) {
     return (
       <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center p-4 relative">
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute inset-0 opacity-10">
-            <motion.div
-              className="absolute inset-0 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500"
-              animate={{
-                rotate: [0, 360],
-                scale: [1, 1.2, 1],
-              }}
-              transition={{
-                duration: 20,
-                repeat: Infinity,
-                ease: "linear",
-              }}
-            />
-          </div>
-        </div>
+        <GameBackground />
 
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
@@ -134,12 +105,28 @@ export const HostView = ({
     );
   }
 
+  return <HostGameView host={host} />;
+};
+
+const HostGameView = ({ host }: { host: string }) => {
+  const currentQuestion = GameContext.useSelector((state) => state.public.currentQuestion);
+  const players = GameContext.useSelector((state) => state.public.players);
+  const questions = GameContext.useSelector((state) => state.public.questions);
+  const questionResults = GameContext.useSelector((state) => state.public.questionResults);
+  const questionNumber = GameContext.useSelector((state) => state.public.questionNumber);
+  const send = GameContext.useSend();
+  const isActive = GameContext.useMatches("active");
+  const isFinished = GameContext.useMatches("finished");
+  const isLobby = GameContext.useMatches("lobby");
+
+  const lastQuestionResult = questionResults[questionResults.length - 1];
+
   return (
     <div className="min-h-screen bg-gray-900 text-white">
       {isActive && (
         <QuestionProgress
-          current={gameState.questionNumber}
-          total={Object.keys(gameState.questions).length}
+          current={questionNumber}
+          total={Object.keys(questions).length}
         />
       )}
       <AnimatePresence mode="wait">
@@ -152,137 +139,12 @@ export const HostView = ({
         )}
 
         {isActive && (
-          <>
-            <div className="min-h-screen flex flex-col items-center pt-16 p-4 relative">
-              {/* Background gradient */}
-              <div className="absolute inset-0 overflow-hidden">
-                <div className="absolute inset-0 opacity-10">
-                  <motion.div
-                    className="absolute inset-0 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500"
-                    animate={{
-                      rotate: [0, 360],
-                      scale: [1, 1.2, 1],
-                    }}
-                    transition={{
-                      duration: 20,
-                      repeat: Infinity,
-                      ease: "linear",
-                    }}
-                  />
-                </div>
-              </div>
-
-              <div className="relative z-10 w-full max-w-4xl mx-auto">
-                {/* Previous question results */}
-                {!currentQuestion && lastQuestionResult && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="mb-8"
-                  >
-                    <div className="text-center mb-8">
-                      <h1 className="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400 mb-6">
-                        {questions[lastQuestionResult.questionId].text}
-                      </h1>
-                      <div className="text-4xl font-bold text-green-400">
-                        {questions[lastQuestionResult.questionId].correctAnswer}
-                      </div>
-                    </div>
-
-                    <div className="bg-gray-800/30 backdrop-blur-sm rounded-3xl p-8 border border-gray-700/50">
-                      <h2 className="text-3xl font-bold text-indigo-300 mb-6">
-                        Results
-                      </h2>
-                      {lastQuestionResult.answers.length === 0 ? (
-                        <motion.div
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          className="text-center py-8"
-                        >
-                          <div className="text-4xl mb-4">😴</div>
-                          <div className="text-xl text-white/70">
-                            No one answered this question
-                          </div>
-                        </motion.div>
-                      ) : (
-                        <div className="space-y-4">
-                          {sortedAnswers(lastQuestionResult, questions).map(
-                            (answer, index) => {
-                              const score = lastQuestionResult.scores.find(
-                                (s: { playerId: string }) =>
-                                  s.playerId === answer.playerId
-                              );
-                              const question =
-                                questions[lastQuestionResult.questionId];
-                              const answerValue =
-                                typeof answer.value === "number"
-                                  ? answer.value
-                                  : 0;
-                              const correctAnswerValue =
-                                typeof question.correctAnswer === "number"
-                                  ? question.correctAnswer
-                                  : 0;
-                              const isExact =
-                                question.questionType === "numeric" &&
-                                answerValue === correctAnswerValue;
-                              const isClose =
-                                question.questionType === "numeric" &&
-                                Math.abs(answerValue - correctAnswerValue) /
-                                  correctAnswerValue <
-                                  0.1; // Within 10%
-
-                              return (
-                                <div
-                                  key={answer.playerId}
-                                  data-testid={`player-result-${answer.playerId}`}
-                                  className={`${
-                                    score && score.points > 0
-                                      ? "bg-green-500/10 border border-green-500/30"
-                                      : isClose
-                                      ? "bg-yellow-500/10 border border-yellow-500/30"
-                                      : "bg-gray-900/50"
-                                  } rounded-2xl p-6 flex items-center gap-6`}
-                                >
-                                  <div className="text-2xl font-bold text-indigo-400 w-12 text-center">
-                                    {score && score.points > 0
-                                      ? `#${score.position}`
-                                      : "―"}
-                                  </div>
-                                  <div className="flex-1">
-                                    <div className="text-xl font-medium">
-                                      {answer.playerName}
-                                    </div>
-                                    <div className="text-sm text-gray-400">
-                                      {answer.value} •{" "}
-                                      {score?.timeTaken.toFixed(1)}s
-                                    </div>
-                                  </div>
-                                  {score && score.points > 0 && (
-                                    <div className="text-2xl font-bold text-indigo-400">
-                                      {score.points}{" "}
-                                      <span className="text-indigo-400/70">
-                                        pts
-                                      </span>
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            }
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </motion.div>
-                )}
-
-                {/* Question input form */}
-                <QuestionControls
-                  currentQuestion={currentQuestion}
-                  players={players}
-                />
-              </div>
-            </div>
-          </>
+          <ActiveGameDisplay
+            currentQuestion={currentQuestion}
+            lastQuestionResult={lastQuestionResult}
+            questions={questions}
+            players={players}
+          />
         )}
 
         {isFinished && <GameFinishedDisplay players={players} />}
@@ -290,6 +152,133 @@ export const HostView = ({
     </div>
   );
 };
+
+const ResultAnswerRow = ({
+  answer,
+  score,
+  question,
+}: {
+  answer: Answer;
+  score: Score | undefined;
+  question: Question;
+}) => {
+  const answerValue = typeof answer.value === "number" ? answer.value : 0;
+  const correctAnswerValue =
+    typeof question.correctAnswer === "number" ? question.correctAnswer : 0;
+  const isClose =
+    question.questionType === "numeric" &&
+    Math.abs(answerValue - correctAnswerValue) / correctAnswerValue < 0.1;
+
+  const rowClass =
+    score && score.points > 0
+      ? "bg-green-500/10 border border-green-500/30"
+      : isClose
+      ? "bg-yellow-500/10 border border-yellow-500/30"
+      : "bg-gray-900/50";
+
+  return (
+    <div
+      key={answer.playerId}
+      data-testid={`player-result-${answer.playerId}`}
+      className={`${rowClass} rounded-2xl p-6 flex items-center gap-6`}
+    >
+      <div className="text-2xl font-bold text-indigo-400 w-12 text-center">
+        {score && score.points > 0 ? `#${score.position}` : "―"}
+      </div>
+      <div className="flex-1">
+        <div className="text-xl font-medium">{answer.playerName}</div>
+        <div className="text-sm text-gray-400">
+          {answer.value} • {score?.timeTaken.toFixed(1)}s
+        </div>
+      </div>
+      {score && score.points > 0 && (
+        <div className="text-2xl font-bold text-indigo-400">
+          {score.points} <span className="text-indigo-400/70">pts</span>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const PreviousQuestionResults = ({
+  lastQuestionResult,
+  questions,
+}: {
+  lastQuestionResult: QuestionResult;
+  questions: Record<string, Question>;
+}) => (
+  <motion.div
+    initial={{ opacity: 0, y: -20 }}
+    animate={{ opacity: 1, y: 0 }}
+    className="mb-8"
+  >
+    <div className="text-center mb-8">
+      <h1 className="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400 mb-6">
+        {questions[lastQuestionResult.questionId].text}
+      </h1>
+      <div className="text-4xl font-bold text-green-400">
+        {questions[lastQuestionResult.questionId].correctAnswer}
+      </div>
+    </div>
+
+    <div className="bg-gray-800/30 backdrop-blur-sm rounded-3xl p-8 border border-gray-700/50">
+      <h2 className="text-3xl font-bold text-indigo-300 mb-6">Results</h2>
+      {lastQuestionResult.answers.length === 0 ? (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="text-center py-8"
+        >
+          <div className="text-4xl mb-4">😴</div>
+          <div className="text-xl text-white/70">
+            No one answered this question
+          </div>
+        </motion.div>
+      ) : (
+        <div className="space-y-4">
+          {sortedAnswers(lastQuestionResult, questions).map((answer) => (
+            <ResultAnswerRow
+              key={answer.playerId}
+              answer={answer}
+              score={lastQuestionResult.scores.find(
+                (s: { playerId: string }) => s.playerId === answer.playerId
+              )}
+              question={questions[lastQuestionResult.questionId]}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  </motion.div>
+);
+
+const ActiveGameDisplay = ({
+  currentQuestion,
+  lastQuestionResult,
+  questions,
+  players,
+}: {
+  currentQuestion: { questionId: string; startTime: number; answers: Answer[] } | null;
+  lastQuestionResult: QuestionResult | undefined;
+  questions: Record<string, Question>;
+  players: Array<{ id: string; name: string; score: number }>;
+}) => (
+  <>
+    <div className="min-h-screen flex flex-col items-center pt-16 p-4 relative">
+      <GameBackground />
+
+      <div className="relative z-10 w-full max-w-4xl mx-auto">
+        {!currentQuestion && lastQuestionResult && (
+          <PreviousQuestionResults
+            lastQuestionResult={lastQuestionResult}
+            questions={questions}
+          />
+        )}
+        <QuestionControls currentQuestion={currentQuestion} players={players} />
+      </div>
+    </div>
+  </>
+);
 
 const PlayerSlot = ({
   player,
@@ -491,28 +480,165 @@ const SettingsModal = ({
   );
 };
 
-const LobbyControls = ({
-  players,
-  onStartGame,
-  host,
+const QuestionImportForm = ({
+  documentContent,
+  onDocumentContentChange,
+  onParseDocument,
+  parsingErrorMessage,
+  isParsing,
 }: {
-  players: Array<{ id: string; name: string; score: number }>;
-  onStartGame: () => void;
-  host: string;
-}) => {
-  const gameState = GameContext.useSelector((state) => state.public);
-  const send = GameContext.useSend();
-  const isParsingDocument = GameContext.useMatches({
-    lobby: "parsingDocument",
-  });
-  const hasEnoughPlayers = players.length > 0;
-  const [copied, setCopied] = useState(false);
-  const [isStarting, setIsStarting] = useState(false);
-  const [showSettings, setShowSettings] = useState(false);
-  const [isEditingQuestions, setIsEditingQuestions] = useState(false);
-  const [documentContent, setDocumentContent] = useState("");
+  documentContent: string;
+  onDocumentContentChange: (content: string) => void;
+  onParseDocument: () => void;
+  parsingErrorMessage?: string;
+  isParsing: boolean;
+}) => (
+  <div className="mb-8">
+    <h2 className="text-xl font-bold text-indigo-300 mb-2">
+      Import Questions
+    </h2>
+    <p className="text-indigo-300/70 text-sm mb-4">
+      Add your trivia questions below. You can use numeric questions
+      (with exact answers) or multiple choice questions. Each question
+      should be followed by its answer.
+    </p>
+    <div className="bg-gray-900/30 rounded-xl p-6 border border-gray-700/50">
+      {parsingErrorMessage && (
+        <div
+          className="mb-4 p-3 rounded-lg bg-red-500/20 border border-red-500/50 text-red-200 text-sm"
+          role="alert"
+        >
+          <strong>Could not parse questions:</strong>{" "}
+          {parsingErrorMessage}
+        </div>
+      )}
+      {isParsing ? (
+        <div className="flex flex-col items-center justify-center py-8">
+          <Loader2
+            className="w-8 h-8 animate-spin text-indigo-400 mb-4"
+            data-testid="parsing-spinner"
+            role="status"
+          />
+          <p className="text-lg text-white/70">
+            Processing questions...
+          </p>
+          <p className="text-sm text-white/50 mt-2">
+            This may take a few moments
+          </p>
+        </div>
+      ) : (
+        <>
+          <textarea
+            value={documentContent}
+            onChange={(e) => onDocumentContentChange(e.target.value)}
+            placeholder={`Paste your questions below using this format:
 
-  const gameUrl = `https://${host}/games/${gameState.id}`;
+Question?
+Answer
+
+For multiple choice questions:
+Question?
+a) Option 1 b) Option 2 c) Option 3 d) Option 4
+Correct answer: B
+
+Example:
+How many bones in human body?
+206
+
+What major canal opened in 1914?
+a) Suez Canal b) Panama Canal c) Erie Canal d) English Channel
+Correct answer: B`}
+            className="w-full bg-gray-800/50 rounded-xl p-4 text-white placeholder-white/50 border border-gray-700/50 mb-4 text-sm font-mono"
+            rows={8}
+          />
+          <button
+            onClick={onParseDocument}
+            disabled={!documentContent.trim()}
+            className={`w-full bg-indigo-500/20 border border-indigo-500/30 hover:bg-indigo-500/30 text-white font-bold py-3 px-4 rounded-xl transition-all flex items-center justify-center gap-2 ${
+              !documentContent.trim()
+                ? "opacity-50 cursor-not-allowed"
+                : ""
+            }`}
+          >
+            Submit
+          </button>
+        </>
+      )}
+    </div>
+  </div>
+);
+
+const QuestionListDisplay = ({
+  questions,
+  onEditQuestions,
+}: {
+  questions: Record<string, Question>;
+  onEditQuestions: () => void;
+}) => (
+  <div className="mb-8">
+    <div className="flex justify-between items-center mb-4">
+      <h3 className="text-lg font-bold text-indigo-300">
+        {Object.keys(questions).length} Questions
+      </h3>
+      <button
+        onClick={onEditQuestions}
+        className="text-indigo-400 hover:text-indigo-300 text-sm"
+      >
+        Edit Questions
+      </button>
+    </div>
+    <div className="space-y-2 max-h-48 overflow-y-auto">
+      {Object.entries(questions).map(
+        ([id, question], index) => (
+          <div
+            key={id}
+            data-testid={`parsed-question-${index + 1}`}
+            className="bg-gray-800/50 rounded-lg p-3 text-sm"
+          >
+            <div className="flex justify-between items-start gap-4">
+              <div>
+                <span className="text-indigo-400 font-medium">
+                  Q{index + 1}:
+                </span>{" "}
+                {question.text}
+                {question.questionType === "multiple-choice" &&
+                  question.options && (
+                    <div className="mt-1 ml-4 text-gray-400">
+                      {question.options.map((option, optIndex) => (
+                        <div
+                          key={optIndex}
+                          className={
+                            option === question.correctAnswer
+                              ? "text-green-400"
+                              : "text-gray-400"
+                          }
+                        >
+                          {String.fromCharCode(97 + optIndex)}) {option}
+                          {option === question.correctAnswer && " ✓"}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+              </div>
+              <div className="text-green-400 font-medium whitespace-nowrap">
+                {question.questionType === "numeric" && (
+                  <>Answer: {question.correctAnswer}</>
+                )}
+              </div>
+            </div>
+          </div>
+        )
+      )}
+    </div>
+  </div>
+);
+
+const GameLinkSection = ({
+  gameUrl,
+}: {
+  gameUrl: string;
+}) => {
+  const [copied, setCopied] = useState(false);
 
   const copyGameLink = async () => {
     await navigator.clipboard.writeText(gameUrl);
@@ -532,12 +658,166 @@ const LobbyControls = ({
       copyGameLink();
     }
   };
-  const client = GameContext.useClient();
+
+  return (
+    <div className="mb-8">
+      <h2 className="text-xl font-bold text-indigo-300 text-center mb-4">
+        Share Game Link
+      </h2>
+      <div className="space-y-3">
+        <motion.button
+          onClick={copyGameLink}
+          className="w-full relative group"
+          whileHover={{ scale: 1.02 }}
+          whileTap={{ scale: 0.98 }}
+          aria-label={gameUrl}
+          data-testid="game-link-button"
+        >
+          <div className="absolute inset-0 bg-indigo-500/20 rounded-xl blur-xl group-hover:bg-indigo-500/30 transition-all" />
+          <div className="relative bg-gray-800/50 backdrop-blur-sm border border-indigo-500/30 rounded-xl p-4 sm:p-6 flex items-center justify-between gap-3">
+            <div className="flex-1 min-w-0">
+              <span className="text-sm sm:text-lg font-medium tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400 truncate block">
+                {gameUrl}
+              </span>
+            </div>
+            <div className="flex-shrink-0">
+              <AnimatePresence mode="wait">
+                {copied ? (
+                  <motion.div
+                    key="check"
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    exit={{ scale: 0 }}
+                    className="text-green-400"
+                    data-testid="copy-success-icon"
+                  >
+                    <Check className="w-5 h-5 sm:w-6 sm:h-6" />
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="copy"
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    exit={{ scale: 0 }}
+                    className="text-indigo-400 group-hover:text-indigo-300 transition-colors"
+                    data-testid="copy-icon"
+                  >
+                    <Copy className="w-5 h-5 sm:w-6 sm:h-6" />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
+        </motion.button>
+
+        {/* Share button - always shown */}
+        <motion.button
+          onClick={shareGameLink}
+          className="w-full bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-500/30 rounded-xl p-4 sm:p-6 flex items-center justify-center gap-2 transition-colors"
+        >
+          <svg
+            className="w-5 h-5 sm:w-6 sm:h-6"
+            fill="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92zM18 4c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zM6 13c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm12 7.02c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z" />
+          </svg>
+          Share Game
+        </motion.button>
+      </div>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        className="text-center mt-2 text-indigo-300/60 text-sm"
+      >
+        Click to copy or share game link
+      </motion.div>
+    </div>
+  );
+};
+
+const StartGameSection = ({
+  canStartGame,
+  hasEnoughPlayers,
+  onStartGame,
+}: {
+  canStartGame: boolean;
+  hasEnoughPlayers: boolean;
+  onStartGame: () => void;
+}) => {
+  const [isStarting, setIsStarting] = useState(false);
 
   const handleStartGame = () => {
     setIsStarting(true);
     onStartGame();
   };
+
+  return (
+    <div className="space-y-3">
+      <motion.button
+        onClick={handleStartGame}
+        disabled={!canStartGame || isStarting}
+        className={`w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold py-4 px-8 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2
+          ${
+            canStartGame && !isStarting
+              ? "hover:from-indigo-500 hover:to-purple-500 opacity-100"
+              : "opacity-50 cursor-not-allowed"
+          }`}
+        whileHover={canStartGame && !isStarting ? { scale: 1.02 } : {}}
+        whileTap={canStartGame && !isStarting ? { scale: 0.98 } : {}}
+      >
+        {isStarting ? (
+          <>
+            <Loader2
+              className="w-5 h-5 animate-spin"
+              data-testid="loading-spinner"
+            />
+            Starting Game...
+          </>
+        ) : (
+          "Start Game"
+        )}
+      </motion.button>
+
+      {!hasEnoughPlayers && (
+        <motion.p
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="text-center text-indigo-300/70 text-sm"
+        >
+          Waiting for at least one player to join...
+        </motion.p>
+      )}
+    </div>
+  );
+};
+
+const LobbyControls = ({
+  players,
+  onStartGame,
+  host,
+}: {
+  players: Array<{ id: string; name: string; score: number }>;
+  onStartGame: () => void;
+  host: string;
+}) => {
+  const gameId = GameContext.useSelector((state) => state.public.id);
+  const questions = GameContext.useSelector((state) => state.public.questions);
+  const hostId = GameContext.useSelector((state) => state.public.hostId);
+  const answerTimeWindow = GameContext.useSelector((state) => state.public.settings.answerTimeWindow);
+  const maxPlayers = GameContext.useSelector((state) => state.public.settings.maxPlayers);
+  const parsingErrorMessage = GameContext.useSelector((state) => state.public.parsingErrorMessage);
+  const send = GameContext.useSend();
+  const isParsingDocument = GameContext.useMatches({
+    lobby: "parsingDocument",
+  });
+  const hasEnoughPlayers = players.length > 0;
+  const [showSettings, setShowSettings] = useState(false);
+  const [isEditingQuestions, setIsEditingQuestions] = useState(false);
+  const [documentContent, setDocumentContent] = useState("");
+
+  const gameUrl = `https://${host}/games/${gameId}`;
+  const client = GameContext.useClient();
 
   const handleParseDocument = async () => {
     if (!documentContent.trim()) return;
@@ -569,28 +849,12 @@ const LobbyControls = ({
     });
   };
 
-  const hasQuestions = Object.keys(gameState.questions).length > 0;
+  const hasQuestions = Object.keys(questions).length > 0;
   const canStartGame = hasEnoughPlayers && hasQuestions;
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 relative">
-      {/* Background Animation */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <motion.div
-            className="absolute inset-0 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500"
-            animate={{
-              rotate: [0, 360],
-              scale: [1, 1.2, 1],
-            }}
-            transition={{
-              duration: 20,
-              repeat: Infinity,
-              ease: "linear",
-            }}
-          />
-        </div>
-      </div>
+      <GameBackground />
 
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
@@ -619,299 +883,51 @@ const LobbyControls = ({
           </div>
         </div>
 
-        {/* Question Import Section */}
         {(!hasQuestions || isEditingQuestions) && (
-          <div className="mb-8">
-            <h2 className="text-xl font-bold text-indigo-300 mb-2">
-              Import Questions
-            </h2>
-            <p className="text-indigo-300/70 text-sm mb-4">
-              Add your trivia questions below. You can use numeric questions
-              (with exact answers) or multiple choice questions. Each question
-              should be followed by its answer.
-            </p>
-            <div className="bg-gray-900/30 rounded-xl p-6 border border-gray-700/50">
-              {gameState.parsingErrorMessage && (
-                <div
-                  className="mb-4 p-3 rounded-lg bg-red-500/20 border border-red-500/50 text-red-200 text-sm"
-                  role="alert"
-                >
-                  <strong>Could not parse questions:</strong>{" "}
-                  {gameState.parsingErrorMessage}
-                </div>
-              )}
-              {isParsingDocument ? (
-                <div className="flex flex-col items-center justify-center py-8">
-                  <Loader2
-                    className="w-8 h-8 animate-spin text-indigo-400 mb-4"
-                    data-testid="parsing-spinner"
-                    role="status"
-                  />
-                  <p className="text-lg text-white/70">
-                    Processing questions...
-                  </p>
-                  <p className="text-sm text-white/50 mt-2">
-                    This may take a few moments
-                  </p>
-                </div>
-              ) : (
-                <>
-                  <textarea
-                    value={documentContent}
-                    onChange={(e) => setDocumentContent(e.target.value)}
-                    placeholder={`Paste your questions below using this format:
-
-Question?
-Answer
-
-For multiple choice questions:
-Question?
-a) Option 1 b) Option 2 c) Option 3 d) Option 4
-Correct answer: B
-
-Example:
-How many bones in human body?
-206
-
-What major canal opened in 1914?
-a) Suez Canal b) Panama Canal c) Erie Canal d) English Channel
-Correct answer: B`}
-                    className="w-full bg-gray-800/50 rounded-xl p-4 text-white placeholder-white/50 border border-gray-700/50 mb-4 text-sm font-mono"
-                    rows={8}
-                  />
-                  <button
-                    onClick={handleParseDocument}
-                    disabled={!documentContent.trim()}
-                    className={`w-full bg-indigo-500/20 border border-indigo-500/30 hover:bg-indigo-500/30 text-white font-bold py-3 px-4 rounded-xl transition-all flex items-center justify-center gap-2 ${
-                      !documentContent.trim()
-                        ? "opacity-50 cursor-not-allowed"
-                        : ""
-                    }`}
-                  >
-                    Submit
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
+          <QuestionImportForm
+            documentContent={documentContent}
+            onDocumentContentChange={setDocumentContent}
+            onParseDocument={handleParseDocument}
+            parsingErrorMessage={parsingErrorMessage}
+            isParsing={isParsingDocument}
+          />
         )}
 
         {hasQuestions && !isEditingQuestions && (
-          <div className="mb-8">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-bold text-indigo-300">
-                {Object.keys(gameState.questions).length} Questions
-              </h3>
-              <button
-                onClick={() => {
-                  const formattedText = Object.values(gameState.questions)
-                    .map((q) => {
-                      if (q.questionType === "numeric") {
-                        return `${q.text}\n${q.correctAnswer}\n`;
-                      } else {
-                        const options =
-                          q.options
-                            ?.map(
-                              (opt, i) =>
-                                `${String.fromCharCode(97 + i)}) ${opt}`
-                            )
-                            .join(" ") || "";
-                        const correctIndex =
-                          q.options?.findIndex(
-                            (opt) => opt === q.correctAnswer
-                          ) || 0;
-                        return `${
-                          q.text
-                        }\n${options}\nCorrect answer: ${String.fromCharCode(
-                          65 + correctIndex
-                        )}\n`;
-                      }
-                    })
-                    .join("\n");
-                  setDocumentContent(formattedText);
-                  setIsEditingQuestions(true);
-                }}
-                className="text-indigo-400 hover:text-indigo-300 text-sm"
-              >
-                Edit Questions
-              </button>
-            </div>
-            <div className="space-y-2 max-h-48 overflow-y-auto">
-              {Object.entries(gameState.questions).map(
-                ([id, question], index) => (
-                  <div
-                    key={id}
-                    data-testid={`parsed-question-${index + 1}`}
-                    className="bg-gray-800/50 rounded-lg p-3 text-sm"
-                  >
-                    <div className="flex justify-between items-start gap-4">
-                      <div>
-                        <span className="text-indigo-400 font-medium">
-                          Q{index + 1}:
-                        </span>{" "}
-                        {question.text}
-                        {question.questionType === "multiple-choice" &&
-                          question.options && (
-                            <div className="mt-1 ml-4 text-gray-400">
-                              {question.options.map((option, optIndex) => (
-                                <div
-                                  key={optIndex}
-                                  className={
-                                    option === question.correctAnswer
-                                      ? "text-green-400"
-                                      : "text-gray-400"
-                                  }
-                                >
-                                  {String.fromCharCode(97 + optIndex)}) {option}
-                                  {option === question.correctAnswer && " ✓"}
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                      </div>
-                      <div className="text-green-400 font-medium whitespace-nowrap">
-                        {question.questionType === "numeric" && (
-                          <>Answer: {question.correctAnswer}</>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                )
-              )}
-            </div>
-          </div>
+          <QuestionListDisplay
+            questions={questions}
+            onEditQuestions={() => {
+              setDocumentContent(formatQuestionsToText(questions));
+              setIsEditingQuestions(true);
+            }}
+          />
         )}
 
-        {/* Game Link Section */}
-        <div className="mb-8">
-          <h2 className="text-xl font-bold text-indigo-300 text-center mb-4">
-            Share Game Link
-          </h2>
-          <div className="space-y-3">
-            <motion.button
-              onClick={copyGameLink}
-              className="w-full relative group"
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              aria-label={gameUrl}
-              data-testid="game-link-button"
-            >
-              <div className="absolute inset-0 bg-indigo-500/20 rounded-xl blur-xl group-hover:bg-indigo-500/30 transition-all" />
-              <div className="relative bg-gray-800/50 backdrop-blur-sm border border-indigo-500/30 rounded-xl p-4 sm:p-6 flex items-center justify-between gap-3">
-                <div className="flex-1 min-w-0">
-                  <span className="text-sm sm:text-lg font-medium tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400 truncate block">
-                    {gameUrl}
-                  </span>
-                </div>
-                <div className="flex-shrink-0">
-                  <AnimatePresence mode="wait">
-                    {copied ? (
-                      <motion.div
-                        key="check"
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        exit={{ scale: 0 }}
-                        className="text-green-400"
-                        data-testid="copy-success-icon"
-                      >
-                        <Check className="w-5 h-5 sm:w-6 sm:h-6" />
-                      </motion.div>
-                    ) : (
-                      <motion.div
-                        key="copy"
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        exit={{ scale: 0 }}
-                        className="text-indigo-400 group-hover:text-indigo-300 transition-colors"
-                        data-testid="copy-icon"
-                      >
-                        <Copy className="w-5 h-5 sm:w-6 sm:h-6" />
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              </div>
-            </motion.button>
-
-            {/* Share button - always shown */}
-            <motion.button
-              onClick={shareGameLink}
-              className="w-full bg-indigo-500/20 hover:bg-indigo-500/30 border border-indigo-500/30 rounded-xl p-4 sm:p-6 flex items-center justify-center gap-2 transition-colors"
-            >
-              <svg
-                className="w-5 h-5 sm:w-6 sm:h-6"
-                fill="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92c0-1.61-1.31-2.92-2.92-2.92zM18 4c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zM6 13c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1zm12 7.02c-.55 0-1-.45-1-1s.45-1 1-1 1 .45 1 1-.45 1-1 1z" />
-              </svg>
-              Share Game
-            </motion.button>
-          </div>
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-center mt-2 text-indigo-300/60 text-sm"
-          >
-            Click to copy or share game link
-          </motion.div>
-        </div>
+        <GameLinkSection gameUrl={gameUrl} />
 
         {/* Player List */}
         <div className="mb-8">
           <PlayerList
             players={players}
-            hostId={gameState.hostId}
+            hostId={hostId}
             onRemovePlayer={(playerId) =>
               send({ type: "REMOVE_PLAYER", playerId })
             }
           />
         </div>
 
-        {/* Start Game Button */}
-        <div className="space-y-3">
-          <motion.button
-            onClick={handleStartGame}
-            disabled={!canStartGame || isStarting}
-            className={`w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold py-4 px-8 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2
-              ${
-                canStartGame && !isStarting
-                  ? "hover:from-indigo-500 hover:to-purple-500 opacity-100"
-                  : "opacity-50 cursor-not-allowed"
-              }`}
-            whileHover={canStartGame && !isStarting ? { scale: 1.02 } : {}}
-            whileTap={canStartGame && !isStarting ? { scale: 0.98 } : {}}
-          >
-            {isStarting ? (
-              <>
-                <Loader2
-                  className="w-5 h-5 animate-spin"
-                  data-testid="loading-spinner"
-                />
-                Starting Game...
-              </>
-            ) : (
-              "Start Game"
-            )}
-          </motion.button>
-
-          {!hasEnoughPlayers && (
-            <motion.p
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="text-center text-indigo-300/70 text-sm"
-            >
-              Waiting for at least one player to join...
-            </motion.p>
-          )}
-        </div>
+        <StartGameSection
+          canStartGame={canStartGame}
+          hasEnoughPlayers={hasEnoughPlayers}
+          onStartGame={onStartGame}
+        />
 
         <AnimatePresence>
           {showSettings && (
             <SettingsModal
               isOpen={showSettings}
               onClose={() => setShowSettings(false)}
-              currentSettings={gameState.settings}
+              currentSettings={{ answerTimeWindow, maxPlayers }}
               onSave={handleSaveSettings}
             />
           )}
@@ -920,6 +936,251 @@ Correct answer: B`}
     </div>
   );
 };
+
+const AnswerItem = ({
+  answer,
+  question,
+  startTime,
+}: {
+  answer: Answer;
+  question: Question;
+  startTime: number;
+}) => {
+  const answerValue = typeof answer.value === "number" ? answer.value : 0;
+  const correctAnswerValue =
+    typeof question.correctAnswer === "number" ? question.correctAnswer : 0;
+  const isExact =
+    question.questionType === "numeric" && answerValue === correctAnswerValue;
+  const isClose =
+    question.questionType === "numeric" &&
+    Math.abs(answerValue - correctAnswerValue) / correctAnswerValue < 0.1;
+
+  return (
+    <div
+      className={`bg-gray-900/30 rounded-lg p-3 flex justify-between items-center border ${
+        isExact
+          ? "border-green-500/50 bg-green-500/10"
+          : isClose
+          ? "border-indigo-500/50 bg-indigo-500/10"
+          : "border-transparent"
+      }`}
+    >
+      <div className="flex items-center gap-2">
+        <span className="text-white/90">{answer.playerName}</span>
+        {(isExact || isClose) && (
+          <span
+            className={`text-xs px-2 py-0.5 rounded-full ${
+              isExact
+                ? "bg-green-500/20 text-green-400"
+                : "bg-indigo-500/20 text-indigo-400"
+            }`}
+          >
+            {isExact ? "Exact" : "Closest"}
+          </span>
+        )}
+      </div>
+      <div className="flex items-center gap-4">
+        <span
+          className={`font-medium ${
+            isExact
+              ? "text-green-400"
+              : isClose
+              ? "text-indigo-400"
+              : "text-white/90"
+          }`}
+        >
+          {answer.value}
+        </span>
+        <span className="text-white/60">
+          {((answer.timestamp - startTime) / 1000).toFixed(1)}s
+        </span>
+      </div>
+    </div>
+  );
+};
+
+const QuestionPreviewContent = ({
+  question,
+  emptyMessage,
+}: {
+  question: Question | undefined;
+  emptyMessage: string;
+}) => {
+  if (!question) {
+    return (
+      <div className="text-lg text-white/70 text-center py-4">
+        {emptyMessage}
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="text-lg text-white/90 mb-2">{question.text}</div>
+      <div className="flex items-center gap-2">
+        <span className="text-sm text-white/60">Answer:</span>
+        <span className="text-lg font-medium text-green-400">
+          {question.correctAnswer}
+        </span>
+      </div>
+      {question.questionType === "multiple-choice" && question.options && (
+        <div className="mt-2">
+          <div className="text-sm text-white/60 mb-1">Options:</div>
+          <div className="grid grid-cols-2 gap-2">
+            {question.options.map((option: string, index: number) => (
+              <div
+                key={index}
+                className={`text-sm p-2 rounded ${
+                  option === question.correctAnswer
+                    ? "bg-green-500/20 text-green-400 border border-green-500/30"
+                    : "bg-gray-800/50 text-white/70"
+                }`}
+              >
+                {option}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
+
+const ActiveQuestionView = ({
+  currentQuestion,
+  questions,
+  timeLeft,
+  playersCount,
+}: {
+  currentQuestion: { questionId: string; startTime: number; answers: Answer[] };
+  questions: Record<string, Question>;
+  timeLeft: number;
+  playersCount: number;
+}) => {
+  const question = questions[currentQuestion.questionId];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-gray-800/30 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-gray-700/50"
+    >
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-bold text-indigo-300">Current Question</h2>
+        <motion.div
+          className="text-3xl font-bold text-indigo-400"
+          data-testid="question-timer"
+          animate={{
+            scale: timeLeft <= 5 ? [1, 1.1, 1] : 1,
+            color:
+              timeLeft <= 5 ? ["#818CF8", "#EF4444", "#818CF8"] : "#818CF8",
+          }}
+          transition={{
+            duration: 1,
+            repeat: timeLeft <= 5 ? Infinity : 0,
+          }}
+        >
+          {timeLeft}s
+        </motion.div>
+      </div>
+
+      <p className="text-lg sm:text-xl text-white/90 mb-4">{question?.text}</p>
+
+      <div className="flex items-center justify-between mb-4 p-3 bg-gray-900/30 rounded-lg border border-gray-700/50">
+        <div>
+          <div className="text-sm text-white/60 mb-1">Correct Answer</div>
+          <div className="text-xl font-bold text-green-400">
+            {question?.correctAnswer}
+          </div>
+        </div>
+      </div>
+
+      {currentQuestion.answers.length > 0 && (
+        <div className="mt-4">
+          <AnswerProgress
+            answersCount={currentQuestion.answers.length}
+            playersCount={playersCount}
+          />
+          <div className="space-y-2">
+            {currentQuestion.answers.map((answer) => (
+              <AnswerItem
+                key={answer.playerId}
+                answer={answer}
+                question={question}
+                startTime={currentQuestion.startTime}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+    </motion.div>
+  );
+};
+
+const StartQuestionCard = ({
+  title,
+  buttonLabel,
+  nextQuestion,
+  emptyMessage,
+  onStart,
+  endGameTestId,
+}: {
+  title: string;
+  buttonLabel: string;
+  nextQuestion: Question | undefined;
+  emptyMessage: string;
+  onStart: () => void;
+  endGameTestId?: string;
+}) => (
+  <motion.div
+    initial={{ opacity: 0, y: -20 }}
+    animate={{ opacity: 1, y: 0 }}
+    className="bg-gray-800/30 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-gray-700/50"
+  >
+    <h2 className="text-xl font-bold text-indigo-300 mb-4">{title}</h2>
+    <div className="bg-gray-900/30 rounded-xl p-4 mb-6">
+      <QuestionPreviewContent
+        question={nextQuestion}
+        emptyMessage={emptyMessage}
+      />
+    </div>
+    <motion.button
+      onClick={onStart}
+      className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold py-4 px-8 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 hover:from-indigo-500 hover:to-purple-500"
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      data-testid={endGameTestId}
+    >
+      {buttonLabel}
+    </motion.button>
+  </motion.div>
+);
+
+const GameCompleteCard = ({
+  onEndGame,
+}: {
+  onEndGame: () => void;
+}) => (
+  <motion.div
+    initial={{ opacity: 0, y: -20 }}
+    animate={{ opacity: 1, y: 0 }}
+    className="bg-gray-800/30 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-gray-700/50"
+  >
+    <h2 className="text-xl font-bold text-indigo-300 mb-4">Game Complete</h2>
+    <p className="text-lg text-white/70 mb-6">
+      All questions have been answered. You can now end the game.
+    </p>
+    <motion.button
+      onClick={onEndGame}
+      className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold py-4 px-8 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 hover:from-indigo-500 hover:to-purple-500"
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      data-testid="end-game-button"
+    >
+      End Game
+    </motion.button>
+  </motion.div>
+);
 
 const QuestionControls = ({
   currentQuestion,
@@ -942,353 +1203,53 @@ const QuestionControls = ({
     return results[results.length - 1];
   });
   const isLastQuestion = questionNumber >= Object.keys(questions).length;
+  const isActive = GameContext.useMatches("active");
+  const isQuestionActive = isActive && currentQuestion !== null;
+  const timeLeft = useQuestionTimer(currentQuestion, answerTimeWindow, isQuestionActive);
 
-  // Add timer state
-  const [timeLeft, setTimeLeft] = useState(0);
+  const nextQuestion = Object.values(questions)[questionNumber] as Question | undefined;
 
-  // Add timer effect
-  useEffect(() => {
-    if (!currentQuestion) return;
-
-    const calculateTimeLeft = () => {
-      return Math.max(
-        0,
-        Math.ceil(
-          (currentQuestion.startTime +
-            answerTimeWindow * 1000 -
-            Date.now()) /
-            1000
-        )
-      );
-    };
-
-    setTimeLeft(calculateTimeLeft());
-
-    const timer = setInterval(() => {
-      const newTimeLeft = calculateTimeLeft();
-      setTimeLeft(newTimeLeft);
-
-      if (newTimeLeft <= 0) {
-        clearInterval(timer);
-      }
-    }, 100);
-
-    return () => clearInterval(timer);
-  }, [currentQuestion, answerTimeWindow]);
-
-  // Get the current question text from questions collection
-  const currentQuestionText = currentQuestion
-    ? questions[currentQuestion.questionId]?.text
-    : null;
-
-  // Get next unanswered question - fix to handle first question
-  const nextQuestion = Object.values(questions)[questionNumber] || {};
+  const handleNextQuestion = () => {
+    if (!nextQuestion) return;
+    send({ type: "NEXT_QUESTION" });
+  };
 
   return (
     <div className="min-h-screen flex flex-col items-center pt-16 p-4 relative">
-      {/* Background Animation */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <motion.div
-            className="absolute inset-0 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500"
-            animate={{
-              rotate: [0, 360],
-              scale: [1, 1.2, 1],
-            }}
-            transition={{
-              duration: 20,
-              repeat: Infinity,
-              ease: "linear",
-            }}
-          />
-        </div>
-      </div>
+      <GameBackground />
 
       <div className="relative z-10 w-full max-w-xl mx-auto space-y-4">
-        {/* Current Question Display */}
         {currentQuestion && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-gray-800/30 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-gray-700/50"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-indigo-300">
-                Current Question
-              </h2>
-              <motion.div
-                className="text-3xl font-bold text-indigo-400"
-                animate={{
-                  scale: timeLeft <= 5 ? [1, 1.1, 1] : 1,
-                  color:
-                    timeLeft <= 5
-                      ? ["#818CF8", "#EF4444", "#818CF8"]
-                      : "#818CF8",
-                }}
-                transition={{
-                  duration: 1,
-                  repeat: timeLeft <= 5 ? Infinity : 0,
-                }}
-              >
-                {timeLeft}s
-              </motion.div>
-            </div>
-
-            {/* Question Text */}
-            <p className="text-lg sm:text-xl text-white/90 mb-4">
-              {currentQuestionText}
-            </p>
-
-            {/* Answer Info */}
-            <div className="flex items-center justify-between mb-4 p-3 bg-gray-900/30 rounded-lg border border-gray-700/50">
-              <div>
-                <div className="text-sm text-white/60 mb-1">Correct Answer</div>
-                <div className="text-xl font-bold text-green-400">
-                  {questions[currentQuestion.questionId]?.correctAnswer}
-                </div>
-              </div>
-            </div>
-
-            {/* Answer submissions display */}
-            {currentQuestion.answers.length > 0 && (
-              <div className="mt-4">
-                <h3 className="text-lg font-bold text-indigo-300 mb-2">
-                  Answers Submitted: {currentQuestion.answers.length}
-                </h3>
-                <div className="space-y-2">
-                  {currentQuestion.answers.map((answer) => {
-                    const question = questions[currentQuestion.questionId];
-                    const answerValue =
-                      typeof answer.value === "number" ? answer.value : 0;
-                    const correctAnswerValue =
-                      typeof question.correctAnswer === "number"
-                        ? question.correctAnswer
-                        : 0;
-                    const isExact =
-                      question.questionType === "numeric" &&
-                      answerValue === correctAnswerValue;
-                    const isClose =
-                      question.questionType === "numeric" &&
-                      Math.abs(answerValue - correctAnswerValue) /
-                        correctAnswerValue <
-                        0.1;
-
-                    return (
-                      <div
-                        key={answer.playerId}
-                        className={`bg-gray-900/30 rounded-lg p-3 flex justify-between items-center border ${
-                          isExact
-                            ? "border-green-500/50 bg-green-500/10"
-                            : isClose
-                            ? "border-indigo-500/50 bg-indigo-500/10"
-                            : "border-transparent"
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="text-white/90">
-                            {answer.playerName}
-                          </span>
-                          {(isExact || isClose) && (
-                            <span
-                              className={`text-xs px-2 py-0.5 rounded-full ${
-                                isExact
-                                  ? "bg-green-500/20 text-green-400"
-                                  : "bg-indigo-500/20 text-indigo-400"
-                              }`}
-                            >
-                              {isExact ? "Exact" : "Closest"}
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <span
-                            className={`font-medium ${
-                              isExact
-                                ? "text-green-400"
-                                : isClose
-                                ? "text-indigo-400"
-                                : "text-white/90"
-                            }`}
-                          >
-                            {answer.value}
-                          </span>
-                          <span className="text-white/60">
-                            {(
-                              (answer.timestamp - currentQuestion.startTime) /
-                              1000
-                            ).toFixed(1)}
-                            s
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </motion.div>
+          <ActiveQuestionView
+            currentQuestion={currentQuestion}
+            questions={questions}
+            timeLeft={timeLeft}
+            playersCount={players.length}
+          />
         )}
 
-        {/* Question Results or Next Question Button */}
         {!currentQuestion && (
           <>
             {lastQuestionResult ? (
-              <motion.div
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-gray-800/30 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-gray-700/50"
-              >
-                {isLastQuestion ? (
-                  <>
-                    <h2 className="text-xl font-bold text-indigo-300 mb-4">
-                      Game Complete
-                    </h2>
-                    <p className="text-lg text-white/70 mb-6">
-                      All questions have been answered. You can now end the
-                      game.
-                    </p>
-                    <motion.button
-                      onClick={() => send({ type: "END_GAME" })}
-                      className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold py-4 px-8 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 hover:from-indigo-500 hover:to-purple-500"
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      data-testid="end-game-button"
-                    >
-                      End Game
-                    </motion.button>
-                  </>
-                ) : (
-                  <>
-                    <h2 className="text-xl font-bold text-indigo-300 mb-4">
-                      Next Question Preview
-                    </h2>
-                    <div className="bg-gray-900/30 rounded-xl p-4 mb-6">
-                      {nextQuestion ? (
-                        <>
-                          <div className="text-lg text-white/90 mb-2">
-                            {nextQuestion.text}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm text-white/60">
-                              Answer:
-                            </span>
-                            <span className="text-lg font-medium text-green-400">
-                              {nextQuestion.correctAnswer}
-                            </span>
-                          </div>
-                          {nextQuestion.questionType === "multiple-choice" &&
-                            nextQuestion.options && (
-                              <div className="mt-2">
-                                <div className="text-sm text-white/60 mb-1">
-                                  Options:
-                                </div>
-                                <div className="grid grid-cols-2 gap-2">
-                                  {nextQuestion.options.map(
-                                    (option: string, index: number) => (
-                                      <div
-                                        key={index}
-                                        className={`text-sm p-2 rounded ${
-                                          option === nextQuestion.correctAnswer
-                                            ? "bg-green-500/20 text-green-400 border border-green-500/30"
-                                            : "bg-gray-800/50 text-white/70"
-                                        }`}
-                                      >
-                                        {option}
-                                      </div>
-                                    )
-                                  )}
-                                </div>
-                              </div>
-                            )}
-                        </>
-                      ) : (
-                        <div className="text-lg text-white/70 text-center py-4">
-                          No more questions available
-                        </div>
-                      )}
-                    </div>
-                    <motion.button
-                      onClick={() => {
-                        if (!nextQuestion) return;
-                        send({
-                          type: "NEXT_QUESTION",
-                        });
-                      }}
-                      className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold py-4 px-8 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 hover:from-indigo-500 hover:to-purple-500"
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      Start Next Question
-                    </motion.button>
-                  </>
-                )}
-              </motion.div>
+              isLastQuestion ? (
+                <GameCompleteCard onEndGame={() => send({ type: "END_GAME" })} />
+              ) : (
+                <StartQuestionCard
+                  title="Next Question Preview"
+                  buttonLabel="Start Next Question"
+                  nextQuestion={nextQuestion}
+                  emptyMessage="No more questions available"
+                  onStart={handleNextQuestion}
+                />
+              )
             ) : (
-              <motion.div
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-gray-800/30 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-gray-700/50"
-              >
-                <h2 className="text-xl font-bold text-indigo-300 mb-4">
-                  Start First Question
-                </h2>
-                <div className="bg-gray-900/30 rounded-xl p-4 mb-6">
-                  {nextQuestion ? (
-                    <>
-                      <div className="text-lg text-white/90 mb-2">
-                        {nextQuestion.text}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-white/60">Answer:</span>
-                        <span className="text-lg font-medium text-green-400">
-                          {nextQuestion.correctAnswer}
-                        </span>
-                      </div>
-                      {nextQuestion.questionType === "multiple-choice" &&
-                        nextQuestion.options && (
-                          <div className="mt-2">
-                            <div className="text-sm text-white/60 mb-1">
-                              Options:
-                            </div>
-                            <div className="grid grid-cols-2 gap-2">
-                              {nextQuestion.options.map(
-                                (option: string, index: number) => (
-                                  <div
-                                    key={index}
-                                    className={`text-sm p-2 rounded ${
-                                      option === nextQuestion.correctAnswer
-                                        ? "bg-green-500/20 text-green-400 border border-green-500/30"
-                                        : "bg-gray-800/50 text-white/70"
-                                    }`}
-                                  >
-                                    {option}
-                                  </div>
-                                )
-                              )}
-                            </div>
-                          </div>
-                        )}
-                    </>
-                  ) : (
-                    <div className="text-lg text-white/70 text-center py-4">
-                      No questions available
-                    </div>
-                  )}
-                </div>
-                <motion.button
-                  onClick={() => {
-                    if (!nextQuestion) return;
-                    send({
-                      type: "NEXT_QUESTION",
-                    });
-                  }}
-                  className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold py-4 px-8 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 hover:from-indigo-500 hover:to-purple-500"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  Start First Question
-                </motion.button>
-              </motion.div>
+              <StartQuestionCard
+                title="Start First Question"
+                buttonLabel="Start First Question"
+                nextQuestion={nextQuestion}
+                emptyMessage="No questions available"
+                onStart={handleNextQuestion}
+              />
             )}
           </>
         )}
@@ -1323,28 +1284,12 @@ const GameFinishedDisplay = ({
 }: {
   players: Array<{ id: string; name: string; score: number }>;
 }) => {
-  // Create a copy before sorting
   const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
+  const winner = sortedPlayers[0];
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 relative">
-      {/* Background Animation */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <motion.div
-            className="absolute inset-0 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500"
-            animate={{
-              rotate: [0, 360],
-              scale: [1, 1.2, 1],
-            }}
-            transition={{
-              duration: 20,
-              repeat: Infinity,
-              ease: "linear",
-            }}
-          />
-        </div>
-      </div>
+      <GameBackground />
 
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
@@ -1355,34 +1300,8 @@ const GameFinishedDisplay = ({
           Game Over!
         </h1>
 
-        <div className="space-y-3 mb-8">
-          <h2 className="text-xl font-bold mb-4 text-indigo-300 flex items-center gap-2">
-            <Trophy className="w-6 h-6" /> Final Scores
-          </h2>
-          {sortedPlayers.map((player, index) => (
-            <motion.div
-              key={player.id}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: index * 0.1 }}
-              className={`flex justify-between items-center p-4 rounded-xl border ${
-                index === 0
-                  ? "bg-yellow-500/10 border-yellow-500/30"
-                  : "bg-gray-800/30 border-gray-700/30"
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <span className="text-2xl font-bold text-indigo-400">
-                  #{index + 1}
-                </span>
-                <span className="font-medium">{player.name}</span>
-              </div>
-              <span className="text-xl font-bold text-indigo-400">
-                {player.score}
-              </span>
-            </motion.div>
-          ))}
-        </div>
+        <WinnerAnnouncement winner={winner} />
+        <FinalScoresList players={players} />
       </motion.div>
     </div>
   );

@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { ArrowRight, Loader2, Users, AlertCircle } from 'lucide-react'
 import { GameContext } from '../game.context'
-import { SessionContext } from '../session.context'
 
 export function PlayerJoin() {
   const [gameCode, setGameCode] = useState('')
@@ -10,7 +9,8 @@ export function PlayerJoin() {
   const [isJoining, setIsJoining] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const gameState = GameContext.useSelector((state) => state.public);
+  const players = GameContext.useSelector((state) => state.public.players);
+  const maxPlayers = GameContext.useSelector((state) => state.public.settings.maxPlayers);
   const sendGameEvent = GameContext.useSend();
 
   const handleJoin = async (e: React.FormEvent) => {
@@ -32,7 +32,7 @@ export function PlayerJoin() {
     }
   }
 
-  const hasJoined = gameState.players.some(p => p.name === playerName);
+  const hasJoined = players.some(p => p.name === playerName);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 flex flex-col items-center justify-center p-4">
@@ -110,7 +110,7 @@ export function PlayerJoin() {
                   <div className="flex items-center">
                     <Users className="shrink-0 mr-2" size={16} />
                     <span>
-                      {gameState.players.length}/{gameState.settings.maxPlayers} Players
+                      {players.length}/{maxPlayers} Players
                     </span>
                   </div>
                   <div className="text-xs space-y-2 bg-white/10 rounded-lg p-4">

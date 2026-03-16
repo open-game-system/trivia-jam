@@ -47,108 +47,102 @@ function calculateMultipleChoiceScores(
   });
 }
 
+interface NumericAnswer extends Answer {
+  numericValue: number;
+  difference: number;
+  timeTaken: number;
+  isValid: boolean;
+  isExactMatch: boolean;
+}
+
+function parseNumericAnswer(
+  answer: Answer,
+  correctValue: number,
+  startTime: number
+): NumericAnswer {
+  const numericValue = Number(answer.value);
+  const isValid = !isNaN(numericValue) && isFinite(numericValue);
+  return {
+    ...answer,
+    numericValue: isValid ? numericValue : NaN,
+    difference: isValid ? Math.abs(numericValue - correctValue) : Infinity,
+    timeTaken: (answer.timestamp - startTime) / 1000,
+    isValid,
+    isExactMatch: isValid && numericValue === correctValue,
+  };
+}
+
+function compareNumericAnswers(a: NumericAnswer, b: NumericAnswer): number {
+  if (a.isExactMatch && b.isExactMatch) {
+    return a.timeTaken - b.timeTaken;
+  }
+  if (a.isExactMatch) return -1;
+  if (b.isExactMatch) return 1;
+  if (a.difference !== b.difference) {
+    return a.difference - b.difference;
+  }
+  return a.timeTaken - b.timeTaken;
+}
+
+function isTied(a: NumericAnswer, b: NumericAnswer): boolean {
+  if (a.isExactMatch && b.isExactMatch) {
+    return Math.abs(a.timeTaken - b.timeTaken) < 0.1;
+  }
+  return (
+    a.difference === b.difference &&
+    Math.abs(a.timeTaken - b.timeTaken) < 0.1
+  );
+}
+
+function groupByPosition(sortedAnswers: NumericAnswer[]): NumericAnswer[][] {
+  return sortedAnswers.reduce<NumericAnswer[][]>((acc, answer) => {
+    const lastGroup = acc[acc.length - 1];
+    if (!lastGroup) {
+      acc.push([answer]);
+    } else if (isTied(lastGroup[0], answer)) {
+      lastGroup.push(answer);
+    } else {
+      acc.push([answer]);
+    }
+    return acc;
+  }, []);
+}
+
+function assignPositionPoints(
+  numericAnswers: NumericAnswer[],
+  positions: NumericAnswer[][]
+): Map<string, number> {
+  const pointsMap = new Map<string, number>();
+
+  for (const answer of numericAnswers) {
+    if (!answer.isValid) {
+      pointsMap.set(answer.playerId, 0);
+    }
+  }
+
+  positions.forEach((group, groupIndex) => {
+    const points = groupIndex >= 3 ? 0 : 4 - groupIndex;
+    group.forEach(answer => pointsMap.set(answer.playerId, points));
+  });
+
+  return pointsMap;
+}
+
 function calculateNumericScores(
   answers: Answer[],
   question: Question,
   startTime: number
 ): QuestionResult["scores"] {
-  const numericAnswers = answers.map((answer) => {
-    const numericValue = Number(answer.value);
-    const correctNumericValue = Number(question.correctAnswer);
-    const isValid = !isNaN(numericValue) && isFinite(numericValue);
-    const isExactMatch = isValid && numericValue === correctNumericValue;
-    
-    return {
-      ...answer,
-      numericValue: isValid ? numericValue : NaN,
-      difference: isValid ? Math.abs(numericValue - correctNumericValue) : Infinity,
-      timeTaken: (answer.timestamp - startTime) / 1000,
-      isValid,
-      isExactMatch
-    };
-  });
+  const correctValue = Number(question.correctAnswer);
+  const numericAnswers = answers.map(a => parseNumericAnswer(a, correctValue, startTime));
+  const validAnswers = numericAnswers.filter(a => a.isValid).sort(compareNumericAnswers);
+  const positions = groupByPosition(validAnswers);
+  const pointsMap = assignPositionPoints(numericAnswers, positions);
 
-  // Sort valid answers by exact match first, then by difference, then by time
-  const validAnswers = numericAnswers
-    .filter(a => a.isValid)
-    .sort((a, b) => {
-      // Exact matches come first, sorted by time
-      if (a.isExactMatch && b.isExactMatch) {
-        return a.timeTaken - b.timeTaken;
-      }
-      if (a.isExactMatch) return -1;
-      if (b.isExactMatch) return 1;
-
-      // Then sort by difference
-      if (a.difference !== b.difference) {
-        return a.difference - b.difference;
-      }
-      // For same differences, sort by time
-      return a.timeTaken - b.timeTaken;
-    });
-
-  // Group answers by position (handling ties)
-  const positions = validAnswers.reduce<typeof validAnswers[]>(
-    (acc, answer) => {
-      const lastGroup = acc[acc.length - 1];
-
-      if (!lastGroup) {
-        acc.push([answer]);
-        return acc;
-      }
-
-      const lastAnswer = lastGroup[0];
-      // Exact matches are never tied unless within time window
-      if (lastAnswer.isExactMatch && answer.isExactMatch) {
-        if (Math.abs(lastAnswer.timeTaken - answer.timeTaken) < 0.1) {
-          lastGroup.push(answer);
-        } else {
-          acc.push([answer]);
-        }
-      } else if (
-        lastAnswer.difference === answer.difference &&
-        Math.abs(lastAnswer.timeTaken - answer.timeTaken) < 0.1 // Tie if within 100ms
-      ) {
-        lastGroup.push(answer);
-      } else {
-        acc.push([answer]);
-      }
-
-      return acc;
-    },
-    []
-  );
-
-  // Calculate points for each position group
-  const pointsMap = new Map<string, number>();
-
-  // Set points for invalid answers
-  numericAnswers.forEach(answer => {
-    if (!answer.isValid) {
-      pointsMap.set(answer.playerId, 0);
-    }
-  });
-
-  // Set points for valid answers
-  positions.forEach((group, groupIndex) => {
-    if (groupIndex >= 3) {
-      group.forEach(answer => pointsMap.set(answer.playerId, 0));
-    } else {
-      // All answers in the same group get the highest possible points for that position
-      const points = 4 - groupIndex;
-      group.forEach(answer => pointsMap.set(answer.playerId, points));
-    }
-  });
-
-  // Create final scores array including all answers
   return answers.map(answer => {
-    const scoredAnswer = numericAnswers.find(
-      sa => sa.playerId === answer.playerId
-    );
-    const position = scoredAnswer?.isValid
-      ? positions.findIndex(group =>
-          group.some(a => a.playerId === answer.playerId)
-        ) + 1
+    const scored = numericAnswers.find(sa => sa.playerId === answer.playerId);
+    const position = scored?.isValid
+      ? positions.findIndex(group => group.some(a => a.playerId === answer.playerId)) + 1
       : positions.length + 1;
 
     return {

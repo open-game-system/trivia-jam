@@ -35,9 +35,6 @@ export const gameMachine = setup({
       "caller" in event &&
       event.caller.type === "client" &&
       event.caller.id === context.public.hostId,
-    hasReachedQuestionLimit: ({ context }: { context: GameServerContext }) =>
-      context.public.questionNumber >=
-      Object.keys(context.public.questions).length,
   },
   actors: {
     answerTimer: fromPromise(
@@ -50,10 +47,8 @@ export const gameMachine = setup({
     parseQuestionsDocument: fromPromise(
       async ({
         input,
-        system,
       }: {
         input: { documentContent: string; env: GameEvent["env"] };
-        system: any;
       }) => {
         const { documentContent, env } = input;
         const questions = await parseQuestions(documentContent, env);
@@ -90,46 +85,11 @@ export const gameMachine = setup({
         }),
       })
     ),
-    validateAnswer: assign(
-      (
-        { context },
-        { playerId, correct }: { playerId: string; correct: boolean }
-      ) => ({
-        public: produce(context.public, (draft) => {
-          const player = draft.players.find((p) => p.id === playerId);
-          if (player) {
-            if (correct) {
-              player.score += 1;
-              draft.questionNumber += 1;
-              draft.currentQuestion = null;
-            }
-
-            if (draft.questionNumber > Object.keys(draft.questions).length) {
-              draft.winner = draft.players.reduce((a, b) =>
-                a.score > b.score ? a : b
-              ).id;
-            }
-          }
-        }),
-      })
-    ),
     setWinner: assign(({ context }) => ({
       public: produce(context.public, (draft) => {
         draft.winner = draft.players.reduce((a, b) =>
           a.score > b.score ? a : b
         ).id;
-      }),
-    })),
-    skipQuestion: assign(({ context }) => ({
-      public: produce(context.public, (draft) => {
-        draft.currentQuestion = null;
-        draft.questionNumber += 1;
-
-        if (draft.questionNumber > Object.keys(draft.questions).length) {
-          draft.winner = draft.players.reduce((a, b) =>
-            a.score > b.score ? a : b
-          ).id;
-        }
       }),
     })),
     removePlayer: assign(({ context }, { playerId }: { playerId: string }) => ({
@@ -238,11 +198,28 @@ export const gameMachine = setup({
       initial: "waitingForQuestions",
       states: {
         waitingForQuestions: {
-          entry: "clearParsingError",
           on: {
             PARSE_QUESTIONS: {
               guard: "isHost",
               target: "parsingDocument",
+              actions: "clearParsingError",
+            },
+            QUESTIONS_PARSED: {
+              guard: "isHost",
+              target: "ready",
+              actions: [
+                "clearParsingError",
+                {
+                  type: "assignParsedQuestions",
+                  params: ({
+                    event,
+                  }: {
+                    event: Extract<GameEvent, { type: "QUESTIONS_PARSED" }>;
+                  }) => ({
+                    questions: event.questions,
+                  }),
+                },
+              ],
             },
           },
         },
@@ -381,9 +358,13 @@ export const gameMachine = setup({
             SUBMIT_ANSWER: [
               {
                 guard: ({ context, event }: { context: GameServerContext; event: GameEvent }) => {
-                  return !!(context.public.currentQuestion && 
-                    context.public.players.length > 0 &&
-                    context.public.currentQuestion.answers.length + 1 === context.public.players.length);
+                  if (!context.public.currentQuestion || context.public.players.length === 0) return false;
+                  const answeredPlayerIds = new Set(
+                    context.public.currentQuestion.answers.map((a) => a.playerId)
+                  );
+                  // Add the current submitter
+                  answeredPlayerIds.add(event.caller.id);
+                  return answeredPlayerIds.size === context.public.players.length;
                 },
                 target: "questionPrep",
                 actions: ["submitAnswer", "processQuestionResults"]
