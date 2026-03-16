@@ -51,8 +51,8 @@ importers:
         specifier: 1.166.7
         version: 1.166.7(@tanstack/react-router@1.166.7(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(vite@7.3.1(@types/node@25.5.0)(jiti@1.21.7)(less@4.6.4)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(webpack@5.105.4(@swc/core@1.15.18)(esbuild@0.25.12))
       actor-kit:
-        specifier: file:../actor-kit
-        version: file:../actor-kit(@cloudflare/workers-types@4.20260313.1)(react@19.2.4)(xstate@5.28.0)(zod@3.25.76)
+        specifier: ^0.52.3
+        version: 0.52.3(@cloudflare/workers-types@4.20260313.1)(react@19.2.4)(xstate@5.28.0)(zod@3.25.76)
       ai:
         specifier: ^6.0.116
         version: 6.0.116(zod@3.25.76)
@@ -2780,8 +2780,8 @@ packages:
     engines: {node: '>=0.4.0'}
     hasBin: true
 
-  actor-kit@file:../actor-kit:
-    resolution: {directory: ../actor-kit, type: directory}
+  actor-kit@0.52.3:
+    resolution: {integrity: sha512-uhD2wsJlKY5Kna5vQg2EKnwsJS+n8dpjwuoHBr+PCpMcD5qNEYBkowbW0M6203kvydg2lfLvF8UzcKzAHS6tcw==}
     peerDependencies:
       '@cloudflare/workers-types': ^4.20240925.0
       react: ^17.0.0 || ^18.0.0 || ^19.0.0
@@ -8724,7 +8724,7 @@ snapshots:
 
   acorn@8.16.0: {}
 
-  actor-kit@file:../actor-kit(@cloudflare/workers-types@4.20260313.1)(react@19.2.4)(xstate@5.28.0)(zod@3.25.76):
+  actor-kit@0.52.3(@cloudflare/workers-types@4.20260313.1)(react@19.2.4)(xstate@5.28.0)(zod@3.25.76):
     dependencies:
       '@cloudflare/workers-types': 4.20260313.1
       cloudflare: 5.2.0
