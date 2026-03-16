@@ -28,7 +28,7 @@ export default defineConfig({
     exclude: ["node_modules", "e2e", "**/*.e2e.spec.{js,ts}", ".swarm", ".claude", ".stryker-tmp"],
     coverage: {
       provider: "v8",
-      reporter: ["text", "json"],
+      reporter: ["text", "json", "lcov"],
       reportsDirectory: "./coverage",
       exclude: [
         "node_modules/",

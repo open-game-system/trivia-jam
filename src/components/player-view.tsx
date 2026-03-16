@@ -264,21 +264,32 @@ const ActiveQuestionDisplay = ({
   );
 };
 
-export const PlayerView = () => {
-  const gameState = GameContext.useSelector((state) => state);
+const ActiveStateContent = ({
+  player,
+  questions,
+  questionResults,
+  questionNumber,
+  totalQuestions,
+}: {
+  player: Player;
+  questions: GamePublicContext["questions"];
+  questionResults: GamePublicContext["questionResults"];
+  questionNumber: number;
+  totalQuestions: number;
+}) => {
+  const { currentQuestion, settings } = GameContext.useSelector(
+    (state) => state.public
+  );
   const sessionState = SessionContext.useSelector((state) => state.public);
-  const { currentQuestion, players, questions, settings, questionResults } =
-    gameState.public;
+  const send = GameContext.useSend();
   const [answerInput, setAnswerInput] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const send = GameContext.useSend();
-  const isLobby = GameContext.useMatches("lobby");
-  const isActive = GameContext.useMatches("active");
-  const isFinished = GameContext.useMatches("finished");
-  const isQuestionActive = isActive && currentQuestion !== null;
-  const timeLeft = useQuestionTimer(currentQuestion, settings.answerTimeWindow, isQuestionActive);
-
-  const player = players.find((p) => p.id === sessionState.userId);
+  const isQuestionActive = currentQuestion !== null;
+  const timeLeft = useQuestionTimer(
+    currentQuestion,
+    settings.answerTimeWindow,
+    isQuestionActive
+  );
   const hasAnswered = currentQuestion?.answers.some(
     (a) => a.playerId === sessionState.userId
   );
@@ -306,6 +317,50 @@ export const PlayerView = () => {
     setIsSubmitting(false);
   };
 
+  return (
+    <>
+      <QuestionProgress current={questionNumber} total={totalQuestions} />
+
+      {!currentQuestion && questionResults.length > 0 && (
+        <QuestionResultsDisplay
+          player={player}
+          questions={questions}
+          questionResults={questionResults}
+        />
+      )}
+
+      {!currentQuestion && questionResults.length === 0 && (
+        <WaitingDisplay player={player} />
+      )}
+
+      {currentQuestion && (
+        <ActiveQuestionDisplay
+          currentQuestion={currentQuestion}
+          questions={questions}
+          hasAnswered={!!hasAnswered}
+          userId={sessionState.userId}
+          timeLeft={timeLeft}
+          answerInput={answerInput}
+          setAnswerInput={setAnswerInput}
+          isSubmitting={isSubmitting}
+          setIsSubmitting={setIsSubmitting}
+          onSubmitNumeric={handleSubmitAnswer}
+        />
+      )}
+    </>
+  );
+};
+
+export const PlayerView = () => {
+  const gameState = GameContext.useSelector((state) => state);
+  const sessionState = SessionContext.useSelector((state) => state.public);
+  const { players, questions, questionResults } = gameState.public;
+  const isLobby = GameContext.useMatches("lobby");
+  const isActive = GameContext.useMatches("active");
+  const isFinished = GameContext.useMatches("finished");
+
+  const player = players.find((p) => p.id === sessionState.userId);
+
   if (!player) {
     return (
       <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center p-4">
@@ -320,39 +375,13 @@ export const PlayerView = () => {
         {isLobby && <LobbyDisplay player={player} />}
 
         {isActive && (
-          <>
-            <QuestionProgress
-              current={gameState.public.questionNumber}
-              total={Object.keys(gameState.public.questions).length}
-            />
-
-            {!currentQuestion && questionResults.length > 0 && (
-              <QuestionResultsDisplay
-                player={player}
-                questions={questions}
-                questionResults={questionResults}
-              />
-            )}
-
-            {!currentQuestion && questionResults.length === 0 && (
-              <WaitingDisplay player={player} />
-            )}
-
-            {currentQuestion && (
-              <ActiveQuestionDisplay
-                currentQuestion={currentQuestion}
-                questions={questions}
-                hasAnswered={!!hasAnswered}
-                userId={sessionState.userId}
-                timeLeft={timeLeft}
-                answerInput={answerInput}
-                setAnswerInput={setAnswerInput}
-                isSubmitting={isSubmitting}
-                setIsSubmitting={setIsSubmitting}
-                onSubmitNumeric={handleSubmitAnswer}
-              />
-            )}
-          </>
+          <ActiveStateContent
+            player={player}
+            questions={questions}
+            questionResults={questionResults}
+            questionNumber={gameState.public.questionNumber}
+            totalQuestions={Object.keys(gameState.public.questions).length}
+          />
         )}
 
         {isFinished && <GameFinishedDisplay player={player} />}
