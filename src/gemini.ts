@@ -84,7 +84,30 @@ export function createQuestionParserModel(env: Env): LanguageModel {
 }
 
 /**
+ * Deterministic mock questions returned when USE_MOCK_LLM is set.
+ * Used in E2E tests to avoid Gemini API dependency.
+ */
+const MOCK_QUESTIONS: Record<string, Question> = {
+  q1: {
+    id: "q1",
+    text: "What is 2 + 2?",
+    correctAnswer: 4,
+    questionType: "numeric",
+  },
+  q2: {
+    id: "q2",
+    text: "What color is the sky on a clear day?",
+    correctAnswer: "Blue",
+    questionType: "multiple-choice",
+    options: ["Red", "Blue", "Green", "Yellow"],
+  },
+};
+
+/**
  * Parse a document of trivia questions into structured Question objects.
+ *
+ * When USE_MOCK_LLM env var is set, returns deterministic test questions
+ * without calling any LLM. This enables E2E tests to run without Gemini.
  *
  * @param documentContent - Raw text containing questions and answers
  * @param env - Cloudflare Workers env (for API key)
@@ -95,6 +118,10 @@ export async function parseQuestions(
   env: Env,
   model?: LanguageModel
 ): Promise<Record<string, Question>> {
+  if (env.USE_MOCK_LLM) {
+    return MOCK_QUESTIONS;
+  }
+
   const llm = model ?? createQuestionParserModel(env);
   const preprocessedContent = preprocessDocument(documentContent);
 
