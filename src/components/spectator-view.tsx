@@ -440,6 +440,112 @@ const CelebrationDisplay = ({
   );
 };
 
+const TimerDisplay = ({ remainingTime }: { remainingTime: number }) => {
+  const isUrgent = remainingTime <= 5;
+
+  return (
+    <motion.div
+      className="text-7xl font-bold text-indigo-400 mb-8"
+      data-testid="question-timer"
+      animate={{
+        scale: isUrgent ? [1, 1.1, 1] : 1,
+        color: isUrgent ? ["#818CF8", "#EF4444", "#818CF8"] : "#818CF8",
+      }}
+      transition={{
+        duration: 1,
+        repeat: isUrgent ? Infinity : 0,
+      }}
+    >
+      {remainingTime}s
+    </motion.div>
+  );
+};
+
+const MultipleChoiceOptionsDisplay = ({
+  options,
+}: {
+  options: string[];
+}) => (
+  <div className="mt-8 space-y-4 max-w-2xl mx-auto">
+    {options.map((option, index) => (
+      <div
+        key={option}
+        className="p-4 rounded-xl bg-gray-800/30 border border-gray-700/30"
+      >
+        <div className="flex items-start gap-4">
+          <span className="text-indigo-400 font-bold">
+            {String.fromCharCode(65 + index)}
+          </span>
+          <span className="text-xl">{option}</span>
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
+const PlayerAnswerRow = ({
+  player,
+  answer,
+  startTime,
+}: {
+  player: { id: string; name: string; score: number };
+  answer: Answer | null;
+  startTime: number;
+}) => {
+  const hasAnswered = !!answer;
+
+  return (
+    <motion.div
+      key={player.id}
+      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, x: 0 }}
+      data-testid={`player-answer-${player.id}`}
+      className={`rounded-xl p-4 flex justify-between items-center border ${
+        hasAnswered
+          ? "bg-gray-900/50 border-gray-700/50"
+          : "bg-gray-900/20 border-gray-700/20"
+      }`}
+    >
+      <span
+        className={`text-xl font-medium ${
+          hasAnswered ? "text-white/90" : "text-white/50"
+        }`}
+      >
+        {player.name}
+      </span>
+      {hasAnswered ? (
+        <span className="text-xl font-bold text-indigo-400">
+          {((answer.timestamp - startTime) / 1000).toFixed(1)}s
+        </span>
+      ) : (
+        <span className="text-lg text-indigo-400/50">Waiting...</span>
+      )}
+    </motion.div>
+  );
+};
+
+const sortPlayersByAnswerTime = (
+  players: Array<{ id: string; name: string; score: number }>,
+  playerAnswers: Record<string, Answer | null>
+) =>
+  [...players].sort((a, b) => {
+    const aAnswer = playerAnswers[a.id];
+    const bAnswer = playerAnswers[b.id];
+    if (!aAnswer && !bAnswer) return 0;
+    if (!aAnswer) return 1;
+    if (!bAnswer) return -1;
+    return aAnswer.timestamp - bAnswer.timestamp;
+  });
+
+const buildPlayerAnswerMap = (
+  players: Array<{ id: string; name: string; score: number }>,
+  answers: Answer[]
+): Record<string, Answer | null> =>
+  players.reduce<Record<string, Answer | null>>((acc, player) => {
+    acc[player.id] = answers.find((a) => a.playerId === player.id) || null;
+    return acc;
+  }, {});
+
 const GameplayDisplay = ({
   currentQuestion,
   players,
@@ -458,30 +564,16 @@ const GameplayDisplay = ({
   const isQuestionActive = isActive && currentQuestion !== null;
   const remainingTime = useQuestionTimer(currentQuestion, gameState.settings.answerTimeWindow, isQuestionActive);
 
-  // Get question text from questions collection
-  const questionText = currentQuestion
-    ? gameState.questions[currentQuestion.questionId]?.text
-    : null;
+  if (!currentQuestion) return null;
 
-  // Create a map of all players with their answers (or null if not answered)
-  const playerAnswers = players.reduce<Record<string, Answer | null>>(
-    (acc, player) => {
-      acc[player.id] =
-        currentQuestion?.answers.find((a) => a.playerId === player.id) || null;
-      return acc;
-    },
-    {}
-  );
+  const question = questions[currentQuestion.questionId];
+  const questionText = question?.text;
+  if (!questionText) return null;
 
-  // Sort players by answer time (unanswered at the bottom)
-  const sortedPlayers = [...players].sort((a, b) => {
-    const aAnswer = playerAnswers[a.id];
-    const bAnswer = playerAnswers[b.id];
-    if (!aAnswer && !bAnswer) return 0;
-    if (!aAnswer) return 1;
-    if (!bAnswer) return -1;
-    return aAnswer.timestamp - bAnswer.timestamp;
-  });
+  const playerAnswers = buildPlayerAnswerMap(players, currentQuestion.answers);
+  const sortedPlayers = sortPlayersByAnswerTime(players, playerAnswers);
+  const showOptions =
+    question.questionType === "multiple-choice" && question.options;
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center pt-16 p-8 relative">
@@ -505,118 +597,43 @@ const GameplayDisplay = ({
 
       {/* Main Content */}
       <div className="relative z-10 w-full max-w-4xl">
-        {currentQuestion && questionText && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center"
-          >
-            {/* Timer Display */}
-            <motion.div
-              className="text-7xl font-bold text-indigo-400 mb-8"
-              data-testid="question-timer"
-              animate={{
-                scale: remainingTime <= 5 ? [1, 1.1, 1] : 1,
-                color:
-                  remainingTime <= 5
-                    ? ["#818CF8", "#EF4444", "#818CF8"]
-                    : "#818CF8",
-              }}
-              transition={{
-                duration: 1,
-                repeat: remainingTime <= 5 ? Infinity : 0,
-              }}
-            >
-              {remainingTime}s
-            </motion.div>
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center"
+        >
+          <TimerDisplay remainingTime={remainingTime} />
 
-            {/* Question */}
-            <div className="text-center mb-8">
-              <h1 className="text-2xl sm:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">
-                {currentQuestion && questions[currentQuestion.questionId]
-                  ? questions[currentQuestion.questionId].text
-                  : "Loading question..."}
-              </h1>
-              {currentQuestion &&
-              questions[currentQuestion.questionId]?.questionType ===
-                "multiple-choice" &&
-              questions[currentQuestion.questionId]?.options ? (
-                <div className="mt-8 space-y-4 max-w-2xl mx-auto">
-                  {(() => {
-                    const question = questions[currentQuestion.questionId];
-                    if (!question?.options) return null;
-                    return question.options.map(
-                      (option: string, index: number) => (
-                        <div
-                          key={option}
-                          className="p-4 rounded-xl bg-gray-800/30 border border-gray-700/30"
-                        >
-                          <div className="flex items-start gap-4">
-                            <span className="text-indigo-400 font-bold">
-                              {String.fromCharCode(65 + index)}
-                            </span>
-                            <span className="text-xl">{option}</span>
-                          </div>
-                        </div>
-                      )
-                    );
-                  })()}
-                </div>
-              ) : null}
+          {/* Question */}
+          <div className="text-center mb-8">
+            <h1 className="text-2xl sm:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">
+              {questionText}
+            </h1>
+            {showOptions && (
+              <MultipleChoiceOptionsDisplay options={question.options!} />
+            )}
+          </div>
+
+          {/* Answers Section */}
+          <div className="bg-gray-800/30 backdrop-blur-sm rounded-2xl p-8 border border-gray-700/50">
+            <h2 className="text-2xl font-bold text-indigo-300 mb-6 flex items-center justify-center gap-3">
+              <Users className="w-6 h-6" />
+              Answers Submitted: {currentQuestion.answers.length} /{" "}
+              {players.length}
+            </h2>
+
+            <div className="space-y-3">
+              {sortedPlayers.map((player) => (
+                <PlayerAnswerRow
+                  key={player.id}
+                  player={player}
+                  answer={playerAnswers[player.id]}
+                  startTime={currentQuestion.startTime}
+                />
+              ))}
             </div>
-
-            {/* Answers Section */}
-            <div className="bg-gray-800/30 backdrop-blur-sm rounded-2xl p-8 border border-gray-700/50">
-              <h2 className="text-2xl font-bold text-indigo-300 mb-6 flex items-center justify-center gap-3">
-                <Users className="w-6 h-6" />
-                Answers Submitted: {currentQuestion.answers.length} /{" "}
-                {players.length}
-              </h2>
-
-              <div className="space-y-3">
-                {sortedPlayers.map((player) => {
-                  const answer = playerAnswers[player.id];
-                  const hasAnswered = !!answer;
-
-                  return (
-                    <motion.div
-                      key={player.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      data-testid={`player-answer-${player.id}`}
-                      className={`rounded-xl p-4 flex justify-between items-center border ${
-                        hasAnswered
-                          ? "bg-gray-900/50 border-gray-700/50"
-                          : "bg-gray-900/20 border-gray-700/20"
-                      }`}
-                    >
-                      <span
-                        className={`text-xl font-medium ${
-                          hasAnswered ? "text-white/90" : "text-white/50"
-                        }`}
-                      >
-                        {player.name}
-                      </span>
-                      {hasAnswered ? (
-                        <span className="text-xl font-bold text-indigo-400">
-                          {(
-                            (answer.timestamp - currentQuestion.startTime) /
-                            1000
-                          ).toFixed(1)}
-                          s
-                        </span>
-                      ) : (
-                        <span className="text-lg text-indigo-400/50">
-                          Waiting...
-                        </span>
-                      )}
-                    </motion.div>
-                  );
-                })}
-              </div>
-            </div>
-          </motion.div>
-        )}
+          </div>
+        </motion.div>
       </div>
     </div>
   );
