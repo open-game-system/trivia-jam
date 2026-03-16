@@ -409,6 +409,104 @@ describe("game machine — mutant killers", () => {
     });
   });
 
+  describe("JOIN_GAME during active state (lines 431-441)", () => {
+    it("player can join during active game with correct id and name", () => {
+      const actor = createTestActor();
+      hostSend(actor, { type: "QUESTIONS_PARSED", questions: TWO_QUESTIONS });
+      playerSend(actor, "player-1", {
+        type: "JOIN_GAME",
+        playerName: "Alice",
+      });
+      hostSend(actor, { type: "START_GAME" });
+      expect(actor.getSnapshot().value).toEqual({ active: "questionPrep" });
+
+      // Join during active game
+      playerSend(actor, "late-joiner", {
+        type: "JOIN_GAME",
+        playerName: "LateJoiner",
+      });
+
+      const players = actor.getSnapshot().context.public.players;
+      expect(players).toHaveLength(2);
+      const latePlayer = players.find((p) => p.id === "late-joiner");
+      expect(latePlayer).toBeDefined();
+      expect(latePlayer!.name).toBe("LateJoiner");
+      expect(latePlayer!.score).toBe(0);
+    });
+
+    it("player can join during questionActive state", () => {
+      const actor = createTestActor();
+      hostSend(actor, { type: "QUESTIONS_PARSED", questions: TWO_QUESTIONS });
+      playerSend(actor, "player-1", {
+        type: "JOIN_GAME",
+        playerName: "Alice",
+      });
+      playerSend(actor, "player-2", {
+        type: "JOIN_GAME",
+        playerName: "Bob",
+      });
+      hostSend(actor, { type: "START_GAME" });
+      hostSend(actor, { type: "NEXT_QUESTION" });
+      expect(actor.getSnapshot().value).toEqual({ active: "questionActive" });
+
+      // Join during active question
+      playerSend(actor, "late-joiner", {
+        type: "JOIN_GAME",
+        playerName: "Charlie",
+      });
+
+      const players = actor.getSnapshot().context.public.players;
+      expect(players).toHaveLength(3);
+      expect(players.find((p) => p.id === "late-joiner")!.name).toBe(
+        "Charlie"
+      );
+    });
+
+    it("late-joining player ID comes from caller.id", () => {
+      const actor = createTestActor();
+      hostSend(actor, { type: "QUESTIONS_PARSED", questions: TWO_QUESTIONS });
+      playerSend(actor, "player-1", {
+        type: "JOIN_GAME",
+        playerName: "Alice",
+      });
+      hostSend(actor, { type: "START_GAME" });
+
+      playerSend(actor, "unique-late-id", {
+        type: "JOIN_GAME",
+        playerName: "Late",
+      });
+
+      const players = actor.getSnapshot().context.public.players;
+      expect(players.find((p) => p.id === "unique-late-id")).toBeDefined();
+    });
+  });
+
+  describe("setWinner tied scores (line 119 EqualityOperator)", () => {
+    it("with equal scores, reduce returns last player (b wins ties)", () => {
+      const actor = createTestActor();
+      hostSend(actor, { type: "QUESTIONS_PARSED", questions: TWO_QUESTIONS });
+      playerSend(actor, "player-1", {
+        type: "JOIN_GAME",
+        playerName: "Alice",
+      });
+      playerSend(actor, "player-2", {
+        type: "JOIN_GAME",
+        playerName: "Bob",
+      });
+      hostSend(actor, { type: "START_GAME" });
+
+      // Both answer exactly the same on Q1 — tied scores
+      hostSend(actor, { type: "NEXT_QUESTION" });
+      playerSend(actor, "player-1", { type: "SUBMIT_ANSWER", value: 4 });
+      playerSend(actor, "player-2", { type: "SUBMIT_ANSWER", value: 4 });
+
+      // End game with tied scores — `a.score > b.score ? a : b` means
+      // when scores equal, condition is false, so reduce returns b (player-2)
+      hostSend(actor, { type: "END_GAME" });
+      expect(actor.getSnapshot().context.public.winner).toBe("player-2");
+    });
+  });
+
   describe("processQuestionResults (lines 154-190)", () => {
     it("updates player scores from calculated scores", () => {
       const actor = createTestActor();
