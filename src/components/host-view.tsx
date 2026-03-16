@@ -8,7 +8,7 @@ import {
   Users,
   X
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import * as Drawer from "vaul";
 import { GameContext } from "~/game.context";
 import type { GamePublicContext } from "~/game.machine";

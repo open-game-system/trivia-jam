@@ -1,25 +1,29 @@
-import { renderHook, act } from "@testing-library/react";
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { renderHook } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import { useQuestionTimer } from "./use-question-timer";
 
-type CurrentQuestion = {
-  questionId: string;
-  startTime: number;
-  answers: Array<{
-    playerId: string;
-    playerName: string;
-    value: number | string;
-    timestamp: number;
-  }>;
-};
+// Mock createCountdown — its internals are tested in timer.test.ts.
+// Here we test the hook's state-awareness logic.
+vi.mock("~/timer", () => ({
+  createCountdown: vi.fn(
+    (timeWindow: number, onTick: (n: number) => void, _onComplete: () => void) => {
+      // Simulate initial tick
+      onTick(timeWindow);
+      // Return cleanup function
+      return vi.fn();
+    }
+  ),
+}));
+
+import { createCountdown } from "~/timer";
+
+const makeQuestion = (id = "q1") => ({ questionId: id });
 
 describe("useQuestionTimer", () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-  });
+  const mockCreateCountdown = vi.mocked(createCountdown);
 
-  afterEach(() => {
-    vi.useRealTimers();
+  beforeEach(() => {
+    mockCreateCountdown.mockClear();
   });
 
   it("returns 0 when currentQuestion is null", () => {
@@ -27,41 +31,44 @@ describe("useQuestionTimer", () => {
       useQuestionTimer(null, 30, true)
     );
     expect(result.current).toBe(0);
+    expect(mockCreateCountdown).not.toHaveBeenCalled();
   });
 
   it("starts countdown when currentQuestion is provided", () => {
-    const question: CurrentQuestion = {
-      questionId: "q1",
-      startTime: Date.now(),
-      answers: [],
-    };
-
     const { result } = renderHook(() =>
-      useQuestionTimer(question, 30, true)
+      useQuestionTimer(makeQuestion(), 30, true)
     );
 
+    expect(mockCreateCountdown).toHaveBeenCalledWith(30, expect.any(Function), expect.any(Function));
     expect(result.current).toBe(30);
+  });
 
-    act(() => {
-      vi.advanceTimersByTime(1000);
-    });
+  it("returns 0 when isQuestionActive is false even with a currentQuestion", () => {
+    const { result } = renderHook(() =>
+      useQuestionTimer(makeQuestion(), 30, false)
+    );
 
-    expect(result.current).toBe(29);
+    expect(result.current).toBe(0);
+    expect(mockCreateCountdown).not.toHaveBeenCalled();
   });
 
   it("stops and returns 0 when isQuestionActive becomes false", () => {
-    const question: CurrentQuestion = {
-      questionId: "q1",
-      startTime: Date.now(),
-      answers: [],
-    };
+    const cleanup = vi.fn();
+    mockCreateCountdown.mockImplementation(
+      (timeWindow: number, onTick: (n: number) => void) => {
+        onTick(timeWindow);
+        return cleanup;
+      }
+    );
+
+    const question = makeQuestion();
 
     const { result, rerender } = renderHook(
       ({ question, answerTimeWindow, isQuestionActive }) =>
         useQuestionTimer(question, answerTimeWindow, isQuestionActive),
       {
         initialProps: {
-          question: question as CurrentQuestion | null,
+          question: question as { questionId: string } | null,
           answerTimeWindow: 30,
           isQuestionActive: true,
         },
@@ -69,12 +76,6 @@ describe("useQuestionTimer", () => {
     );
 
     expect(result.current).toBe(30);
-
-    act(() => {
-      vi.advanceTimersByTime(5000);
-    });
-
-    expect(result.current).toBe(25);
 
     // Server advances past questionActive
     rerender({
@@ -84,72 +85,57 @@ describe("useQuestionTimer", () => {
     });
 
     expect(result.current).toBe(0);
-
-    // Timer should not resume ticking
-    act(() => {
-      vi.advanceTimersByTime(1000);
-    });
-
-    expect(result.current).toBe(0);
+    // Cleanup should have been called
+    expect(cleanup).toHaveBeenCalled();
   });
 
   it("restarts countdown when a new question starts", () => {
-    const question1: CurrentQuestion = {
-      questionId: "q1",
-      startTime: Date.now(),
-      answers: [],
-    };
+    const question1 = makeQuestion("q1");
 
     const { result, rerender } = renderHook(
       ({ question, answerTimeWindow, isQuestionActive }) =>
         useQuestionTimer(question, answerTimeWindow, isQuestionActive),
       {
         initialProps: {
-          question: question1 as CurrentQuestion | null,
-          answerTimeWindow: 30,
+          question: question1 as { questionId: string } | null,
+          answerTimeWindow: 25,
           isQuestionActive: true,
         },
       }
     );
 
-    act(() => {
-      vi.advanceTimersByTime(10000);
-    });
-
-    expect(result.current).toBe(20);
+    expect(result.current).toBe(25);
+    expect(mockCreateCountdown).toHaveBeenCalledTimes(1);
 
     // New question starts
-    const question2: CurrentQuestion = {
-      questionId: "q2",
-      startTime: Date.now(),
-      answers: [],
-    };
+    const question2 = makeQuestion("q2");
 
     rerender({
       question: question2,
-      answerTimeWindow: 30,
+      answerTimeWindow: 25,
       isQuestionActive: true,
     });
 
-    expect(result.current).toBe(30);
+    // createCountdown called again for the new question
+    expect(mockCreateCountdown).toHaveBeenCalledTimes(2);
+    expect(result.current).toBe(25);
   });
 
   it("cleans up interval on unmount", () => {
-    const clearIntervalSpy = vi.spyOn(global, "clearInterval");
-
-    const question: CurrentQuestion = {
-      questionId: "q1",
-      startTime: Date.now(),
-      answers: [],
-    };
+    const cleanup = vi.fn();
+    mockCreateCountdown.mockImplementation(
+      (timeWindow: number, onTick: (n: number) => void) => {
+        onTick(timeWindow);
+        return cleanup;
+      }
+    );
 
     const { unmount } = renderHook(() =>
-      useQuestionTimer(question, 30, true)
+      useQuestionTimer(makeQuestion(), 30, true)
     );
 
     unmount();
 
-    expect(clearIntervalSpy).toHaveBeenCalled();
-    clearIntervalSpy.mockRestore();
+    expect(cleanup).toHaveBeenCalled();
   });
 });

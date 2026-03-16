@@ -1,18 +1,16 @@
 import { useEffect, useState } from "react";
+import { createCountdown } from "~/timer";
 
-type CurrentQuestion = {
-  questionId: string;
-  startTime: number;
-  answers: Array<{
-    playerId: string;
-    playerName: string;
-    value: number | string;
-    timestamp: number;
-  }>;
-} | null;
-
+/**
+ * Hook that wraps createCountdown with state-awareness.
+ * Returns 0 immediately when isQuestionActive becomes false
+ * (server advanced past questionActive), fixing the stale timer bug.
+ *
+ * Uses performance.now() via createCountdown for clock-skew-safe
+ * local countdown — no dependency on server timestamps.
+ */
 export function useQuestionTimer(
-  currentQuestion: CurrentQuestion,
+  currentQuestion: { questionId: string } | null,
   answerTimeWindow: number,
   isQuestionActive: boolean
 ): number {
@@ -24,31 +22,7 @@ export function useQuestionTimer(
       return;
     }
 
-    const calculateTimeLeft = () =>
-      Math.max(
-        0,
-        Math.ceil(
-          (currentQuestion.startTime +
-            answerTimeWindow * 1000 -
-            Date.now()) /
-            1000
-        )
-      );
-
-    setTimeLeft(calculateTimeLeft());
-
-    const timer = setInterval(() => {
-      const newTimeLeft = calculateTimeLeft();
-      setTimeLeft(newTimeLeft);
-
-      if (newTimeLeft <= 0) {
-        clearInterval(timer);
-      }
-    }, 100);
-
-    return () => {
-      clearInterval(timer);
-    };
+    return createCountdown(answerTimeWindow, setTimeLeft, () => {});
   }, [currentQuestion, answerTimeWindow, isQuestionActive]);
 
   return timeLeft;
