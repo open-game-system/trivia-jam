@@ -4,7 +4,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { useEffect, useRef, useState } from "react";
 import { GameContext } from "~/game.context";
 import type { Answer, GamePublicContext, Question } from "~/game.types";
-import { createCountdown } from "~/timer";
+import { useQuestionTimer } from "~/hooks/use-question-timer";
 
 const SOUND_EFFECTS = {
   // Classic game show buzzer sound
@@ -454,23 +454,9 @@ const GameplayDisplay = ({
   questions: Record<string, Question>;
 }) => {
   const gameState = GameContext.useSelector((state) => state.public);
-  const [remainingTime, setRemainingTime] = useState(
-    gameState.settings.answerTimeWindow
-  );
-
-  // Use local countdown to avoid server-client clock skew
-  useEffect(() => {
-    if (!currentQuestion) {
-      setRemainingTime(gameState.settings.answerTimeWindow);
-      return;
-    }
-
-    return createCountdown(
-      gameState.settings.answerTimeWindow,
-      setRemainingTime,
-      () => {}
-    );
-  }, [currentQuestion, gameState.settings.answerTimeWindow]);
+  const isActive = GameContext.useMatches("active");
+  const isQuestionActive = isActive && currentQuestion !== null;
+  const remainingTime = useQuestionTimer(currentQuestion, gameState.settings.answerTimeWindow, isQuestionActive);
 
   // Get question text from questions collection
   const questionText = currentQuestion

@@ -5,8 +5,8 @@ import { atom } from "nanostores";
 import { useEffect, useState } from "react";
 import { GameContext } from "~/game.context";
 import { GamePublicContext } from "~/game.types";
+import { useQuestionTimer } from "~/hooks/use-question-timer";
 import { SessionContext } from "~/session.context";
-import { createCountdown } from "~/timer";
 import { HelpModal } from "./help-modal";
 import { QuestionProgress } from "./question-progress";
 
@@ -272,24 +272,16 @@ export const PlayerView = () => {
   const [answerInput, setAnswerInput] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const send = GameContext.useSend();
-  const [timeLeft, setTimeLeft] = useState(0);
   const isLobby = GameContext.useMatches("lobby");
   const isActive = GameContext.useMatches("active");
   const isFinished = GameContext.useMatches("finished");
+  const isQuestionActive = isActive && currentQuestion !== null;
+  const timeLeft = useQuestionTimer(currentQuestion, settings.answerTimeWindow, isQuestionActive);
 
   const player = players.find((p) => p.id === sessionState.userId);
   const hasAnswered = currentQuestion?.answers.some(
     (a) => a.playerId === sessionState.userId
   );
-
-  useEffect(() => {
-    if (!currentQuestion) {
-      setTimeLeft(0);
-      return;
-    }
-
-    return createCountdown(settings.answerTimeWindow, setTimeLeft, () => {});
-  }, [currentQuestion, settings.answerTimeWindow]);
 
   useEffect(() => {
     if (currentQuestion && !hasAnswered) {

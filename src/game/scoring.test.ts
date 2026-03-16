@@ -142,6 +142,7 @@ describe('calculateScores', () => {
       expect(scores[0].points).toBe(scores[1].points) // Should have same points due to tie
       expect(scores[0].position).toBe(scores[1].position) // Should have same position
       expect(scores[0].points).toBe(4) // Both should get max points for being tied at first
+      expect(scores[0].position).toBe(1) // Tied at position 1, not 0
     })
 
     it('filters out invalid numeric answers', () => {
@@ -255,5 +256,91 @@ describe('calculateScores', () => {
       // Third gets second place points
       expect(scores.find(s => s.playerId === 'p3')?.points).toBe(3);
     });
+
+    it('sorts by closeness not by submission time', () => {
+      const answers: Answer[] = [
+        { playerId: 'p1', playerName: 'P1', value: '10', timestamp: startTime + 1000 }, // diff=2, fast
+        { playerId: 'p2', playerName: 'P2', value: '8.5', timestamp: startTime + 3000 }, // diff=0.5, slow
+      ]
+
+      const scores = calculateScores(answers, question, startTime)
+
+      // p2 is closer despite answering later
+      expect(scores.find(s => s.playerId === 'p2')?.points).toBe(4)
+      expect(scores.find(s => s.playerId === 'p1')?.points).toBe(3)
+      expect(scores.find(s => s.playerId === 'p2')?.position).toBe(1)
+      expect(scores.find(s => s.playerId === 'p1')?.position).toBe(2)
+    })
+
+    it('does not tie answers exactly 100ms apart', () => {
+      // Use timestamps where timeTaken difference is exactly 0.1 in IEEE 754
+      // (100/1000 = 0.1 and 200/1000 = 0.2 — 0.2-0.1 = 0.1 exactly in floating point)
+      const answers: Answer[] = [
+        { playerId: 'p1', playerName: 'P1', value: '8.1', timestamp: startTime + 100 },
+        { playerId: 'p2', playerName: 'P2', value: '8.1', timestamp: startTime + 200 },
+      ]
+
+      const scores = calculateScores(answers, question, startTime)
+
+      // Exactly 100ms apart (0.1s) should NOT tie — boundary is strictly less than 0.1
+      expect(scores.find(s => s.playerId === 'p1')?.points).toBe(4)
+      expect(scores.find(s => s.playerId === 'p2')?.points).toBe(3)
+      expect(scores.find(s => s.playerId === 'p1')?.position).toBe(1)
+      expect(scores.find(s => s.playerId === 'p2')?.position).toBe(2)
+    })
+
+    it('does not tie exact matches exactly 100ms apart', () => {
+      // Use timestamps where timeTaken difference is exactly 0.1 in IEEE 754
+      const answers: Answer[] = [
+        { playerId: 'p1', playerName: 'P1', value: '8', timestamp: startTime + 100 },
+        { playerId: 'p2', playerName: 'P2', value: '8', timestamp: startTime + 200 },
+      ]
+
+      const scores = calculateScores(answers, question, startTime)
+
+      // Exact matches exactly 100ms apart should NOT tie
+      expect(scores.find(s => s.playerId === 'p1')?.points).toBe(4)
+      expect(scores.find(s => s.playerId === 'p2')?.points).toBe(3)
+    })
+
+    it('assigns last position to invalid answers and correct positions to valid ones', () => {
+      const answers: Answer[] = [
+        { playerId: 'p1', playerName: 'P1', value: 'abc', timestamp: startTime + 1000 },
+        { playerId: 'p2', playerName: 'P2', value: '8', timestamp: startTime + 2000 },
+        { playerId: 'p3', playerName: 'P3', value: '9', timestamp: startTime + 3000 },
+      ]
+
+      const scores = calculateScores(answers, question, startTime)
+
+      const p1 = scores.find(s => s.playerId === 'p1')!
+      const p2 = scores.find(s => s.playerId === 'p2')!
+      const p3 = scores.find(s => s.playerId === 'p3')!
+      // Invalid answer should get position after all valid groups
+      expect(p1.position).toBe(3) // 2 valid groups + 1
+      expect(p1.points).toBe(0)
+      // Valid answers should get their correct positions
+      expect(p2.position).toBe(1) // Exact match, first place
+      expect(p2.points).toBe(4)
+      expect(p3.position).toBe(2) // Second closest
+      expect(p3.points).toBe(3)
+    })
+
+    it('uses difference over time when both vary', () => {
+      const answers: Answer[] = [
+        { playerId: 'p1', playerName: 'P1', value: '7', timestamp: startTime + 500 },  // diff=1, fast
+        { playerId: 'p2', playerName: 'P2', value: '7.5', timestamp: startTime + 3000 }, // diff=0.5, slow
+        { playerId: 'p3', playerName: 'P3', value: '9', timestamp: startTime + 1000 },  // diff=1, medium
+      ]
+
+      const scores = calculateScores(answers, question, startTime)
+
+      // p2 closest despite being slowest; p1 and p3 same difference, p1 faster
+      expect(scores.find(s => s.playerId === 'p2')?.position).toBe(1)
+      expect(scores.find(s => s.playerId === 'p1')?.position).toBe(2)
+      expect(scores.find(s => s.playerId === 'p3')?.position).toBe(3)
+      expect(scores.find(s => s.playerId === 'p2')?.points).toBe(4)
+      expect(scores.find(s => s.playerId === 'p1')?.points).toBe(3)
+      expect(scores.find(s => s.playerId === 'p3')?.points).toBe(2)
+    })
   })
 })

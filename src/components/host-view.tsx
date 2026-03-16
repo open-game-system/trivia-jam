@@ -8,12 +8,12 @@ import {
   Users,
   X
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import * as Drawer from "vaul";
 import { GameContext } from "~/game.context";
-import { createCountdown } from "~/timer";
 import type { GamePublicContext } from "~/game.machine";
 import type { Answer, Question, QuestionResult } from "~/game.types";
+import { useQuestionTimer } from "~/hooks/use-question-timer";
 import { SessionContext } from "~/session.context";
 import { QuestionProgress } from "./question-progress";
 import { CastButton } from "./CastButton";
@@ -981,18 +981,9 @@ const QuestionControls = ({
     return results[results.length - 1];
   });
   const isLastQuestion = questionNumber >= Object.keys(questions).length;
-
-  // Timer state using local countdown to avoid server-client clock skew
-  const [timeLeft, setTimeLeft] = useState(0);
-
-  useEffect(() => {
-    if (!currentQuestion) {
-      setTimeLeft(0);
-      return;
-    }
-
-    return createCountdown(answerTimeWindow, setTimeLeft, () => {});
-  }, [currentQuestion, answerTimeWindow]);
+  const isActive = GameContext.useMatches("active");
+  const isQuestionActive = isActive && currentQuestion !== null;
+  const timeLeft = useQuestionTimer(currentQuestion, answerTimeWindow, isQuestionActive);
 
   // Get the current question text from questions collection
   const currentQuestionText = currentQuestion
