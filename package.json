@@ -27,7 +27,6 @@
   "license": "ISC",
   "dependencies": {
     "@ai-sdk/google": "^3.0.43",
-    "@google/generative-ai": "^0.21.0",
     "@jonmumm/utils": "^1.0.3",
     "@nanostores/react": "^0.8.4",
     "@open-game-system/app-bridge-react": "link:../open-game-system/packages/app-bridge-react",
