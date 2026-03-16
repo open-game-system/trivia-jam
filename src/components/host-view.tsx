@@ -961,6 +961,251 @@ const LobbyControls = ({
   );
 };
 
+const AnswerItem = ({
+  answer,
+  question,
+  startTime,
+}: {
+  answer: Answer;
+  question: Question;
+  startTime: number;
+}) => {
+  const answerValue = typeof answer.value === "number" ? answer.value : 0;
+  const correctAnswerValue =
+    typeof question.correctAnswer === "number" ? question.correctAnswer : 0;
+  const isExact =
+    question.questionType === "numeric" && answerValue === correctAnswerValue;
+  const isClose =
+    question.questionType === "numeric" &&
+    Math.abs(answerValue - correctAnswerValue) / correctAnswerValue < 0.1;
+
+  return (
+    <div
+      className={`bg-gray-900/30 rounded-lg p-3 flex justify-between items-center border ${
+        isExact
+          ? "border-green-500/50 bg-green-500/10"
+          : isClose
+          ? "border-indigo-500/50 bg-indigo-500/10"
+          : "border-transparent"
+      }`}
+    >
+      <div className="flex items-center gap-2">
+        <span className="text-white/90">{answer.playerName}</span>
+        {(isExact || isClose) && (
+          <span
+            className={`text-xs px-2 py-0.5 rounded-full ${
+              isExact
+                ? "bg-green-500/20 text-green-400"
+                : "bg-indigo-500/20 text-indigo-400"
+            }`}
+          >
+            {isExact ? "Exact" : "Closest"}
+          </span>
+        )}
+      </div>
+      <div className="flex items-center gap-4">
+        <span
+          className={`font-medium ${
+            isExact
+              ? "text-green-400"
+              : isClose
+              ? "text-indigo-400"
+              : "text-white/90"
+          }`}
+        >
+          {answer.value}
+        </span>
+        <span className="text-white/60">
+          {((answer.timestamp - startTime) / 1000).toFixed(1)}s
+        </span>
+      </div>
+    </div>
+  );
+};
+
+const QuestionPreviewContent = ({
+  question,
+  emptyMessage,
+}: {
+  question: Question | undefined;
+  emptyMessage: string;
+}) => {
+  if (!question) {
+    return (
+      <div className="text-lg text-white/70 text-center py-4">
+        {emptyMessage}
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="text-lg text-white/90 mb-2">{question.text}</div>
+      <div className="flex items-center gap-2">
+        <span className="text-sm text-white/60">Answer:</span>
+        <span className="text-lg font-medium text-green-400">
+          {question.correctAnswer}
+        </span>
+      </div>
+      {question.questionType === "multiple-choice" && question.options && (
+        <div className="mt-2">
+          <div className="text-sm text-white/60 mb-1">Options:</div>
+          <div className="grid grid-cols-2 gap-2">
+            {question.options.map((option: string, index: number) => (
+              <div
+                key={index}
+                className={`text-sm p-2 rounded ${
+                  option === question.correctAnswer
+                    ? "bg-green-500/20 text-green-400 border border-green-500/30"
+                    : "bg-gray-800/50 text-white/70"
+                }`}
+              >
+                {option}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </>
+  );
+};
+
+const ActiveQuestionView = ({
+  currentQuestion,
+  questions,
+  timeLeft,
+  playersCount,
+}: {
+  currentQuestion: { questionId: string; startTime: number; answers: Answer[] };
+  questions: Record<string, Question>;
+  timeLeft: number;
+  playersCount: number;
+}) => {
+  const question = questions[currentQuestion.questionId];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="bg-gray-800/30 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-gray-700/50"
+    >
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-xl font-bold text-indigo-300">Current Question</h2>
+        <motion.div
+          className="text-3xl font-bold text-indigo-400"
+          data-testid="question-timer"
+          animate={{
+            scale: timeLeft <= 5 ? [1, 1.1, 1] : 1,
+            color:
+              timeLeft <= 5 ? ["#818CF8", "#EF4444", "#818CF8"] : "#818CF8",
+          }}
+          transition={{
+            duration: 1,
+            repeat: timeLeft <= 5 ? Infinity : 0,
+          }}
+        >
+          {timeLeft}s
+        </motion.div>
+      </div>
+
+      <p className="text-lg sm:text-xl text-white/90 mb-4">{question?.text}</p>
+
+      <div className="flex items-center justify-between mb-4 p-3 bg-gray-900/30 rounded-lg border border-gray-700/50">
+        <div>
+          <div className="text-sm text-white/60 mb-1">Correct Answer</div>
+          <div className="text-xl font-bold text-green-400">
+            {question?.correctAnswer}
+          </div>
+        </div>
+      </div>
+
+      {currentQuestion.answers.length > 0 && (
+        <div className="mt-4">
+          <AnswerProgress
+            answersCount={currentQuestion.answers.length}
+            playersCount={playersCount}
+          />
+          <div className="space-y-2">
+            {currentQuestion.answers.map((answer) => (
+              <AnswerItem
+                key={answer.playerId}
+                answer={answer}
+                question={question}
+                startTime={currentQuestion.startTime}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+    </motion.div>
+  );
+};
+
+const StartQuestionCard = ({
+  title,
+  buttonLabel,
+  nextQuestion,
+  emptyMessage,
+  onStart,
+  endGameTestId,
+}: {
+  title: string;
+  buttonLabel: string;
+  nextQuestion: Question | undefined;
+  emptyMessage: string;
+  onStart: () => void;
+  endGameTestId?: string;
+}) => (
+  <motion.div
+    initial={{ opacity: 0, y: -20 }}
+    animate={{ opacity: 1, y: 0 }}
+    className="bg-gray-800/30 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-gray-700/50"
+  >
+    <h2 className="text-xl font-bold text-indigo-300 mb-4">{title}</h2>
+    <div className="bg-gray-900/30 rounded-xl p-4 mb-6">
+      <QuestionPreviewContent
+        question={nextQuestion}
+        emptyMessage={emptyMessage}
+      />
+    </div>
+    <motion.button
+      onClick={onStart}
+      className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold py-4 px-8 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 hover:from-indigo-500 hover:to-purple-500"
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      data-testid={endGameTestId}
+    >
+      {buttonLabel}
+    </motion.button>
+  </motion.div>
+);
+
+const GameCompleteCard = ({
+  onEndGame,
+}: {
+  onEndGame: () => void;
+}) => (
+  <motion.div
+    initial={{ opacity: 0, y: -20 }}
+    animate={{ opacity: 1, y: 0 }}
+    className="bg-gray-800/30 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-gray-700/50"
+  >
+    <h2 className="text-xl font-bold text-indigo-300 mb-4">Game Complete</h2>
+    <p className="text-lg text-white/70 mb-6">
+      All questions have been answered. You can now end the game.
+    </p>
+    <motion.button
+      onClick={onEndGame}
+      className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold py-4 px-8 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 hover:from-indigo-500 hover:to-purple-500"
+      whileHover={{ scale: 1.02 }}
+      whileTap={{ scale: 0.98 }}
+      data-testid="end-game-button"
+    >
+      End Game
+    </motion.button>
+  </motion.div>
+);
+
 const QuestionControls = ({
   currentQuestion,
   players,
@@ -986,13 +1231,12 @@ const QuestionControls = ({
   const isQuestionActive = isActive && currentQuestion !== null;
   const timeLeft = useQuestionTimer(currentQuestion, answerTimeWindow, isQuestionActive);
 
-  // Get the current question text from questions collection
-  const currentQuestionText = currentQuestion
-    ? questions[currentQuestion.questionId]?.text
-    : null;
+  const nextQuestion = Object.values(questions)[questionNumber] as Question | undefined;
 
-  // Get next unanswered question - fix to handle first question
-  const nextQuestion = Object.values(questions)[questionNumber] || {};
+  const handleNextQuestion = () => {
+    if (!nextQuestion) return;
+    send({ type: "NEXT_QUESTION" });
+  };
 
   return (
     <div className="min-h-screen flex flex-col items-center pt-16 p-4 relative">
@@ -1015,292 +1259,37 @@ const QuestionControls = ({
       </div>
 
       <div className="relative z-10 w-full max-w-xl mx-auto space-y-4">
-        {/* Current Question Display */}
         {currentQuestion && (
-          <motion.div
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-gray-800/30 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-gray-700/50"
-          >
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold text-indigo-300">
-                Current Question
-              </h2>
-              <motion.div
-                className="text-3xl font-bold text-indigo-400"
-                data-testid="question-timer"
-                animate={{
-                  scale: timeLeft <= 5 ? [1, 1.1, 1] : 1,
-                  color:
-                    timeLeft <= 5
-                      ? ["#818CF8", "#EF4444", "#818CF8"]
-                      : "#818CF8",
-                }}
-                transition={{
-                  duration: 1,
-                  repeat: timeLeft <= 5 ? Infinity : 0,
-                }}
-              >
-                {timeLeft}s
-              </motion.div>
-            </div>
-
-            {/* Question Text */}
-            <p className="text-lg sm:text-xl text-white/90 mb-4">
-              {currentQuestionText}
-            </p>
-
-            {/* Answer Info */}
-            <div className="flex items-center justify-between mb-4 p-3 bg-gray-900/30 rounded-lg border border-gray-700/50">
-              <div>
-                <div className="text-sm text-white/60 mb-1">Correct Answer</div>
-                <div className="text-xl font-bold text-green-400">
-                  {questions[currentQuestion.questionId]?.correctAnswer}
-                </div>
-              </div>
-            </div>
-
-            {/* Answer submissions display */}
-            {currentQuestion.answers.length > 0 && (
-              <div className="mt-4">
-                <AnswerProgress
-                  answersCount={currentQuestion.answers.length}
-                  playersCount={players.length}
-                />
-                <div className="space-y-2">
-                  {currentQuestion.answers.map((answer) => {
-                    const question = questions[currentQuestion.questionId];
-                    const answerValue =
-                      typeof answer.value === "number" ? answer.value : 0;
-                    const correctAnswerValue =
-                      typeof question.correctAnswer === "number"
-                        ? question.correctAnswer
-                        : 0;
-                    const isExact =
-                      question.questionType === "numeric" &&
-                      answerValue === correctAnswerValue;
-                    const isClose =
-                      question.questionType === "numeric" &&
-                      Math.abs(answerValue - correctAnswerValue) /
-                        correctAnswerValue <
-                        0.1;
-
-                    return (
-                      <div
-                        key={answer.playerId}
-                        className={`bg-gray-900/30 rounded-lg p-3 flex justify-between items-center border ${
-                          isExact
-                            ? "border-green-500/50 bg-green-500/10"
-                            : isClose
-                            ? "border-indigo-500/50 bg-indigo-500/10"
-                            : "border-transparent"
-                        }`}
-                      >
-                        <div className="flex items-center gap-2">
-                          <span className="text-white/90">
-                            {answer.playerName}
-                          </span>
-                          {(isExact || isClose) && (
-                            <span
-                              className={`text-xs px-2 py-0.5 rounded-full ${
-                                isExact
-                                  ? "bg-green-500/20 text-green-400"
-                                  : "bg-indigo-500/20 text-indigo-400"
-                              }`}
-                            >
-                              {isExact ? "Exact" : "Closest"}
-                            </span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-4">
-                          <span
-                            className={`font-medium ${
-                              isExact
-                                ? "text-green-400"
-                                : isClose
-                                ? "text-indigo-400"
-                                : "text-white/90"
-                            }`}
-                          >
-                            {answer.value}
-                          </span>
-                          <span className="text-white/60">
-                            {(
-                              (answer.timestamp - currentQuestion.startTime) /
-                              1000
-                            ).toFixed(1)}
-                            s
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </motion.div>
+          <ActiveQuestionView
+            currentQuestion={currentQuestion}
+            questions={questions}
+            timeLeft={timeLeft}
+            playersCount={players.length}
+          />
         )}
 
-        {/* Question Results or Next Question Button */}
         {!currentQuestion && (
           <>
             {lastQuestionResult ? (
-              <motion.div
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-gray-800/30 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-gray-700/50"
-              >
-                {isLastQuestion ? (
-                  <>
-                    <h2 className="text-xl font-bold text-indigo-300 mb-4">
-                      Game Complete
-                    </h2>
-                    <p className="text-lg text-white/70 mb-6">
-                      All questions have been answered. You can now end the
-                      game.
-                    </p>
-                    <motion.button
-                      onClick={() => send({ type: "END_GAME" })}
-                      className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold py-4 px-8 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 hover:from-indigo-500 hover:to-purple-500"
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      data-testid="end-game-button"
-                    >
-                      End Game
-                    </motion.button>
-                  </>
-                ) : (
-                  <>
-                    <h2 className="text-xl font-bold text-indigo-300 mb-4">
-                      Next Question Preview
-                    </h2>
-                    <div className="bg-gray-900/30 rounded-xl p-4 mb-6">
-                      {nextQuestion ? (
-                        <>
-                          <div className="text-lg text-white/90 mb-2">
-                            {nextQuestion.text}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm text-white/60">
-                              Answer:
-                            </span>
-                            <span className="text-lg font-medium text-green-400">
-                              {nextQuestion.correctAnswer}
-                            </span>
-                          </div>
-                          {nextQuestion.questionType === "multiple-choice" &&
-                            nextQuestion.options && (
-                              <div className="mt-2">
-                                <div className="text-sm text-white/60 mb-1">
-                                  Options:
-                                </div>
-                                <div className="grid grid-cols-2 gap-2">
-                                  {nextQuestion.options.map(
-                                    (option: string, index: number) => (
-                                      <div
-                                        key={index}
-                                        className={`text-sm p-2 rounded ${
-                                          option === nextQuestion.correctAnswer
-                                            ? "bg-green-500/20 text-green-400 border border-green-500/30"
-                                            : "bg-gray-800/50 text-white/70"
-                                        }`}
-                                      >
-                                        {option}
-                                      </div>
-                                    )
-                                  )}
-                                </div>
-                              </div>
-                            )}
-                        </>
-                      ) : (
-                        <div className="text-lg text-white/70 text-center py-4">
-                          No more questions available
-                        </div>
-                      )}
-                    </div>
-                    <motion.button
-                      onClick={() => {
-                        if (!nextQuestion) return;
-                        send({
-                          type: "NEXT_QUESTION",
-                        });
-                      }}
-                      className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold py-4 px-8 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 hover:from-indigo-500 hover:to-purple-500"
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      Start Next Question
-                    </motion.button>
-                  </>
-                )}
-              </motion.div>
+              isLastQuestion ? (
+                <GameCompleteCard onEndGame={() => send({ type: "END_GAME" })} />
+              ) : (
+                <StartQuestionCard
+                  title="Next Question Preview"
+                  buttonLabel="Start Next Question"
+                  nextQuestion={nextQuestion}
+                  emptyMessage="No more questions available"
+                  onStart={handleNextQuestion}
+                />
+              )
             ) : (
-              <motion.div
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-gray-800/30 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-gray-700/50"
-              >
-                <h2 className="text-xl font-bold text-indigo-300 mb-4">
-                  Start First Question
-                </h2>
-                <div className="bg-gray-900/30 rounded-xl p-4 mb-6">
-                  {nextQuestion ? (
-                    <>
-                      <div className="text-lg text-white/90 mb-2">
-                        {nextQuestion.text}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-white/60">Answer:</span>
-                        <span className="text-lg font-medium text-green-400">
-                          {nextQuestion.correctAnswer}
-                        </span>
-                      </div>
-                      {nextQuestion.questionType === "multiple-choice" &&
-                        nextQuestion.options && (
-                          <div className="mt-2">
-                            <div className="text-sm text-white/60 mb-1">
-                              Options:
-                            </div>
-                            <div className="grid grid-cols-2 gap-2">
-                              {nextQuestion.options.map(
-                                (option: string, index: number) => (
-                                  <div
-                                    key={index}
-                                    className={`text-sm p-2 rounded ${
-                                      option === nextQuestion.correctAnswer
-                                        ? "bg-green-500/20 text-green-400 border border-green-500/30"
-                                        : "bg-gray-800/50 text-white/70"
-                                    }`}
-                                  >
-                                    {option}
-                                  </div>
-                                )
-                              )}
-                            </div>
-                          </div>
-                        )}
-                    </>
-                  ) : (
-                    <div className="text-lg text-white/70 text-center py-4">
-                      No questions available
-                    </div>
-                  )}
-                </div>
-                <motion.button
-                  onClick={() => {
-                    if (!nextQuestion) return;
-                    send({
-                      type: "NEXT_QUESTION",
-                    });
-                  }}
-                  className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold py-4 px-8 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2 hover:from-indigo-500 hover:to-purple-500"
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  Start First Question
-                </motion.button>
-              </motion.div>
+              <StartQuestionCard
+                title="Start First Question"
+                buttonLabel="Start First Question"
+                nextQuestion={nextQuestion}
+                emptyMessage="No questions available"
+                onStart={handleNextQuestion}
+              />
             )}
           </>
         )}

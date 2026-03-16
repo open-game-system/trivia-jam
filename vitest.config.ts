@@ -28,9 +28,19 @@ export default defineConfig({
     exclude: ["node_modules", "e2e", "**/*.e2e.spec.{js,ts}", ".swarm", ".claude", ".stryker-tmp"],
     coverage: {
       provider: "v8",
-      reporter: ["text", "lcov", "json", "html"],
+      reporter: ["text", "json"],
       reportsDirectory: "./coverage",
-      exclude: ["node_modules/", "test/setup.ts"],
+      exclude: [
+        "node_modules/",
+        "test/setup.ts",
+        ".swarm/**",
+        ".claude/**",
+        ".stryker-tmp/**",
+        "e2e/**",
+        "**/*.stories.*",
+        "**/*.d.ts",
+        "src/routeTree.gen.ts",
+      ],
     },
   },
 });
