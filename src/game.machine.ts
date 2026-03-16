@@ -35,9 +35,6 @@ export const gameMachine = setup({
       "caller" in event &&
       event.caller.type === "client" &&
       event.caller.id === context.public.hostId,
-    hasReachedQuestionLimit: ({ context }: { context: GameServerContext }) =>
-      context.public.questionNumber >=
-      Object.keys(context.public.questions).length,
   },
   actors: {
     answerTimer: fromPromise(
@@ -90,46 +87,11 @@ export const gameMachine = setup({
         }),
       })
     ),
-    validateAnswer: assign(
-      (
-        { context },
-        { playerId, correct }: { playerId: string; correct: boolean }
-      ) => ({
-        public: produce(context.public, (draft) => {
-          const player = draft.players.find((p) => p.id === playerId);
-          if (player) {
-            if (correct) {
-              player.score += 1;
-              draft.questionNumber += 1;
-              draft.currentQuestion = null;
-            }
-
-            if (draft.questionNumber > Object.keys(draft.questions).length) {
-              draft.winner = draft.players.reduce((a, b) =>
-                a.score > b.score ? a : b
-              ).id;
-            }
-          }
-        }),
-      })
-    ),
     setWinner: assign(({ context }) => ({
       public: produce(context.public, (draft) => {
         draft.winner = draft.players.reduce((a, b) =>
           a.score > b.score ? a : b
         ).id;
-      }),
-    })),
-    skipQuestion: assign(({ context }) => ({
-      public: produce(context.public, (draft) => {
-        draft.currentQuestion = null;
-        draft.questionNumber += 1;
-
-        if (draft.questionNumber > Object.keys(draft.questions).length) {
-          draft.winner = draft.players.reduce((a, b) =>
-            a.score > b.score ? a : b
-          ).id;
-        }
       }),
     })),
     removePlayer: assign(({ context }, { playerId }: { playerId: string }) => ({
