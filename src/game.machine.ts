@@ -47,10 +47,8 @@ export const gameMachine = setup({
     parseQuestionsDocument: fromPromise(
       async ({
         input,
-        system,
       }: {
         input: { documentContent: string; env: GameEvent["env"] };
-        system: any;
       }) => {
         const { documentContent, env } = input;
         const questions = await parseQuestions(documentContent, env);
