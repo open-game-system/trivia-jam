@@ -1,7 +1,8 @@
 import { motion, AnimatePresence } from 'framer-motion'
 import { GameContext } from '../game.context'
 import { SessionContext } from '../session.context'
-import { Trophy, Medal, Award, Star, Crown } from 'lucide-react'
+import { Trophy, Medal, Award, Star } from 'lucide-react'
+import { GameBackground } from './game'
 
 export function Scoreboard() {
   const players = GameContext.useSelector((state) => state.public.players);
@@ -23,23 +24,7 @@ export function Scoreboard() {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white p-8 relative">
-      {/* Background Animation */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <motion.div
-            className="absolute inset-0 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500"
-            animate={{
-              rotate: [0, 360],
-              scale: [1, 1.2, 1],
-            }}
-            transition={{
-              duration: 20,
-              repeat: Infinity,
-              ease: "linear",
-            }}
-          />
-        </div>
-      </div>
+      <GameBackground />
 
       <div className="relative z-10 max-w-4xl mx-auto">
         <h1 className="text-5xl font-bold text-center mb-12 bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">

@@ -15,11 +15,20 @@ function readComponent(filename: string): string[] {
   return readFileSync(join(COMPONENTS_DIR, filename), "utf-8").split("\n");
 }
 
-/** Find lines with broad useSelector patterns */
+/**
+ * Find lines with broad useSelector patterns.
+ * Catches any parameter name (state, s, st, etc.) returning the whole
+ * public context or entire state, e.g.:
+ *   useSelector((state) => state.public)
+ *   useSelector((s) => s.public)
+ *   useSelector(s => s)
+ */
 function findBroadSelectors(lines: string[]): Array<{ line: number; text: string }> {
   const broadPatterns = [
-    /useSelector\(\s*\(?\s*state\s*\)?\s*=>\s*state\.public\s*\)/,
-    /useSelector\(\s*\(?\s*state\s*\)?\s*=>\s*state\s*\)/,
+    // Matches: useSelector((anyName) => anyName.public) — with no further property access
+    /useSelector\(\s*\(?\s*(\w+)\s*\)?\s*=>\s*\1\.public\s*[),]/,
+    // Matches: useSelector((anyName) => anyName) — returning whole state
+    /useSelector\(\s*\(?\s*(\w+)\s*\)?\s*=>\s*\1\s*[),]/,
   ];
 
   return lines.reduce<Array<{ line: number; text: string }>>((acc, text, i) => {

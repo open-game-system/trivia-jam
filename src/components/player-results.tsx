@@ -4,6 +4,7 @@ import { SessionContext } from '../session.context'
 import { Trophy, Medal, Award, Star, RotateCcw, Crown } from 'lucide-react'
 import confetti from 'canvas-confetti'
 import { useEffect } from 'react'
+import { GameBackground } from './game'
 
 export function PlayerResults() {
   const players = GameContext.useSelector((state) => state.public.players);
@@ -61,23 +62,7 @@ export function PlayerResults() {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white flex flex-col items-center justify-center p-4 relative">
-      {/* Background Animation */}
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <motion.div
-            className="absolute inset-0 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500"
-            animate={{
-              rotate: [0, 360],
-              scale: [1, 1.2, 1],
-            }}
-            transition={{
-              duration: 20,
-              repeat: Infinity,
-              ease: "linear",
-            }}
-          />
-        </div>
-      </div>
+      <GameBackground />
 
       <div className="relative z-10 w-full max-w-4xl mx-auto">
         <motion.div

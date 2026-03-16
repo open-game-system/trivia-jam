@@ -4,7 +4,6 @@ import {
   Copy,
   Loader2,
   Settings,
-  Trophy,
   Users,
   X
 } from "lucide-react";
@@ -61,20 +60,9 @@ export const HostView = ({
 }: {
   host: string;
 }) => {
-  const currentQuestion = GameContext.useSelector((state) => state.public.currentQuestion);
-  const players = GameContext.useSelector((state) => state.public.players);
   const hostId = GameContext.useSelector((state) => state.public.hostId);
   const id = GameContext.useSelector((state) => state.public.id);
-  const questions = GameContext.useSelector((state) => state.public.questions);
-  const questionResults = GameContext.useSelector((state) => state.public.questionResults);
-  const questionNumber = GameContext.useSelector((state) => state.public.questionNumber);
   const userId = SessionContext.useSelector((state) => state.public.userId);
-  const send = GameContext.useSend();
-  const isActive = GameContext.useMatches("active");
-  const isFinished = GameContext.useMatches("finished");
-  const isLobby = GameContext.useMatches("lobby");
-
-  const lastQuestionResult = questionResults[questionResults.length - 1];
 
   if (userId !== hostId) {
     return (
@@ -116,6 +104,22 @@ export const HostView = ({
       </div>
     );
   }
+
+  return <HostGameView host={host} />;
+};
+
+const HostGameView = ({ host }: { host: string }) => {
+  const currentQuestion = GameContext.useSelector((state) => state.public.currentQuestion);
+  const players = GameContext.useSelector((state) => state.public.players);
+  const questions = GameContext.useSelector((state) => state.public.questions);
+  const questionResults = GameContext.useSelector((state) => state.public.questionResults);
+  const questionNumber = GameContext.useSelector((state) => state.public.questionNumber);
+  const send = GameContext.useSend();
+  const isActive = GameContext.useMatches("active");
+  const isFinished = GameContext.useMatches("finished");
+  const isLobby = GameContext.useMatches("lobby");
+
+  const lastQuestionResult = questionResults[questionResults.length - 1];
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
@@ -261,22 +265,7 @@ const ActiveGameDisplay = ({
 }) => (
   <>
     <div className="min-h-screen flex flex-col items-center pt-16 p-4 relative">
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <motion.div
-            className="absolute inset-0 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500"
-            animate={{
-              rotate: [0, 360],
-              scale: [1, 1.2, 1],
-            }}
-            transition={{
-              duration: 20,
-              repeat: Infinity,
-              ease: "linear",
-            }}
-          />
-        </div>
-      </div>
+      <GameBackground />
 
       <div className="relative z-10 w-full max-w-4xl mx-auto">
         {!currentQuestion && lastQuestionResult && (
@@ -815,7 +804,8 @@ const LobbyControls = ({
   const gameId = GameContext.useSelector((state) => state.public.id);
   const questions = GameContext.useSelector((state) => state.public.questions);
   const hostId = GameContext.useSelector((state) => state.public.hostId);
-  const settings = GameContext.useSelector((state) => state.public.settings);
+  const answerTimeWindow = GameContext.useSelector((state) => state.public.settings.answerTimeWindow);
+  const maxPlayers = GameContext.useSelector((state) => state.public.settings.maxPlayers);
   const parsingErrorMessage = GameContext.useSelector((state) => state.public.parsingErrorMessage);
   const send = GameContext.useSend();
   const isParsingDocument = GameContext.useMatches({
@@ -937,7 +927,7 @@ const LobbyControls = ({
             <SettingsModal
               isOpen={showSettings}
               onClose={() => setShowSettings(false)}
-              currentSettings={settings}
+              currentSettings={{ answerTimeWindow, maxPlayers }}
               onSave={handleSaveSettings}
             />
           )}
@@ -1294,8 +1284,8 @@ const GameFinishedDisplay = ({
 }: {
   players: Array<{ id: string; name: string; score: number }>;
 }) => {
-  // Create a copy before sorting
   const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
+  const winner = sortedPlayers[0];
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center p-4 relative">
@@ -1310,34 +1300,8 @@ const GameFinishedDisplay = ({
           Game Over!
         </h1>
 
-        <div className="space-y-3 mb-8">
-          <h2 className="text-xl font-bold mb-4 text-indigo-300 flex items-center gap-2">
-            <Trophy className="w-6 h-6" /> Final Scores
-          </h2>
-          {sortedPlayers.map((player, index) => (
-            <motion.div
-              key={player.id}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: index * 0.1 }}
-              className={`flex justify-between items-center p-4 rounded-xl border ${
-                index === 0
-                  ? "bg-yellow-500/10 border-yellow-500/30"
-                  : "bg-gray-800/30 border-gray-700/30"
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <span className="text-2xl font-bold text-indigo-400">
-                  #{index + 1}
-                </span>
-                <span className="font-medium">{player.name}</span>
-              </div>
-              <span className="text-xl font-bold text-indigo-400">
-                {player.score}
-              </span>
-            </motion.div>
-          ))}
-        </div>
+        <WinnerAnnouncement winner={winner} />
+        <FinalScoresList players={players} />
       </motion.div>
     </div>
   );

@@ -263,7 +263,7 @@ const ActiveStateContent = ({
   totalQuestions: number;
 }) => {
   const currentQuestion = GameContext.useSelector((state) => state.public.currentQuestion);
-  const settings = GameContext.useSelector((state) => state.public.settings);
+  const answerTimeWindow = GameContext.useSelector((state) => state.public.settings.answerTimeWindow);
   const userId = SessionContext.useSelector((state) => state.public.userId);
   const send = GameContext.useSend();
   const [answerInput, setAnswerInput] = useState("");
@@ -271,7 +271,7 @@ const ActiveStateContent = ({
   const isQuestionActive = currentQuestion !== null;
   const timeLeft = useQuestionTimer(
     currentQuestion,
-    settings.answerTimeWindow,
+    answerTimeWindow,
     isQuestionActive
   );
   const hasAnswered = currentQuestion?.answers.some(
@@ -737,15 +737,7 @@ const QuestionResultsDisplay = ({
 
   return (
     <div className="min-h-screen flex flex-col items-center pt-8 sm:pt-16 p-3 sm:p-4 relative">
-      <div className="absolute inset-0 overflow-hidden">
-        <div className="absolute inset-0 opacity-10">
-          <motion.div
-            className="absolute inset-0 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500"
-            animate={{ scale: [1, 1.02], rotate: [0, 18] }}
-            transition={{ duration: 10, repeat: Infinity, repeatType: "reverse" }}
-          />
-        </div>
-      </div>
+      <GameBackground />
 
       <div className="relative z-10 w-full max-w-4xl mx-auto">
         <motion.div
