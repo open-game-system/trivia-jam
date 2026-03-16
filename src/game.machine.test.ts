@@ -72,6 +72,13 @@ describe("game machine", () => {
       expect(players).toEqual([]);
       expect(questions).toEqual({});
     });
+
+    it("initializes default settings", () => {
+      const actor = createTestActor();
+      const { settings } = actor.getSnapshot().context.public;
+      expect(settings.maxPlayers).toBe(30);
+      expect(settings.answerTimeWindow).toBe(25);
+    });
   });
 
   describe("lobby", () => {
@@ -299,6 +306,33 @@ describe("game machine", () => {
       expect(actor.getSnapshot().context.public.winner).not.toBeNull();
     });
 
+    it("processQuestionResults picks correct winner with multiple players at game end", () => {
+      const actor = createTestActor();
+      hostSend(actor, { type: "QUESTIONS_PARSED", questions: TWO_QUESTIONS });
+      playerSend(actor, "player-1", {
+        type: "JOIN_GAME",
+        playerName: "Alice",
+      });
+      playerSend(actor, "player-2", {
+        type: "JOIN_GAME",
+        playerName: "Bob",
+      });
+      hostSend(actor, { type: "START_GAME" });
+
+      // Question 1: player-2 answers exactly, player-1 way off
+      hostSend(actor, { type: "NEXT_QUESTION" });
+      playerSend(actor, "player-1", { type: "SUBMIT_ANSWER", value: 100 });
+      playerSend(actor, "player-2", { type: "SUBMIT_ANSWER", value: 4 });
+
+      // Question 2: player-2 answers exactly again
+      hostSend(actor, { type: "NEXT_QUESTION" });
+      playerSend(actor, "player-1", { type: "SUBMIT_ANSWER", value: 100 });
+      playerSend(actor, "player-2", { type: "SUBMIT_ANSWER", value: 6 });
+
+      // Game should auto-end, player-2 wins (highest score)
+      expect(actor.getSnapshot().context.public.winner).toBe("player-2");
+    });
+
     it("processQuestionResults clears currentQuestion to null", () => {
       const actor = createTestActor();
       hostSend(actor, { type: "QUESTIONS_PARSED", questions: TWO_QUESTIONS });
@@ -356,6 +390,29 @@ describe("game machine", () => {
 
       // Player 1 should be the winner (higher score)
       expect(actor.getSnapshot().context.public.winner).toBe("player-1");
+    });
+
+    it("setWinner picks the later player when they have the highest score", () => {
+      const actor = createTestActor();
+      hostSend(actor, { type: "QUESTIONS_PARSED", questions: TWO_QUESTIONS });
+      playerSend(actor, "player-1", {
+        type: "JOIN_GAME",
+        playerName: "Alice",
+      });
+      playerSend(actor, "player-2", {
+        type: "JOIN_GAME",
+        playerName: "Bob",
+      });
+      hostSend(actor, { type: "START_GAME" });
+
+      // Question 1: player-2 answers exactly, player-1 is way off
+      hostSend(actor, { type: "NEXT_QUESTION" });
+      playerSend(actor, "player-1", { type: "SUBMIT_ANSWER", value: 100 });
+      playerSend(actor, "player-2", { type: "SUBMIT_ANSWER", value: 4 });
+
+      // End game early — player-2 should win (higher score, later in array)
+      hostSend(actor, { type: "END_GAME" });
+      expect(actor.getSnapshot().context.public.winner).toBe("player-2");
     });
 
     it("new player starts with score 0", () => {
@@ -423,6 +480,25 @@ describe("game machine", () => {
 
       hostSend(actor, { type: "REMOVE_PLAYER", playerId: "player-1" });
       expect(actor.getSnapshot().context.public.players).toHaveLength(0);
+    });
+
+    it("removes only the targeted player, keeping others", () => {
+      const actor = createTestActor();
+      playerSend(actor, "player-1", {
+        type: "JOIN_GAME",
+        playerName: "Alice",
+      });
+      playerSend(actor, "player-2", {
+        type: "JOIN_GAME",
+        playerName: "Bob",
+      });
+      expect(actor.getSnapshot().context.public.players).toHaveLength(2);
+
+      hostSend(actor, { type: "REMOVE_PLAYER", playerId: "player-1" });
+      const players = actor.getSnapshot().context.public.players;
+      expect(players).toHaveLength(1);
+      expect(players[0].id).toBe("player-2");
+      expect(players[0].name).toBe("Bob");
     });
 
     it("non-host cannot remove a player", () => {
