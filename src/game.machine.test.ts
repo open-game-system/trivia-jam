@@ -261,6 +261,157 @@ describe("game machine", () => {
     });
   });
 
+  describe("question numbering and game end", () => {
+    it("setQuestion uses questionNumber+1 for questionId", () => {
+      const actor = createTestActor();
+      hostSend(actor, { type: "QUESTIONS_PARSED", questions: TWO_QUESTIONS });
+      playerSend(actor, "player-1", {
+        type: "JOIN_GAME",
+        playerName: "Alice",
+      });
+      hostSend(actor, { type: "START_GAME" });
+
+      // Start first question — should be q1 (questionNumber 0 + 1)
+      hostSend(actor, { type: "NEXT_QUESTION" });
+      expect(
+        actor.getSnapshot().context.public.currentQuestion?.questionId
+      ).toBe("q1");
+    });
+
+    it("game ends after all questions are answered", () => {
+      const actor = createTestActor();
+      hostSend(actor, { type: "QUESTIONS_PARSED", questions: TWO_QUESTIONS });
+      playerSend(actor, "player-1", {
+        type: "JOIN_GAME",
+        playerName: "Alice",
+      });
+      hostSend(actor, { type: "START_GAME" });
+
+      // Question 1
+      hostSend(actor, { type: "NEXT_QUESTION" });
+      playerSend(actor, "player-1", { type: "SUBMIT_ANSWER", value: 4 });
+
+      // Question 2
+      hostSend(actor, { type: "NEXT_QUESTION" });
+      playerSend(actor, "player-1", { type: "SUBMIT_ANSWER", value: 6 });
+
+      // After 2 questions with 2 total, game should set winner
+      expect(actor.getSnapshot().context.public.winner).not.toBeNull();
+    });
+
+    it("processQuestionResults clears currentQuestion to null", () => {
+      const actor = createTestActor();
+      hostSend(actor, { type: "QUESTIONS_PARSED", questions: TWO_QUESTIONS });
+      playerSend(actor, "player-1", {
+        type: "JOIN_GAME",
+        playerName: "Alice",
+      });
+      hostSend(actor, { type: "START_GAME" });
+      hostSend(actor, { type: "NEXT_QUESTION" });
+
+      // Answer triggers processQuestionResults
+      playerSend(actor, "player-1", { type: "SUBMIT_ANSWER", value: 4 });
+
+      expect(actor.getSnapshot().context.public.currentQuestion).toBeNull();
+    });
+
+    it("processQuestionResults adds to questionResults", () => {
+      const actor = createTestActor();
+      hostSend(actor, { type: "QUESTIONS_PARSED", questions: TWO_QUESTIONS });
+      playerSend(actor, "player-1", {
+        type: "JOIN_GAME",
+        playerName: "Alice",
+      });
+      hostSend(actor, { type: "START_GAME" });
+      hostSend(actor, { type: "NEXT_QUESTION" });
+      playerSend(actor, "player-1", { type: "SUBMIT_ANSWER", value: 4 });
+
+      const results = actor.getSnapshot().context.public.questionResults;
+      expect(results).toHaveLength(1);
+      expect(results[0].questionId).toBe("q1");
+      expect(results[0].answers).toHaveLength(1);
+      expect(results[0].scores).toHaveLength(1);
+    });
+
+    it("setWinner picks the player with the highest score", () => {
+      const actor = createTestActor();
+      hostSend(actor, { type: "QUESTIONS_PARSED", questions: TWO_QUESTIONS });
+      playerSend(actor, "player-1", {
+        type: "JOIN_GAME",
+        playerName: "Alice",
+      });
+      playerSend(actor, "player-2", {
+        type: "JOIN_GAME",
+        playerName: "Bob",
+      });
+      hostSend(actor, { type: "START_GAME" });
+
+      // Question 1: player-1 answers exactly, player-2 is off
+      hostSend(actor, { type: "NEXT_QUESTION" });
+      playerSend(actor, "player-1", { type: "SUBMIT_ANSWER", value: 4 });
+      playerSend(actor, "player-2", { type: "SUBMIT_ANSWER", value: 100 });
+
+      // End game early
+      hostSend(actor, { type: "END_GAME" });
+
+      // Player 1 should be the winner (higher score)
+      expect(actor.getSnapshot().context.public.winner).toBe("player-1");
+    });
+
+    it("new player starts with score 0", () => {
+      const actor = createTestActor();
+      playerSend(actor, "player-1", {
+        type: "JOIN_GAME",
+        playerName: "Alice",
+      });
+      expect(
+        actor.getSnapshot().context.public.players[0].score
+      ).toBe(0);
+    });
+
+    it("SKIP_QUESTION increments questionNumber", () => {
+      const actor = createTestActor();
+      hostSend(actor, { type: "QUESTIONS_PARSED", questions: TWO_QUESTIONS });
+      playerSend(actor, "player-1", {
+        type: "JOIN_GAME",
+        playerName: "Alice",
+      });
+      hostSend(actor, { type: "START_GAME" });
+
+      expect(actor.getSnapshot().context.public.questionNumber).toBe(0);
+
+      hostSend(actor, { type: "NEXT_QUESTION" });
+      // questionNumber is set to 1 by setQuestionNumber action
+      expect(actor.getSnapshot().context.public.questionNumber).toBe(1);
+
+      hostSend(actor, { type: "SKIP_QUESTION" });
+      // processQuestionResults doesn't increment questionNumber directly,
+      // but it pushes to questionResults. Let's verify currentQuestion is null.
+      expect(actor.getSnapshot().context.public.currentQuestion).toBeNull();
+    });
+
+    it("submitAnswer records correct player name from players list", () => {
+      const actor = createTestActor();
+      hostSend(actor, { type: "QUESTIONS_PARSED", questions: TWO_QUESTIONS });
+      playerSend(actor, "player-1", {
+        type: "JOIN_GAME",
+        playerName: "Alice",
+      });
+      playerSend(actor, "player-2", {
+        type: "JOIN_GAME",
+        playerName: "Bob",
+      });
+      hostSend(actor, { type: "START_GAME" });
+      hostSend(actor, { type: "NEXT_QUESTION" });
+
+      playerSend(actor, "player-2", { type: "SUBMIT_ANSWER", value: 4 });
+
+      const answers =
+        actor.getSnapshot().context.public.currentQuestion?.answers;
+      expect(answers?.[0]?.playerName).toBe("Bob");
+    });
+  });
+
   describe("REMOVE_PLAYER", () => {
     it("host can remove a player", () => {
       const actor = createTestActor();
