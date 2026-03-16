@@ -25,7 +25,7 @@ export default defineConfig({
     globals: true,
     setupFiles: ["./test/setup.ts"],
     include: ["**/*.{test,spec}.{js,ts,jsx,tsx}"],
-    exclude: ["node_modules", "e2e", "**/*.e2e.spec.{js,ts}"],
+    exclude: ["node_modules", "e2e", "**/*.e2e.spec.{js,ts}", ".swarm", ".claude", ".stryker-tmp"],
     coverage: {
       provider: "v8",
       reporter: ["text", "lcov", "json", "html"],
