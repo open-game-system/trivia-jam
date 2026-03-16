@@ -1,21 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
-import { createActor } from "xstate";
-import { gameMachine } from "./game.machine";
-
-const TWO_QUESTIONS = {
-  q1: {
-    id: "q1",
-    text: "What is 2+2?",
-    correctAnswer: 4,
-    questionType: "numeric" as const,
-  },
-  q2: {
-    id: "q2",
-    text: "What is 3+3?",
-    correctAnswer: 6,
-    questionType: "numeric" as const,
-  },
-};
+import {
+  createTestActor,
+  hostSend,
+  playerSend,
+  TWO_QUESTIONS,
+} from "~/test/game-test-helpers";
 
 vi.mock("./gemini", () => ({
   parseQuestions: vi.fn().mockResolvedValue({
@@ -33,26 +22,6 @@ vi.mock("./gemini", () => ({
     },
   }),
 }));
-
-function createTestActor() {
-  const actor = createActor(gameMachine, {
-    input: {
-      id: "test-game",
-      hostName: "TestHost",
-      caller: { type: "client" as const, id: "host-1" },
-    } as any,
-  });
-  actor.start();
-  return actor;
-}
-
-function hostSend(actor: ReturnType<typeof createTestActor>, event: any) {
-  actor.send({
-    ...event,
-    caller: { type: "client" as const, id: "host-1" },
-    env: { GEMINI_API_KEY: "test-key" } as any,
-  });
-}
 
 describe("game machine — PARSE_QUESTIONS flow", () => {
   it("PARSE_QUESTIONS transitions to parsingDocument", () => {
@@ -87,12 +56,10 @@ describe("game machine — PARSE_QUESTIONS flow", () => {
   it("non-host cannot trigger PARSE_QUESTIONS", () => {
     const actor = createTestActor();
 
-    actor.send({
+    playerSend(actor, "player-1", {
       type: "PARSE_QUESTIONS",
       documentContent: "Test questions",
-      caller: { type: "client" as const, id: "player-1" },
-      env: { GEMINI_API_KEY: "test-key" },
-    } as any);
+    });
 
     expect(actor.getSnapshot().value).toEqual({ lobby: "waitingForQuestions" });
   });
