@@ -740,6 +740,113 @@ function getOrdinalSuffix(n: number): string {
   return s[(v - 20) % 10] || s[v] || s[0];
 }
 
+const isCloseNumericAnswer = (
+  answerValue: string | number | undefined,
+  correctAnswer: string | number | undefined,
+): boolean => {
+  if (typeof answerValue === "undefined" || typeof correctAnswer === "undefined")
+    return false;
+  return (
+    Math.abs(Number(answerValue) - Number(correctAnswer)) /
+      Number(correctAnswer) <
+    0.1
+  );
+};
+
+const getPlayerResultStyle = (
+  points: number,
+  isClose: boolean,
+  isCurrentPlayer: boolean,
+): string => {
+  const bg =
+    points > 0
+      ? "bg-green-500/10 border border-green-500/30"
+      : isClose
+      ? "bg-yellow-500/10 border border-yellow-500/30"
+      : "bg-gray-900/50";
+  const highlight = isCurrentPlayer ? "bg-indigo-500/10" : "";
+  return `${bg} rounded-2xl p-3 sm:p-6 flex items-center gap-3 sm:gap-6 ${highlight}`;
+};
+
+const PlayerResultRow = ({
+  score,
+  answer,
+  question,
+  isCurrentPlayer,
+}: {
+  score: { playerId: string; points: number; position: number; timeTaken: number };
+  answer: { playerId: string; playerName: string; value: string | number };
+  question: { questionType: string; correctAnswer: string | number };
+  isCurrentPlayer: boolean;
+}) => {
+  const isClose =
+    question.questionType === "numeric" &&
+    isCloseNumericAnswer(answer.value, question.correctAnswer);
+
+  return (
+    <div
+      data-testid={`player-result-${answer.playerId}`}
+      className={getPlayerResultStyle(score.points, isClose, isCurrentPlayer)}
+    >
+      <div className="text-lg sm:text-2xl font-bold text-indigo-400 w-8 sm:w-12 text-center">
+        {score.points > 0 ? `#${score.position}` : "―"}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="text-base sm:text-xl font-medium truncate">
+          {answer.playerName}
+        </div>
+        <div className="text-xs sm:text-sm text-gray-400">
+          {answer.value} • {score.timeTaken.toFixed(1)}s
+        </div>
+      </div>
+      {score.points > 0 && (
+        <div className="text-lg sm:text-2xl font-bold text-indigo-400 whitespace-nowrap">
+          {score.points} <span className="text-indigo-400/70">pts</span>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const sortScoresByRank = (
+  scores: Array<{ playerId: string; points: number; position: number; timeTaken: number }>,
+) =>
+  [...scores].sort((a, b) => {
+    if (b.points !== a.points) return b.points - a.points;
+    return a.timeTaken - b.timeTaken;
+  });
+
+const PlayerResultsList = ({
+  scores,
+  answers,
+  question,
+  currentPlayerId,
+}: {
+  scores: Array<{ playerId: string; points: number; position: number; timeTaken: number }>;
+  answers: Array<{ playerId: string; playerName: string; value: string | number }>;
+  question: { questionType: string; correctAnswer: string | number };
+  currentPlayerId: string;
+}) => {
+  const sortedScores = sortScoresByRank(scores);
+  return (
+    <div className="space-y-3 sm:space-y-4">
+      {sortedScores.map((score) => {
+        const answer = answers.find((a) => a.playerId === score.playerId);
+        if (!answer) return null;
+        return (
+          <PlayerResultRow
+            key={answer.playerId}
+            score={score}
+            answer={answer}
+            question={question}
+            isCurrentPlayer={score.playerId === currentPlayerId}
+          />
+        );
+      })}
+    </div>
+  );
+};
+
 const QuestionResultsDisplay = ({
   player,
   questions,
@@ -754,40 +861,24 @@ const QuestionResultsDisplay = ({
 
   if (!latestResult || !question) return null;
 
-  // Sort by points first, then by time for equal points
-  const sortedScores = [...latestResult.scores].sort((a, b) => {
-    if (b.points !== a.points) return b.points - a.points;
-    return a.timeTaken - b.timeTaken;
-  });
-
   return (
     <div className="min-h-screen flex flex-col items-center pt-8 sm:pt-16 p-3 sm:p-4 relative">
-      {/* Background gradient */}
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute inset-0 opacity-10">
           <motion.div
             className="absolute inset-0 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500"
-            animate={{
-              scale: [1, 1.02],
-              rotate: [0, 18],
-            }}
-            transition={{
-              duration: 10,
-              repeat: Infinity,
-              repeatType: "reverse",
-            }}
+            animate={{ scale: [1, 1.02], rotate: [0, 18] }}
+            transition={{ duration: 10, repeat: Infinity, repeatType: "reverse" }}
           />
         </div>
       </div>
 
-      {/* Content */}
       <div className="relative z-10 w-full max-w-4xl mx-auto">
         <motion.div
           className="mb-4 sm:mb-8"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          {/* Question and Answer */}
           <div className="text-center mb-6 sm:mb-12">
             <h1 className="text-xl sm:text-3xl md:text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400 mb-4 sm:mb-6">
               {question.text}
@@ -800,67 +891,14 @@ const QuestionResultsDisplay = ({
             </div>
           </div>
 
-          {/* Results */}
           <div className="bg-gray-800/30 backdrop-blur-sm rounded-2xl p-4 sm:p-8 border border-gray-700/50">
             <h2 className="text-2xl font-bold text-indigo-300 mb-4 sm:mb-6">Results</h2>
-            <div className="space-y-3 sm:space-y-4">
-              {sortedScores.map((score) => {
-                const answer = latestResult.answers.find(
-                  (a) => a.playerId === score.playerId
-                );
-                if (!answer) return null;
-
-                const isCurrentPlayer = score.playerId === player.id;
-                const isExact =
-                  question.questionType === "numeric"
-                    ? Number(answer.value) === Number(question.correctAnswer)
-                    : answer.value === question.correctAnswer;
-                const isClose =
-                  question.questionType === "numeric" &&
-                  typeof answer.value !== "undefined" &&
-                  typeof question.correctAnswer !== "undefined"
-                    ? Math.abs(
-                        Number(answer.value) - Number(question.correctAnswer)
-                      ) /
-                        Number(question.correctAnswer) <
-                      0.1
-                    : false;
-
-                return (
-                  <div
-                    key={answer.playerId}
-                    data-testid={`player-result-${answer.playerId}`}
-                    className={`${
-                      score && score.points > 0
-                        ? "bg-green-500/10 border border-green-500/30"
-                        : isClose
-                        ? "bg-yellow-500/10 border border-yellow-500/30"
-                        : "bg-gray-900/50"
-                    } rounded-2xl p-3 sm:p-6 flex items-center gap-3 sm:gap-6 ${
-                      isCurrentPlayer ? "bg-indigo-500/10" : ""
-                    }`}
-                  >
-                    <div className="text-lg sm:text-2xl font-bold text-indigo-400 w-8 sm:w-12 text-center">
-                      {score && score.points > 0 ? `#${score.position}` : "―"}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-base sm:text-xl font-medium truncate">
-                        {answer.playerName}
-                      </div>
-                      <div className="text-xs sm:text-sm text-gray-400">
-                        {answer.value} • {score.timeTaken.toFixed(1)}s
-                      </div>
-                    </div>
-                    {score.points > 0 && (
-                      <div className="text-lg sm:text-2xl font-bold text-indigo-400 whitespace-nowrap">
-                        {score.points}{" "}
-                        <span className="text-indigo-400/70">pts</span>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
+            <PlayerResultsList
+              scores={latestResult.scores}
+              answers={latestResult.answers}
+              question={question}
+              currentPlayerId={player.id}
+            />
           </div>
         </motion.div>
       </div>
