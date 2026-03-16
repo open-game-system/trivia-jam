@@ -1,56 +1,16 @@
 import { describe, expect, it, vi } from "vitest";
-import { createActor } from "xstate";
-import { gameMachine } from "./game.machine";
+import {
+  createTestActor,
+  hostSend,
+  playerSend,
+  serviceSend,
+  TWO_QUESTIONS,
+} from "~/test/game-test-helpers";
 
 // Mock Gemini to avoid live API calls
 vi.mock("./gemini", () => ({
   parseQuestionsDocument: vi.fn(),
 }));
-
-function createTestActor() {
-  const actor = createActor(gameMachine, {
-    input: {
-      id: "test-game",
-      hostName: "TestHost",
-      caller: { type: "client" as const, id: "host-1" },
-    } as any,
-  });
-  actor.start();
-  return actor;
-}
-
-const TWO_QUESTIONS = {
-  q1: {
-    id: "q1",
-    text: "What is 2+2?",
-    correctAnswer: 4,
-    questionType: "numeric" as const,
-  },
-  q2: {
-    id: "q2",
-    text: "What is 3+3?",
-    correctAnswer: 6,
-    questionType: "numeric" as const,
-  },
-};
-
-function hostSend(actor: ReturnType<typeof createTestActor>, event: any) {
-  actor.send({
-    ...event,
-    caller: { type: "client" as const, id: "host-1" },
-  });
-}
-
-function playerSend(
-  actor: ReturnType<typeof createTestActor>,
-  playerId: string,
-  event: any
-) {
-  actor.send({
-    ...event,
-    caller: { type: "client" as const, id: playerId },
-  });
-}
 
 describe("game machine", () => {
   describe("initial state", () => {
@@ -561,12 +521,10 @@ describe("game machine", () => {
     it("service-type caller with host ID is rejected for QUESTIONS_PARSED", () => {
       const actor = createTestActor();
       // Send QUESTIONS_PARSED with server-type caller that has the host's ID
-      // Use `as any` to bypass type-level client enforcement — testing runtime guard
-      actor.send({
+      serviceSend(actor, "host-1", {
         type: "QUESTIONS_PARSED",
         questions: TWO_QUESTIONS,
-        caller: { type: "service", id: "host-1" },
-      } as any);
+      });
       // Should stay in waitingForQuestions — service callers are not clients
       expect(actor.getSnapshot().value).toEqual({
         lobby: "waitingForQuestions",
@@ -583,11 +541,10 @@ describe("game machine", () => {
       expect(actor.getSnapshot().context.public.players).toHaveLength(1);
 
       // Service caller should not be able to remove a player even with host's ID
-      actor.send({
+      serviceSend(actor, "host-1", {
         type: "REMOVE_PLAYER",
         playerId: "player-1",
-        caller: { type: "service", id: "host-1" },
-      } as any);
+      });
       expect(actor.getSnapshot().context.public.players).toHaveLength(1);
     });
   });
