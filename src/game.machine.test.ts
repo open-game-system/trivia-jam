@@ -520,6 +520,102 @@ describe("game machine", () => {
     });
   });
 
+  describe("processQuestionResults with removed player", () => {
+    it("gracefully handles scores for a player removed mid-question", () => {
+      const actor = createTestActor();
+      hostSend(actor, { type: "QUESTIONS_PARSED", questions: TWO_QUESTIONS });
+      playerSend(actor, "player-1", {
+        type: "JOIN_GAME",
+        playerName: "Alice",
+      });
+      playerSend(actor, "player-2", {
+        type: "JOIN_GAME",
+        playerName: "Bob",
+      });
+      hostSend(actor, { type: "START_GAME" });
+
+      // Start question and have player-1 submit
+      hostSend(actor, { type: "NEXT_QUESTION" });
+      playerSend(actor, "player-1", { type: "SUBMIT_ANSWER", value: 4 });
+
+      // Host removes player-1 while question is still active
+      hostSend(actor, { type: "REMOVE_PLAYER", playerId: "player-1" });
+      expect(actor.getSnapshot().context.public.players).toHaveLength(1);
+      expect(actor.getSnapshot().context.public.players[0].id).toBe("player-2");
+
+      // Host skips question — processQuestionResults runs with player-1's answer
+      // but player-1 is no longer in the players array
+      hostSend(actor, { type: "SKIP_QUESTION" });
+
+      // Should not crash; remaining player's score is unaffected by removed player's answer
+      expect(actor.getSnapshot().value).toEqual({ active: "questionPrep" });
+      const player2 = actor.getSnapshot().context.public.players.find(
+        (p) => p.id === "player-2"
+      );
+      expect(player2).toBeDefined();
+      expect(player2!.score).toBe(0); // player-2 didn't answer, so 0 points
+    });
+  });
+
+  describe("isHost guard rejects non-client callers", () => {
+    it("service-type caller with host ID is rejected for QUESTIONS_PARSED", () => {
+      const actor = createTestActor();
+      // Send QUESTIONS_PARSED with server-type caller that has the host's ID
+      // Use `as any` to bypass type-level client enforcement — testing runtime guard
+      actor.send({
+        type: "QUESTIONS_PARSED",
+        questions: TWO_QUESTIONS,
+        caller: { type: "service", id: "host-1" },
+      } as any);
+      // Should stay in waitingForQuestions — service callers are not clients
+      expect(actor.getSnapshot().value).toEqual({
+        lobby: "waitingForQuestions",
+      });
+      expect(Object.keys(actor.getSnapshot().context.public.questions).length).toBe(0);
+    });
+
+    it("service-type caller with host ID is rejected for REMOVE_PLAYER", () => {
+      const actor = createTestActor();
+      playerSend(actor, "player-1", {
+        type: "JOIN_GAME",
+        playerName: "Alice",
+      });
+      expect(actor.getSnapshot().context.public.players).toHaveLength(1);
+
+      // Service caller should not be able to remove a player even with host's ID
+      actor.send({
+        type: "REMOVE_PLAYER",
+        playerId: "player-1",
+        caller: { type: "service", id: "host-1" },
+      } as any);
+      expect(actor.getSnapshot().context.public.players).toHaveLength(1);
+    });
+  });
+
+  describe("REMOVE_PLAYER during active game", () => {
+    it("non-host cannot remove a player during active game", () => {
+      const actor = createTestActor();
+      hostSend(actor, { type: "QUESTIONS_PARSED", questions: TWO_QUESTIONS });
+      playerSend(actor, "player-1", {
+        type: "JOIN_GAME",
+        playerName: "Alice",
+      });
+      playerSend(actor, "player-2", {
+        type: "JOIN_GAME",
+        playerName: "Bob",
+      });
+      hostSend(actor, { type: "START_GAME" });
+      expect(actor.getSnapshot().value).toEqual({ active: "questionPrep" });
+
+      // Non-host tries to remove a player — should be rejected
+      playerSend(actor, "player-1", {
+        type: "REMOVE_PLAYER",
+        playerId: "player-2",
+      });
+      expect(actor.getSnapshot().context.public.players).toHaveLength(2);
+    });
+  });
+
   describe("guard edge cases", () => {
     it("START_GAME in ready state with empty questions is blocked", () => {
       const actor = createTestActor();
