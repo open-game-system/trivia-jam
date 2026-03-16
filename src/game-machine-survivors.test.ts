@@ -507,6 +507,112 @@ describe("game machine — mutant killers", () => {
     });
   });
 
+  describe("NEXT_QUESTION action params (lines 328-343)", () => {
+    it("second NEXT_QUESTION generates q2 not q1", () => {
+      const actor = createTestActor();
+      hostSend(actor, { type: "QUESTIONS_PARSED", questions: TWO_QUESTIONS });
+      playerSend(actor, "player-1", {
+        type: "JOIN_GAME",
+        playerName: "Alice",
+      });
+      hostSend(actor, { type: "START_GAME" });
+
+      // Q1
+      hostSend(actor, { type: "NEXT_QUESTION" });
+      expect(
+        actor.getSnapshot().context.public.currentQuestion?.questionId
+      ).toBe("q1");
+      expect(actor.getSnapshot().context.public.questionNumber).toBe(1);
+
+      // Answer Q1 to advance
+      playerSend(actor, "player-1", { type: "SUBMIT_ANSWER", value: 4 });
+
+      // Q2
+      hostSend(actor, { type: "NEXT_QUESTION" });
+      expect(
+        actor.getSnapshot().context.public.currentQuestion?.questionId
+      ).toBe("q2");
+      expect(actor.getSnapshot().context.public.questionNumber).toBe(2);
+    });
+  });
+
+  describe("START_GAME guard (line 363)", () => {
+    it("START_GAME requires both host ID match AND questions present", () => {
+      const actor = createTestActor();
+      hostSend(actor, {
+        type: "QUESTIONS_PARSED",
+        questions: TWO_QUESTIONS,
+      });
+      expect(actor.getSnapshot().value).toEqual({ lobby: "ready" });
+
+      // Non-host with questions present — should be blocked by hostId check
+      playerSend(actor, "player-1", { type: "START_GAME" });
+      expect(actor.getSnapshot().value).toEqual({ lobby: "ready" });
+
+      // Host with questions present — should succeed
+      hostSend(actor, { type: "START_GAME" });
+      expect(actor.getSnapshot().value).toEqual({ active: "questionPrep" });
+    });
+  });
+
+  describe("answerTimer invoke config (lines 349-356)", () => {
+    it("timer uses settings.answerTimeWindow from context", async () => {
+      vi.useFakeTimers();
+      const actor = createTestActor();
+      hostSend(actor, { type: "QUESTIONS_PARSED", questions: TWO_QUESTIONS });
+      playerSend(actor, "player-1", {
+        type: "JOIN_GAME",
+        playerName: "Alice",
+      });
+      playerSend(actor, "player-2", {
+        type: "JOIN_GAME",
+        playerName: "Bob",
+      });
+      hostSend(actor, { type: "START_GAME" });
+      hostSend(actor, { type: "NEXT_QUESTION" });
+
+      // Default answerTimeWindow is 25s — at 24s, still active
+      await vi.advanceTimersByTimeAsync(24_000);
+      expect(actor.getSnapshot().value).toEqual({ active: "questionActive" });
+
+      // At 26s, timer should have fired
+      await vi.advanceTimersByTimeAsync(2_000);
+      expect(actor.getSnapshot().value).toEqual({ active: "questionPrep" });
+      expect(actor.getSnapshot().context.public.currentQuestion).toBeNull();
+
+      vi.useRealTimers();
+    });
+
+    it("timer onDone processes results and clears currentQuestion", async () => {
+      vi.useFakeTimers();
+      const actor = createTestActor();
+      hostSend(actor, { type: "QUESTIONS_PARSED", questions: TWO_QUESTIONS });
+      playerSend(actor, "player-1", {
+        type: "JOIN_GAME",
+        playerName: "Alice",
+      });
+      playerSend(actor, "player-2", {
+        type: "JOIN_GAME",
+        playerName: "Bob",
+      });
+      hostSend(actor, { type: "START_GAME" });
+      hostSend(actor, { type: "NEXT_QUESTION" });
+
+      // Submit one answer, then let timer expire
+      playerSend(actor, "player-1", { type: "SUBMIT_ANSWER", value: 4 });
+
+      await vi.advanceTimersByTimeAsync(26_000);
+
+      // processQuestionResults should have run
+      expect(actor.getSnapshot().context.public.questionResults).toHaveLength(
+        1
+      );
+      expect(actor.getSnapshot().context.public.currentQuestion).toBeNull();
+
+      vi.useRealTimers();
+    });
+  });
+
   describe("processQuestionResults (lines 154-190)", () => {
     it("updates player scores from calculated scores", () => {
       const actor = createTestActor();
