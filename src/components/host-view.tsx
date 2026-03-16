@@ -57,10 +57,8 @@ const formatQuestionsToText = (questions: Record<string, Question>): string => {
 
 export const HostView = ({
   host,
-  initialDocumentContent = "",
 }: {
   host: string;
-  initialDocumentContent?: string;
 }) => {
   const gameState = GameContext.useSelector((state) => state.public);
   const sessionState = SessionContext.useSelector((state) => state.public);
@@ -72,13 +70,6 @@ export const HostView = ({
   const isLobby = GameContext.useMatches("lobby");
 
   const lastQuestionResult = questionResults[questionResults.length - 1];
-
-  const [documentContent, setDocumentContent] = useState(
-    initialDocumentContent
-  );
-  const [isParsingDocument, setIsParsingDocument] = useState(false);
-  const [isEditingQuestions, setIsEditingQuestions] = useState(false);
-  const client = GameContext.useClient();
 
   if (sessionState.userId !== hostId) {
     return (
@@ -154,137 +145,12 @@ export const HostView = ({
         )}
 
         {isActive && (
-          <>
-            <div className="min-h-screen flex flex-col items-center pt-16 p-4 relative">
-              {/* Background gradient */}
-              <div className="absolute inset-0 overflow-hidden">
-                <div className="absolute inset-0 opacity-10">
-                  <motion.div
-                    className="absolute inset-0 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500"
-                    animate={{
-                      rotate: [0, 360],
-                      scale: [1, 1.2, 1],
-                    }}
-                    transition={{
-                      duration: 20,
-                      repeat: Infinity,
-                      ease: "linear",
-                    }}
-                  />
-                </div>
-              </div>
-
-              <div className="relative z-10 w-full max-w-4xl mx-auto">
-                {/* Previous question results */}
-                {!currentQuestion && lastQuestionResult && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="mb-8"
-                  >
-                    <div className="text-center mb-8">
-                      <h1 className="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400 mb-6">
-                        {questions[lastQuestionResult.questionId].text}
-                      </h1>
-                      <div className="text-4xl font-bold text-green-400">
-                        {questions[lastQuestionResult.questionId].correctAnswer}
-                      </div>
-                    </div>
-
-                    <div className="bg-gray-800/30 backdrop-blur-sm rounded-3xl p-8 border border-gray-700/50">
-                      <h2 className="text-3xl font-bold text-indigo-300 mb-6">
-                        Results
-                      </h2>
-                      {lastQuestionResult.answers.length === 0 ? (
-                        <motion.div
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          className="text-center py-8"
-                        >
-                          <div className="text-4xl mb-4">😴</div>
-                          <div className="text-xl text-white/70">
-                            No one answered this question
-                          </div>
-                        </motion.div>
-                      ) : (
-                        <div className="space-y-4">
-                          {sortedAnswers(lastQuestionResult, questions).map(
-                            (answer, index) => {
-                              const score = lastQuestionResult.scores.find(
-                                (s: { playerId: string }) =>
-                                  s.playerId === answer.playerId
-                              );
-                              const question =
-                                questions[lastQuestionResult.questionId];
-                              const answerValue =
-                                typeof answer.value === "number"
-                                  ? answer.value
-                                  : 0;
-                              const correctAnswerValue =
-                                typeof question.correctAnswer === "number"
-                                  ? question.correctAnswer
-                                  : 0;
-                              const isExact =
-                                question.questionType === "numeric" &&
-                                answerValue === correctAnswerValue;
-                              const isClose =
-                                question.questionType === "numeric" &&
-                                Math.abs(answerValue - correctAnswerValue) /
-                                  correctAnswerValue <
-                                  0.1; // Within 10%
-
-                              return (
-                                <div
-                                  key={answer.playerId}
-                                  data-testid={`player-result-${answer.playerId}`}
-                                  className={`${
-                                    score && score.points > 0
-                                      ? "bg-green-500/10 border border-green-500/30"
-                                      : isClose
-                                      ? "bg-yellow-500/10 border border-yellow-500/30"
-                                      : "bg-gray-900/50"
-                                  } rounded-2xl p-6 flex items-center gap-6`}
-                                >
-                                  <div className="text-2xl font-bold text-indigo-400 w-12 text-center">
-                                    {score && score.points > 0
-                                      ? `#${score.position}`
-                                      : "―"}
-                                  </div>
-                                  <div className="flex-1">
-                                    <div className="text-xl font-medium">
-                                      {answer.playerName}
-                                    </div>
-                                    <div className="text-sm text-gray-400">
-                                      {answer.value} •{" "}
-                                      {score?.timeTaken.toFixed(1)}s
-                                    </div>
-                                  </div>
-                                  {score && score.points > 0 && (
-                                    <div className="text-2xl font-bold text-indigo-400">
-                                      {score.points}{" "}
-                                      <span className="text-indigo-400/70">
-                                        pts
-                                      </span>
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            }
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </motion.div>
-                )}
-
-                {/* Question input form */}
-                <QuestionControls
-                  currentQuestion={currentQuestion}
-                  players={players}
-                />
-              </div>
-            </div>
-          </>
+          <ActiveGameDisplay
+            currentQuestion={currentQuestion}
+            lastQuestionResult={lastQuestionResult}
+            questions={questions}
+            players={players}
+          />
         )}
 
         {isFinished && <GameFinishedDisplay players={players} />}
@@ -292,6 +158,148 @@ export const HostView = ({
     </div>
   );
 };
+
+const ResultAnswerRow = ({
+  answer,
+  score,
+  question,
+}: {
+  answer: Answer;
+  score: Score | undefined;
+  question: Question;
+}) => {
+  const answerValue = typeof answer.value === "number" ? answer.value : 0;
+  const correctAnswerValue =
+    typeof question.correctAnswer === "number" ? question.correctAnswer : 0;
+  const isClose =
+    question.questionType === "numeric" &&
+    Math.abs(answerValue - correctAnswerValue) / correctAnswerValue < 0.1;
+
+  const rowClass =
+    score && score.points > 0
+      ? "bg-green-500/10 border border-green-500/30"
+      : isClose
+      ? "bg-yellow-500/10 border border-yellow-500/30"
+      : "bg-gray-900/50";
+
+  return (
+    <div
+      key={answer.playerId}
+      data-testid={`player-result-${answer.playerId}`}
+      className={`${rowClass} rounded-2xl p-6 flex items-center gap-6`}
+    >
+      <div className="text-2xl font-bold text-indigo-400 w-12 text-center">
+        {score && score.points > 0 ? `#${score.position}` : "―"}
+      </div>
+      <div className="flex-1">
+        <div className="text-xl font-medium">{answer.playerName}</div>
+        <div className="text-sm text-gray-400">
+          {answer.value} • {score?.timeTaken.toFixed(1)}s
+        </div>
+      </div>
+      {score && score.points > 0 && (
+        <div className="text-2xl font-bold text-indigo-400">
+          {score.points} <span className="text-indigo-400/70">pts</span>
+        </div>
+      )}
+    </div>
+  );
+};
+
+const PreviousQuestionResults = ({
+  lastQuestionResult,
+  questions,
+}: {
+  lastQuestionResult: QuestionResult;
+  questions: Record<string, Question>;
+}) => (
+  <motion.div
+    initial={{ opacity: 0, y: -20 }}
+    animate={{ opacity: 1, y: 0 }}
+    className="mb-8"
+  >
+    <div className="text-center mb-8">
+      <h1 className="text-5xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400 mb-6">
+        {questions[lastQuestionResult.questionId].text}
+      </h1>
+      <div className="text-4xl font-bold text-green-400">
+        {questions[lastQuestionResult.questionId].correctAnswer}
+      </div>
+    </div>
+
+    <div className="bg-gray-800/30 backdrop-blur-sm rounded-3xl p-8 border border-gray-700/50">
+      <h2 className="text-3xl font-bold text-indigo-300 mb-6">Results</h2>
+      {lastQuestionResult.answers.length === 0 ? (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="text-center py-8"
+        >
+          <div className="text-4xl mb-4">😴</div>
+          <div className="text-xl text-white/70">
+            No one answered this question
+          </div>
+        </motion.div>
+      ) : (
+        <div className="space-y-4">
+          {sortedAnswers(lastQuestionResult, questions).map((answer) => (
+            <ResultAnswerRow
+              key={answer.playerId}
+              answer={answer}
+              score={lastQuestionResult.scores.find(
+                (s: { playerId: string }) => s.playerId === answer.playerId
+              )}
+              question={questions[lastQuestionResult.questionId]}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  </motion.div>
+);
+
+const ActiveGameDisplay = ({
+  currentQuestion,
+  lastQuestionResult,
+  questions,
+  players,
+}: {
+  currentQuestion: { questionId: string; startTime: number; answers: Answer[] } | null;
+  lastQuestionResult: QuestionResult | undefined;
+  questions: Record<string, Question>;
+  players: Array<{ id: string; name: string; score: number }>;
+}) => (
+  <>
+    <div className="min-h-screen flex flex-col items-center pt-16 p-4 relative">
+      <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute inset-0 opacity-10">
+          <motion.div
+            className="absolute inset-0 bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500"
+            animate={{
+              rotate: [0, 360],
+              scale: [1, 1.2, 1],
+            }}
+            transition={{
+              duration: 20,
+              repeat: Infinity,
+              ease: "linear",
+            }}
+          />
+        </div>
+      </div>
+
+      <div className="relative z-10 w-full max-w-4xl mx-auto">
+        {!currentQuestion && lastQuestionResult && (
+          <PreviousQuestionResults
+            lastQuestionResult={lastQuestionResult}
+            questions={questions}
+          />
+        )}
+        <QuestionControls currentQuestion={currentQuestion} players={players} />
+      </div>
+    </div>
+  </>
+);
 
 const PlayerSlot = ({
   player,
