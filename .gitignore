@@ -27,3 +27,6 @@ coverage/
 reports/
 # Swarm
 .swarm/
+
+# Nightshift agent data
+.nightshift/
