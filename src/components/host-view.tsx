@@ -16,8 +16,6 @@ import { useQuestionTimer } from "~/hooks/use-question-timer";
 import { SessionContext } from "~/session.context";
 import { AnswerProgress } from "./answer-progress";
 import { QuestionProgress } from "./question-progress";
-import { CastButton } from "./CastButton";
-import { CastProvider } from "@open-game-system/cast-kit-react";
 import { GameBackground, FinalScoresList, WinnerAnnouncement } from "./game";
 
 type GameSettings = {
@@ -868,9 +866,6 @@ const LobbyControls = ({
             Game Setup
           </h1>
           <div className="flex items-center gap-2">
-            <CastProvider>
-              <CastButton />
-            </CastProvider>
             <motion.button
               onClick={() => setShowSettings(true)}
               className="p-2 rounded-lg bg-gray-900/30 border border-gray-700/30 text-indigo-300 hover:text-indigo-200 transition-colors"
