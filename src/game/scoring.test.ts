@@ -325,6 +325,23 @@ describe('calculateScores', () => {
       expect(p3.points).toBe(3)
     })
 
+    it('sorts by time when differences are equal regardless of input order', () => {
+      // Slower answer appears FIRST in the input array
+      // This kills sort mutants that return 0 or always-positive for equal differences
+      const answers: Answer[] = [
+        { playerId: 'p2', playerName: 'P2', value: '7', timestamp: startTime + 2000 },  // diff = 1, slower
+        { playerId: 'p1', playerName: 'P1', value: '9', timestamp: startTime + 1000 },  // diff = 1, faster
+      ]
+
+      const scores = calculateScores(answers, question, startTime)
+
+      // Despite p2 appearing first in input, p1 should rank higher (faster)
+      expect(scores.find(s => s.playerId === 'p1')?.points).toBe(4)
+      expect(scores.find(s => s.playerId === 'p2')?.points).toBe(3)
+      expect(scores.find(s => s.playerId === 'p1')?.position).toBe(1)
+      expect(scores.find(s => s.playerId === 'p2')?.position).toBe(2)
+    })
+
     it('uses difference over time when both vary', () => {
       const answers: Answer[] = [
         { playerId: 'p1', playerName: 'P1', value: '7', timestamp: startTime + 500 },  // diff=1, fast
