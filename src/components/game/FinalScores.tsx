@@ -11,7 +11,7 @@ const getMedalEmoji = (index: number): string => {
 };
 
 export const WinnerAnnouncement = ({ winner }: { winner: Player }) => (
-  <div className="text-center mb-12">
+  <div className="text-center mb-12" data-testid="winner-announcement">
     <div className="text-8xl mb-6">{"\u{1F451}"}</div>
     <h2 className="text-4xl font-bold text-indigo-300 mb-4">
       {winner.name} Wins!
@@ -31,13 +31,14 @@ export const FinalScoresList = ({
 
   return (
     <div className="space-y-4">
-      <h2 className="text-2xl font-bold text-indigo-300 flex items-center justify-center gap-3 mb-6">
+      <h2 className="text-2xl font-bold text-indigo-300 flex items-center justify-center gap-3 mb-6" data-testid="final-scores-heading">
         <Crown className="w-6 h-6" /> Final Scores
       </h2>
       <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
         {sortedPlayers.map((player, index) => (
           <motion.div
             key={player.id}
+            data-testid={`player-score-${player.id}`}
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: index * 0.1 }}
