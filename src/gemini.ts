@@ -1,14 +1,22 @@
-import { GoogleGenerativeAI, SchemaType } from "@google/generative-ai";
+import { generateText, Output, type LanguageModel } from "ai";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { z } from "zod";
 import type { Env } from "./env";
 import type { Question } from "./game.types";
 
 const QuestionSchema = z.object({
-  id: z.string(),
-  text: z.string(),
-  correctAnswer: z.union([z.number(), z.string()]),
+  id: z.string().describe("Unique ID in format q1, q2, q3, etc."),
+  text: z.string().describe("The question text without options"),
+  correctAnswer: z
+    .union([z.number(), z.string()])
+    .describe(
+      "For numeric: the number. For multiple choice: the FULL TEXT of the correct option."
+    ),
   questionType: z.enum(["numeric", "multiple-choice"]),
-  options: z.array(z.string()).optional(),
+  options: z
+    .array(z.string())
+    .optional()
+    .describe("For multiple choice: all option texts in order"),
 });
 
 const QuestionsResponseSchema = z.array(QuestionSchema);
@@ -57,6 +65,23 @@ function validateMultipleChoiceAnswer(question: ParsedQuestion): void {
 }
 
 /**
+ * Creates the language model to use for question parsing.
+ */
+export function createQuestionParserModel(env: Env): LanguageModel {
+  if (!env.GEMINI_API_KEY) {
+    throw new Error(
+      "GEMINI_API_KEY is not configured. Add it in Cloudflare: Workers & Pages → trivia-jam → Settings → Variables and Secrets."
+    );
+  }
+
+  const google = createGoogleGenerativeAI({
+    apiKey: env.GEMINI_API_KEY,
+  });
+
+  return google("gemini-2.5-flash");
+}
+
+/**
  * Deterministic mock questions returned when USE_MOCK_LLM is set.
  * Used in E2E tests to avoid Gemini API dependency.
  */
@@ -84,56 +109,31 @@ const MOCK_QUESTIONS: Record<string, Question> = {
  */
 export async function parseQuestions(
   documentContent: string,
-  env: Env
+  env: Env,
+  model?: LanguageModel
 ): Promise<Record<string, Question>> {
   if (env.USE_MOCK_LLM) {
     return MOCK_QUESTIONS;
   }
 
-  if (!env.GEMINI_API_KEY) {
-    throw new Error(
-      "GEMINI_API_KEY is not configured. Add it in Cloudflare: Workers & Pages → trivia-jam → Settings → Variables and Secrets."
-    );
-  }
-
+  const llm = model ?? createQuestionParserModel(env);
   const preprocessedContent = preprocessDocument(documentContent);
-  const genAI = new GoogleGenerativeAI(env.GEMINI_API_KEY);
 
-  const model = genAI.getGenerativeModel({
-    model: "gemini-2.5-flash",
-    generationConfig: {
-      responseMimeType: "application/json",
-      responseSchema: {
-        type: SchemaType.ARRAY,
-        items: {
-          type: SchemaType.OBJECT,
-          properties: {
-            id: { type: SchemaType.STRING },
-            text: { type: SchemaType.STRING },
-            correctAnswer: { type: SchemaType.STRING },
-            questionType: { type: SchemaType.STRING, format: "enum", enum: ["numeric", "multiple-choice"] },
-            options: {
-              type: SchemaType.ARRAY,
-              items: { type: SchemaType.STRING },
-            },
-          },
-          required: ["id", "text", "correctAnswer", "questionType"],
-        },
-      },
-    },
-    systemInstruction: SYSTEM_PROMPT,
+  const result = await generateText({
+    model: llm,
+    system: SYSTEM_PROMPT,
+    prompt: `Parse the following document into structured trivia questions:\n\n${preprocessedContent}`,
+    output: Output.object({ schema: QuestionsResponseSchema }),
   });
 
-  const result = await model.generateContent(
-    `Parse the following document into structured trivia questions:\n\n${preprocessedContent}`
-  );
+  const parsedQuestions = result.output;
 
-  const responseText = result.response.text();
-  const rawQuestions = JSON.parse(responseText);
-  const parsedQuestions = QuestionsResponseSchema.parse(rawQuestions);
+  if (!parsedQuestions) {
+    throw new Error("Failed to parse questions — no structured output returned");
+  }
 
   // Validate sequential IDs and multiple choice answers
-  parsedQuestions.forEach((q, index) => {
+  parsedQuestions.forEach((q: ParsedQuestion, index: number) => {
     const expectedId = `q${index + 1}`;
     if (q.id !== expectedId) {
       throw new Error(
@@ -144,7 +144,7 @@ export async function parseQuestions(
   });
 
   // Convert numeric answers from string to number
-  const processedQuestions = parsedQuestions.map((q) => {
+  const processedQuestions = parsedQuestions.map((q: ParsedQuestion) => {
     const num =
       q.questionType === "numeric" ? Number(q.correctAnswer) : NaN;
     return {
