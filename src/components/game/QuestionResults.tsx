@@ -1,28 +1,6 @@
 import { motion } from "framer-motion";
-import type { Question } from "~/game.types";
-
-type PlayerAnswer = {
-  playerId: string;
-  playerName: string;
-  value: string | number;
-};
-
-type PlayerScore = {
-  playerId: string;
-  points: number;
-  position: number;
-  timeTaken: number;
-};
-
-const isCloseNumericAnswer = (
-  question: Question,
-  answerValue: string | number,
-): boolean => {
-  if (question.questionType !== "numeric") return false;
-  if (typeof answerValue !== "number" || typeof question.correctAnswer !== "number")
-    return false;
-  return Math.abs(answerValue - question.correctAnswer) / question.correctAnswer < 0.1;
-};
+import type { PlayerAnswer, PlayerScore, Question } from "~/game.types";
+import { isCloseNumericAnswer } from "~/game/scoring-utils";
 
 const getResultRowStyle = (points: number, isClose: boolean): string => {
   if (points > 0) return "bg-green-500/10 border border-green-500/30";
@@ -39,7 +17,9 @@ export const ResultScoreRow = ({
   score: PlayerScore;
   question: Question;
 }) => {
-  const isClose = isCloseNumericAnswer(question, answer.value);
+  const isClose =
+    question.questionType === "numeric" &&
+    isCloseNumericAnswer(answer.value, question.correctAnswer);
 
   return (
     <motion.div

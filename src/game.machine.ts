@@ -252,7 +252,9 @@ export const gameMachine = setup({
               actions: {
                 type: "setParsingError",
                 params: ({ event }: { event: ErrorActorEvent<unknown, string> }) => ({
-                  error: event.error as Error,
+                  error: event.error instanceof Error
+                    ? event.error
+                    : new Error(String(event.error)),
                 }),
               },
             },

@@ -5,6 +5,7 @@ import { atom } from "nanostores";
 import { useEffect, useState } from "react";
 import { GameContext } from "~/game.context";
 import { GamePublicContext } from "~/game.types";
+import { isCloseNumericAnswer } from "~/game/scoring-utils";
 import { useQuestionTimer } from "~/hooks/use-question-timer";
 import { SessionContext } from "~/session.context";
 import { HelpModal } from "./help-modal";
@@ -614,18 +615,6 @@ function getOrdinalSuffix(n: number): string {
   return s[(v - 20) % 10] || s[v] || s[0];
 }
 
-const isCloseNumericAnswer = (
-  answerValue: string | number | undefined,
-  correctAnswer: string | number | undefined,
-): boolean => {
-  if (typeof answerValue === "undefined" || typeof correctAnswer === "undefined")
-    return false;
-  return (
-    Math.abs(Number(answerValue) - Number(correctAnswer)) /
-      Number(correctAnswer) <
-    0.1
-  );
-};
 
 const getPlayerResultStyle = (
   points: number,

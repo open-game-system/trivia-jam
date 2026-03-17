@@ -9,7 +9,10 @@ import {
 import type { ActorEnv } from "./actor-env";
 
 export const Game = createMachineServer({
-  machine: gameMachine as any, // todo type this
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Actor Kit's
+  // createMachineServer has a circular generic (TMachine ↔ EnvFromMachine<TMachine>)
+  // that prevents direct type inference. Schemas below provide runtime safety.
+  machine: gameMachine as any,
   schemas: {
     clientEvent: GameClientEventSchema,
     serviceEvent: GameServiceEventSchema,

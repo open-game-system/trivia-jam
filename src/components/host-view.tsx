@@ -12,12 +12,11 @@ import * as Drawer from "vaul";
 import { GameContext } from "~/game.context";
 import type { GamePublicContext } from "~/game.machine";
 import type { Answer, Question, QuestionResult } from "~/game.types";
+import { isCloseNumericAnswer } from "~/game/scoring-utils";
 import { useQuestionTimer } from "~/hooks/use-question-timer";
 import { SessionContext } from "~/session.context";
 import { AnswerProgress } from "./answer-progress";
 import { QuestionProgress } from "./question-progress";
-import { CastButton } from "./CastButton";
-import { CastProvider } from "@open-game-system/cast-kit-react";
 import { GameBackground, FinalScoresList, WinnerAnnouncement } from "./game";
 
 type GameSettings = {
@@ -162,12 +161,9 @@ const ResultAnswerRow = ({
   score: Score | undefined;
   question: Question;
 }) => {
-  const answerValue = typeof answer.value === "number" ? answer.value : 0;
-  const correctAnswerValue =
-    typeof question.correctAnswer === "number" ? question.correctAnswer : 0;
   const isClose =
     question.questionType === "numeric" &&
-    Math.abs(answerValue - correctAnswerValue) / correctAnswerValue < 0.1;
+    isCloseNumericAnswer(answer.value, question.correctAnswer);
 
   const rowClass =
     score && score.points > 0
@@ -868,9 +864,6 @@ const LobbyControls = ({
             Game Setup
           </h1>
           <div className="flex items-center gap-2">
-            <CastProvider>
-              <CastButton />
-            </CastProvider>
             <motion.button
               onClick={() => setShowSettings(true)}
               className="p-2 rounded-lg bg-gray-900/30 border border-gray-700/30 text-indigo-300 hover:text-indigo-200 transition-colors"
@@ -946,14 +939,12 @@ const AnswerItem = ({
   question: Question;
   startTime: number;
 }) => {
-  const answerValue = typeof answer.value === "number" ? answer.value : 0;
-  const correctAnswerValue =
-    typeof question.correctAnswer === "number" ? question.correctAnswer : 0;
   const isExact =
-    question.questionType === "numeric" && answerValue === correctAnswerValue;
+    question.questionType === "numeric" &&
+    Number(answer.value) === Number(question.correctAnswer);
   const isClose =
     question.questionType === "numeric" &&
-    Math.abs(answerValue - correctAnswerValue) / correctAnswerValue < 0.1;
+    isCloseNumericAnswer(answer.value, question.correctAnswer);
 
   return (
     <div
@@ -1207,7 +1198,7 @@ const QuestionControls = ({
   const isQuestionActive = isActive && currentQuestion !== null;
   const timeLeft = useQuestionTimer(currentQuestion, answerTimeWindow, isQuestionActive);
 
-  const nextQuestion = Object.values(questions)[questionNumber] as Question | undefined;
+  const nextQuestion: Question | undefined = Object.values(questions)[questionNumber];
 
   const handleNextQuestion = () => {
     if (!nextQuestion) return;

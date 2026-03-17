@@ -1,5 +1,14 @@
 import { jwtVerify, SignJWT } from "jose";
-import invariant from "tiny-invariant";
+import { z } from "zod";
+
+const SessionPayloadSchema = z.object({
+  userId: z.string(),
+  sessionId: z.string(),
+});
+
+const UserPayloadSchema = z.object({
+  userId: z.string(),
+});
 
 export function getCookie(request: Request, name: string): string | undefined {
   const cookieHeader = request.headers.get("Cookie");
@@ -67,9 +76,7 @@ export async function verifyOneTimeToken({
 }) {
   try {
     const verified = await jwtVerify(token, new TextEncoder().encode(secret));
-    invariant(verified.payload.userId, "Missing userId in token payload");
-    // todo verifyt his is the rigth type of token
-    return verified.payload as { userId: string };
+    return UserPayloadSchema.parse(verified.payload);
   } catch {
     return null;
   }
@@ -84,10 +91,7 @@ export async function verifySessionToken({
 }) {
   try {
     const verified = await jwtVerify(token, new TextEncoder().encode(secret));
-    invariant(verified.payload.userId, "Missing userId in token payload");
-    invariant(verified.payload.sessionId, "Missing sessionId in token payload");
-    // todo verifyt his is the rigth type of token
-    return verified.payload as { userId: string; sessionId: string };
+    return SessionPayloadSchema.parse(verified.payload);
   } catch {
     return null;
   }
@@ -102,9 +106,7 @@ export async function verifyRefreshToken({
 }) {
   try {
     const verified = await jwtVerify(token, new TextEncoder().encode(secret));
-    invariant(verified.payload.userId, "Invalid refresh token");
-    // todo verifyt his is the rigth type of token
-    return verified.payload as { userId: string };
+    return UserPayloadSchema.parse(verified.payload);
   } catch {
     return null;
   }

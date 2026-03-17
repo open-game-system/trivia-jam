@@ -31,10 +31,14 @@ export default defineConfig({
       ],
   timeout: 45_000,
   expect: { timeout: 10_000 },
-  webServer: {
-    command: "pnpm dev",
-    url: "http://localhost:3000",
-    reuseExistingServer: true,
-    timeout: 120_000,
-  },
+  // In CI, the workflow starts wrangler on :8787 before running tests.
+  // Locally, auto-start the dev server on :3000.
+  ...(!process.env.CI && {
+    webServer: {
+      command: "pnpm dev",
+      url: "http://localhost:3000",
+      reuseExistingServer: true,
+      timeout: 120_000,
+    },
+  }),
 });

@@ -66,8 +66,6 @@ function validateMultipleChoiceAnswer(question: ParsedQuestion): void {
 
 /**
  * Creates the language model to use for question parsing.
- * In E2E test mode (USE_MOCK_LLM env var), returns null — caller must
- * provide a mock model. In production, creates a Google Generative AI model.
  */
 export function createQuestionParserModel(env: Env): LanguageModel {
   if (!env.GEMINI_API_KEY) {
@@ -108,10 +106,6 @@ const MOCK_QUESTIONS: Record<string, Question> = {
  *
  * When USE_MOCK_LLM env var is set, returns deterministic test questions
  * without calling any LLM. This enables E2E tests to run without Gemini.
- *
- * @param documentContent - Raw text containing questions and answers
- * @param env - Cloudflare Workers env (for API key)
- * @param model - Optional language model override (for testing with MockLanguageModelV3)
  */
 export async function parseQuestions(
   documentContent: string,
@@ -162,7 +156,13 @@ export async function parseQuestions(
   // Convert array to record keyed by ID
   const questionsRecord: Record<string, Question> = {};
   for (const question of processedQuestions) {
-    questionsRecord[question.id] = question as Question;
+    questionsRecord[question.id] = {
+      id: question.id,
+      text: question.text,
+      correctAnswer: question.correctAnswer,
+      questionType: question.questionType,
+      ...(question.options ? { options: question.options } : {}),
+    };
   }
   return questionsRecord;
 }

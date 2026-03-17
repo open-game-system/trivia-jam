@@ -207,7 +207,10 @@ export const ActiveQuestionNoAnswers: Story = {
     // Verify timer display
     const timer = await canvas.findByTestId("question-timer");
     expect(timer).toBeInTheDocument();
-    expect(timer).toHaveTextContent("30s");
+    // Timer counts down from answerTimeWindow — verify it's present and in range
+    const timerValue = parseInt(timer.textContent!);
+    expect(timerValue).toBeGreaterThanOrEqual(0);
+    expect(timerValue).toBeLessThanOrEqual(30);
   },
 };
 
