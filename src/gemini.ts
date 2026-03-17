@@ -156,7 +156,13 @@ export async function parseQuestions(
   // Convert array to record keyed by ID
   const questionsRecord: Record<string, Question> = {};
   for (const question of processedQuestions) {
-    questionsRecord[question.id] = question as Question;
+    questionsRecord[question.id] = {
+      id: question.id,
+      text: question.text,
+      correctAnswer: question.correctAnswer,
+      questionType: question.questionType,
+      ...(question.options ? { options: question.options } : {}),
+    };
   }
   return questionsRecord;
 }

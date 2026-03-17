@@ -1198,7 +1198,7 @@ const QuestionControls = ({
   const isQuestionActive = isActive && currentQuestion !== null;
   const timeLeft = useQuestionTimer(currentQuestion, answerTimeWindow, isQuestionActive);
 
-  const nextQuestion = Object.values(questions)[questionNumber] as Question | undefined;
+  const nextQuestion: Question | undefined = Object.values(questions)[questionNumber];
 
   const handleNextQuestion = () => {
     if (!nextQuestion) return;
