@@ -12,6 +12,7 @@ import * as Drawer from "vaul";
 import { GameContext } from "~/game.context";
 import type { GamePublicContext } from "~/game.machine";
 import type { Answer, Question, QuestionResult } from "~/game.types";
+import { isCloseNumericAnswer } from "~/game/scoring-utils";
 import { useQuestionTimer } from "~/hooks/use-question-timer";
 import { SessionContext } from "~/session.context";
 import { AnswerProgress } from "./answer-progress";
@@ -160,12 +161,9 @@ const ResultAnswerRow = ({
   score: Score | undefined;
   question: Question;
 }) => {
-  const answerValue = typeof answer.value === "number" ? answer.value : 0;
-  const correctAnswerValue =
-    typeof question.correctAnswer === "number" ? question.correctAnswer : 0;
   const isClose =
     question.questionType === "numeric" &&
-    Math.abs(answerValue - correctAnswerValue) / correctAnswerValue < 0.1;
+    isCloseNumericAnswer(answer.value, question.correctAnswer);
 
   const rowClass =
     score && score.points > 0
@@ -941,14 +939,12 @@ const AnswerItem = ({
   question: Question;
   startTime: number;
 }) => {
-  const answerValue = typeof answer.value === "number" ? answer.value : 0;
-  const correctAnswerValue =
-    typeof question.correctAnswer === "number" ? question.correctAnswer : 0;
   const isExact =
-    question.questionType === "numeric" && answerValue === correctAnswerValue;
+    question.questionType === "numeric" &&
+    Number(answer.value) === Number(question.correctAnswer);
   const isClose =
     question.questionType === "numeric" &&
-    Math.abs(answerValue - correctAnswerValue) / correctAnswerValue < 0.1;
+    isCloseNumericAnswer(answer.value, question.correctAnswer);
 
   return (
     <div
