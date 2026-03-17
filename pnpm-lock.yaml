@@ -36,8 +36,8 @@ importers:
         specifier: 1.166.7
         version: 1.166.7(@tanstack/react-router@1.166.7(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(vite@7.3.1(@types/node@25.5.0)(jiti@1.21.7)(less@4.6.4)(terser@5.46.0)(tsx@4.21.0)(yaml@2.8.2))(webpack@5.105.4(@swc/core@1.15.18)(esbuild@0.25.12))
       actor-kit:
-        specifier: ^0.52.3
-        version: 0.52.3(@cloudflare/workers-types@4.20260313.1)(react@19.2.4)(xstate@5.28.0)(zod@3.25.76)
+        specifier: ^0.52.4
+        version: 0.52.4(@cloudflare/workers-types@4.20260313.1)(react@19.2.4)(xstate@5.28.0)(zod@3.25.76)
       ai:
         specifier: ^6.0.116
         version: 6.0.116(zod@3.25.76)
@@ -2765,8 +2765,8 @@ packages:
     engines: {node: '>=0.4.0'}
     hasBin: true
 
-  actor-kit@0.52.3:
-    resolution: {integrity: sha512-uhD2wsJlKY5Kna5vQg2EKnwsJS+n8dpjwuoHBr+PCpMcD5qNEYBkowbW0M6203kvydg2lfLvF8UzcKzAHS6tcw==}
+  actor-kit@0.52.4:
+    resolution: {integrity: sha512-1PyDIhekVXYfMdBqdVNj0cc3qumPq+tFiuEPIkzgwmSsDb5V1b3Di+Im+Apyc0U3/UfRZv/Ru82OkkaznzLasw==}
     peerDependencies:
       '@cloudflare/workers-types': ^4.20240925.0
       react: ^17.0.0 || ^18.0.0 || ^19.0.0
@@ -3462,8 +3462,8 @@ packages:
   encoding-sniffer@0.2.1:
     resolution: {integrity: sha512-5gvq20T6vfpekVtqrYQsSCFZ1wEg5+wW0/QaZMWkFr6BqD3NfKs0rLCx4rrVlSWJeZb5NBJgVLswK/w2MWU+Gw==}
 
-  enhanced-resolve@5.20.0:
-    resolution: {integrity: sha512-/ce7+jQ1PQ6rVXwe+jKEg5hW5ciicHwIQUagZkp6IufBoY3YDgdTTY1azVs0qoRgVmvsNB+rbjLJxDAeHHtwsQ==}
+  enhanced-resolve@5.20.1:
+    resolution: {integrity: sha512-Qohcme7V1inbAfvjItgw0EaxVX5q2rdVEZHRBrEQdRZTssLDGsL8Lwrznl8oQ/6kuTJONLaDcGjkNP247XEhcA==}
     engines: {node: '>=10.13.0'}
 
   entities@1.1.2:
@@ -5220,8 +5220,8 @@ packages:
   safer-buffer@2.1.2:
     resolution: {integrity: sha512-YZo3K82SD7Riyi0E1EQPojLz7kpepnSQI9IyPbHHg1XXXevb5dJI7tpyN2ADxGcQbHG7vcyRHk0cbwqcQriUtg==}
 
-  sax@1.5.0:
-    resolution: {integrity: sha512-21IYA3Q5cQf089Z6tgaUTr7lDAyzoTPx5HRtbhsME8Udispad8dC/+sziTNugOEx54ilvatQ9YCzl4KQLPcRHA==}
+  sax@1.6.0:
+    resolution: {integrity: sha512-6R3J5M4AcbtLUdZmRv2SygeVaM7IhrLXu9BmnOGmmACak8fiUtOsYNWUS4uK7upbmHIBbLBeFeI//477BKLBzA==}
     engines: {node: '>=11.0.0'}
 
   saxes@6.0.0:
@@ -8709,7 +8709,7 @@ snapshots:
 
   acorn@8.16.0: {}
 
-  actor-kit@0.52.3(@cloudflare/workers-types@4.20260313.1)(react@19.2.4)(xstate@5.28.0)(zod@3.25.76):
+  actor-kit@0.52.4(@cloudflare/workers-types@4.20260313.1)(react@19.2.4)(xstate@5.28.0)(zod@3.25.76):
     dependencies:
       '@cloudflare/workers-types': 4.20260313.1
       cloudflare: 5.2.0
@@ -9427,7 +9427,7 @@ snapshots:
       iconv-lite: 0.6.3
       whatwg-encoding: 3.1.1
 
-  enhanced-resolve@5.20.0:
+  enhanced-resolve@5.20.1:
     dependencies:
       graceful-fs: 4.2.11
       tapable: 2.3.0
@@ -10927,7 +10927,7 @@ snapshots:
   needle@3.5.0:
     dependencies:
       iconv-lite: 0.6.3
-      sax: 1.5.0
+      sax: 1.6.0
     optional: true
 
   neo-async@2.6.2:
@@ -11513,7 +11513,7 @@ snapshots:
 
   safer-buffer@2.1.2: {}
 
-  sax@1.5.0:
+  sax@1.6.0:
     optional: true
 
   saxes@6.0.0:
@@ -12235,7 +12235,7 @@ snapshots:
       acorn-import-phases: 1.0.4(acorn@8.16.0)
       browserslist: 4.28.1
       chrome-trace-event: 1.0.4
-      enhanced-resolve: 5.20.0
+      enhanced-resolve: 5.20.1
       es-module-lexer: 2.0.0
       eslint-scope: 5.1.1
       events: 3.3.0

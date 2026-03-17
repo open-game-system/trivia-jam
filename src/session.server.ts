@@ -7,9 +7,8 @@ import {
 } from "./session.schemas";
 
 export const Session = createMachineServer({
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Actor Kit's
-  // createMachineServer has a circular generic (TMachine ↔ EnvFromMachine<TMachine>)
-  // that prevents direct type inference. Schemas below provide runtime safety.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Actor Kit 0.52.4 fixed
+  // the EnvFromMachine circularity but the context constraint still uses Record<string, unknown>.
   machine: sessionMachine as any,
   schemas: {
     clientEvent: SessionClientEventSchema,
