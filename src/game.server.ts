@@ -9,9 +9,9 @@ import {
 import type { ActorEnv } from "./actor-env";
 
 export const Game = createMachineServer({
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Actor Kit's
-  // createMachineServer has a circular generic (TMachine ↔ EnvFromMachine<TMachine>)
-  // that prevents direct type inference. Schemas below provide runtime safety.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Actor Kit 0.52.4 fixed
+  // the EnvFromMachine circularity but the context constraint still uses Record<string, unknown>
+  // which doesn't match our typed GameServerContext. Tracked upstream.
   machine: gameMachine as any,
   schemas: {
     clientEvent: GameClientEventSchema,
