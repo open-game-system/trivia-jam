@@ -1,5 +1,6 @@
 import type { StorybookConfig } from "@storybook/react-vite";
 import path from "path";
+import { tanstackStartPlugin } from "storybook-addon-tanstack-start/plugin";
 import { mergeConfig } from "vite";
 
 const config: StorybookConfig = {
@@ -12,6 +13,7 @@ const config: StorybookConfig = {
     "@storybook/addon-essentials",
     "@storybook/addon-interactions",
     "@storybook/addon-coverage",
+    "storybook-addon-tanstack-start",
   ],
   framework: {
     name: "@storybook/react-vite",
@@ -24,8 +26,8 @@ const config: StorybookConfig = {
     builder: "@storybook/builder-vite",
   },
   async viteFinal(config) {
-    // Remove Nitro and TanStack Start plugins that come from the project's
-    // vite.config.ts — they break Storybook's preview build.
+    // Remove Nitro and TanStack Start/Router plugins from the project's
+    // vite.config.ts — the tanstack-start addon's plugin replaces them.
     const filteredPlugins = (config.plugins || []).filter((plugin) => {
       const name =
         (plugin as any)?.name ||
@@ -40,6 +42,7 @@ const config: StorybookConfig = {
     return mergeConfig(
       { ...config, plugins: filteredPlugins },
       {
+        plugins: [tanstackStartPlugin()],
         resolve: {
           alias: {
             "~": path.resolve(__dirname, "../src"),
