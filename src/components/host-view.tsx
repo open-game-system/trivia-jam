@@ -378,7 +378,6 @@ const QuestionImportForm = ({
   isParsing: boolean;
 }) => (
   <section className="mb-6">
-    <h2 className="h-head mb-3">Import Questions</h2>
     {parsingErrorMessage && (
       <div
         className="mb-3 border-4 border-ink bg-yellow p-3 h-detail"
@@ -711,7 +710,14 @@ const LobbyControls = ({
               <Settings size={26} strokeWidth={2.6} aria-hidden="true" />
             </button>
           </Masthead>
-          <h1 className="misreg mb-4 text-4xl font-extrabold">Game Setup</h1>
+          <hgroup className="mb-4">
+            <h1 className="misreg misreg-sm text-4xl font-extrabold">Game Setup</h1>
+            {(!hasQuestions || isEditingQuestions) && (
+              <h2 className="pslug mt-1" style={{ fontSize: 16 }}>
+                Import Questions
+              </h2>
+            )}
+          </hgroup>
 
           {(!hasQuestions || isEditingQuestions) && (
             <QuestionImportForm
@@ -933,13 +939,13 @@ const QuestionControls = ({
                     maxPlayers={maxPlayers}
                     onRemove={(playerId) => send({ type: "REMOVE_PLAYER", playerId })}
                   />
-                  {showEndGameDemoted && (
-                    <div className="border-t-4 border-dashed border-ink pt-4">
-                      <EndGameControl onEnd={endGame} confirm={false} />
-                    </div>
-                  )}
                 </Details>
               </div>
+              {showEndGameDemoted && (
+                <div className="mt-5 flex justify-center">
+                  <EndGameControl onEnd={endGame} confirm={false} />
+                </div>
+              )}
             </>
           )}
         </Page>
@@ -947,7 +953,18 @@ const QuestionControls = ({
 
       {currentQuestion && (
         <ActionBar>
-          <EndGameControl onEnd={endGame} confirm />
+          <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              onClick={() => send({ type: "SKIP_QUESTION" })}
+              className="pbtn pbtn-quiet flex-1"
+            >
+              Skip question
+            </button>
+            <div className="flex flex-1 has-[[role=alertdialog]]:basis-full [&>button]:flex-1">
+              <EndGameControl onEnd={endGame} confirm />
+            </div>
+          </div>
         </ActionBar>
       )}
 
