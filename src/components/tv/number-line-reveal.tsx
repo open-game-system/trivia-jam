@@ -132,6 +132,7 @@ export const GuessGroupView = ({
   showPoints,
   lit,
   dim,
+  shiver,
   live,
   delay,
 }: {
@@ -140,6 +141,7 @@ export const GuessGroupView = ({
   showPoints: boolean;
   lit: boolean;
   dim: boolean;
+  shiver: boolean;
   live: boolean;
   delay: number;
 }) => {
@@ -165,7 +167,14 @@ export const GuessGroupView = ({
         <span className="flex flex-col items-start mt-3" style={{ gap: 10 }}>
           {shown.map((m) => (
             <span key={m.playerId} className="relative flex items-center" style={{ height: size.chip, gap: 14 }} data-testid={`player-result-${m.playerId}`}>
-              <InkToken name={m.name} inkIndex={m.inkIndex} size={size.chip} />
+              <motion.span
+                className="inline-flex"
+                style={{ transformOrigin: "100% 50%" }}
+                animate={lit ? { scale: 1.22 } : shiver ? { rotate: [0, -7, 6, -5, 4, 0], y: [0, -3, 0, -2, 0] } : { scale: 1, rotate: 0, y: 0 }}
+                transition={shiver ? { duration: 0.42, repeat: Infinity } : { type: "spring", stiffness: 420, damping: 11 }}
+              >
+                <InkToken name={m.name} inkIndex={m.inkIndex} size={size.chip} />
+              </motion.span>
               <span className="tv-display" style={{ fontSize: size.name, lineHeight: 1, letterSpacing: "-0.01em", whiteSpace: "nowrap" }}>
                 {shortName(m.name, size.maxName)}
               </span>

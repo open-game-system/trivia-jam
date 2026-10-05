@@ -3,6 +3,8 @@ import {
   assignLanes,
   buildAxis,
   buildStandings,
+  choiceWinners,
+  joinNames,
   findHighlights,
   inkForIndex,
   initialOf,
@@ -196,5 +198,50 @@ describe("revealSchedule", () => {
     const reduced = revealSchedule(4, true);
     expect(reduced.end).toBeLessThan(full.end);
     expect(reduced.end).toBeGreaterThan(2000);
+  });
+});
+
+describe("joinNames", () => {
+  it("reads like a sentence for up to three people", () => {
+    expect(joinNames(["Lou"])).toBe("Lou");
+    expect(joinNames(["Mom", "Sam"])).toBe("Mom & Sam");
+    expect(joinNames(["Mom", "Sam", "Grandpa"])).toBe("Mom, Sam & Grandpa");
+  });
+  it("counts a crowd", () => {
+    expect(joinNames(["a", "b", "c", "d"])).toBe("4 players");
+  });
+  it("is empty for nobody", () => {
+    expect(joinNames([])).toBe("");
+  });
+});
+
+describe("revealSchedule anticipation", () => {
+  it("holds a real ~2.5 s suspense beat between the last guess landing and the answer", () => {
+    for (const n of [1, 3, 4, 10]) {
+      const s = revealSchedule(n, false);
+      const lastDropEnd = s.firstDrop + (n - 1) * s.stagger + s.dropDuration;
+      expect(s.answer - lastDropEnd).toBeGreaterThanOrEqual(2300);
+      expect(s.answer - lastDropEnd).toBeLessThanOrEqual(2800);
+    }
+  });
+});
+
+describe("choiceWinners", () => {
+  const options = ["Mars", "Jupiter", "Saturn", "Neptune"];
+  it("names everyone who picked the right option, by text or letter", () => {
+    expect(
+      choiceWinners(
+        [
+          { playerId: "a", value: "Jupiter" },
+          { playerId: "b", value: "B" },
+          { playerId: "c", value: "Mars" },
+        ],
+        "Jupiter",
+        options,
+      ),
+    ).toEqual(["a", "b"]);
+  });
+  it("is empty when nobody got it", () => {
+    expect(choiceWinners([{ playerId: "a", value: "Mars" }], "Jupiter", options)).toEqual([]);
   });
 });

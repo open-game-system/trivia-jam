@@ -898,3 +898,18 @@ export const TvStandingsCrowdedSettled: Story = {
     ),
   ),
 };
+
+/** Two identical exact guesses (one label, two chips) and a guess far off the scale (an edge tab with its true value). */
+export const TvRevealTiedAndOffScaleLive: Story = {
+  play: liveReveal(
+    "q1",
+    1,
+    resultFor("q1", 1, [
+      ["p-sam", "Sam", 8, 4],
+      ["p-mom", "Mom", 8, 4],
+      ["p-grandpa", "Grandpa", 6, 2],
+      ["p-lou", "Lou", 30, 0],
+    ]),
+    { "p-sam": 0, "p-mom": 0, "p-grandpa": 0, "p-lou": 0 },
+  ),
+};

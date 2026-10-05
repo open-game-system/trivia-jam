@@ -219,13 +219,14 @@ export const revealSchedule = (guessCount: number, reducedMotion: boolean): Reve
   const scale = reducedMotion ? 0.5 : 1;
   const stagger = guessCount <= 6 ? 450 : Math.max(220, 2700 / guessCount);
   const dropDuration = 500;
-  const firstDrop = 900;
+  const firstDrop = 700;
   const lastDrop = firstDrop + Math.max(0, guessCount - 1) * stagger;
-  const answer = lastDrop + dropDuration + 1100;
-  const spotlight = answer + 900;
-  const points = spotlight + 800;
-  const standings = points + 1100;
-  const end = standings + 1200;
+  // The anticipation beat: the "?" swings between the guesses before the answer slams.
+  const answer = lastDrop + dropDuration + 2500;
+  const spotlight = answer + 700;
+  const points = spotlight + 700;
+  const standings = points + 900;
+  const end = standings + 700;
   return {
     axis: 0,
     firstDrop: firstDrop * scale,
@@ -237,6 +238,24 @@ export const revealSchedule = (guessCount: number, reducedMotion: boolean): Reve
     standings: standings * scale,
     end: end * scale,
   };
+};
+
+/** "Lou", "Mom & Sam", "Mom, Sam & Grandpa", "4 players". */
+export const joinNames = (names: ReadonlyArray<string>): string => {
+  if (names.length > 3) return `${names.length} players`;
+  if (names.length <= 1) return names[0] ?? "";
+  return `${names.slice(0, -1).join(", ")} & ${names[names.length - 1]}`;
+};
+
+/** Who picked the right option in a multiple-choice question. */
+export const choiceWinners = (
+  answers: ReadonlyArray<{ playerId: string; value: string | number }>,
+  correct: string | number,
+  options: ReadonlyArray<string>,
+): string[] => {
+  const right = matchOptionIndex(correct, options);
+  if (right < 0) return [];
+  return answers.filter((a) => matchOptionIndex(a.value, options) === right).map((a) => a.playerId);
 };
 
 /** Numbers on the TV: years and small integers stay raw; big ones get thin separators. */
