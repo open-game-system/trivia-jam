@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
+import { getRequest } from "@tanstack/react-start/server";
 import { createAccessToken, createActorFetch } from "actor-kit/server";
 import type { Caller } from "actor-kit";
 import { z } from "zod";
@@ -8,6 +9,7 @@ import { useTvAudio } from "~/audio/use-tv-audio";
 import { useOgsSitting } from "~/ogs/use-ogs-game";
 import type { gameMachine } from "~/game.machine";
 import { GameProvider } from "~/game.context";
+import { getRequestSession } from "~/request-session";
 import { getServerEnv, tryGetActorRuntimeEnv } from "../server-env";
 
 const SpectateRouteInputSchema = z.object({
@@ -18,7 +20,7 @@ const loadSpectateRoute = createServerFn({ method: "GET" })
   .inputValidator((input: unknown) => SpectateRouteInputSchema.parse(input))
   .handler(async ({ data }) => {
     const env = getServerEnv();
-    const session = globalThis.__session__;
+    const session = getRequestSession(getRequest());
     if (!session) {
       throw new Error("Session not initialized");
     }

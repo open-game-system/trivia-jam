@@ -39,6 +39,9 @@ export const gameMachine = setup({
       "caller" in event &&
       event.caller.type === "client" &&
       event.caller.id === context.public.hostId,
+    /** A join from someone already seated (a second tab, a double tap) is not a new player. */
+    isNotSeated: ({ context, event }: { context: GameServerContext; event: GameEvent }) =>
+      !context.public.players.some((p) => p.id === event.caller.id),
     hasQuestions: ({ context }: { context: GameServerContext }) =>
       Object.keys(context.public.questions).length > 0,
   },
@@ -288,6 +291,7 @@ export const gameMachine = setup({
       },
       on: {
         JOIN_GAME: {
+          guard: "isNotSeated",
           actions: {
             type: "addPlayerToGame",
             params: ({
@@ -301,6 +305,7 @@ export const gameMachine = setup({
           },
         },
         OGS_JOIN_GAME: {
+          guard: "isNotSeated",
           actions: {
             type: "addPlayerToGame",
             params: ({
@@ -412,6 +417,7 @@ export const gameMachine = setup({
       },
       on: {
         JOIN_GAME: {
+          guard: "isNotSeated",
           actions: {
             type: "addPlayerToGame",
             params: ({
@@ -425,6 +431,7 @@ export const gameMachine = setup({
           },
         },
         OGS_JOIN_GAME: {
+          guard: "isNotSeated",
           actions: {
             type: "addPlayerToGame",
             params: ({

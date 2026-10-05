@@ -4,10 +4,6 @@ import type { ActorEnv } from "./actor-env";
 
 declare global {
   var __env__: unknown;
-  var __session__: { userId: string; sessionId: string } | undefined;
-  var __sessionCookies__:
-    | { sessionToken?: string; refreshToken?: string }
-    | undefined;
 }
 
 const DevServerEnvSchema = z.object({
