@@ -10,7 +10,9 @@ const BED_URLS: Record<Bed, string> = {
   think: "/audio/music/think.m4a",
   finale: "/audio/music/finale.m4a",
 };
-const BED_LEVEL: Record<Bed, number> = { lobby: 0.55, think: 0.42, finale: 0.6 };
+const BED_LEVEL: Record<Bed, number> = { lobby: 0.55, think: 0.46, finale: 0.95 };
+// The thinking bed steps key each question (whole-tone up, down, up a third…) so no two questions sound the same.
+const THINK_RATES = [1, 1.1225, 0.8909, 1.2599, 0.9439];
 const XFADE = 1.6; // seconds of overlap at each loop seam
 // C major pentatonic, mallet register.
 const SCALE = [523.25, 587.33, 659.25, 783.99, 880.0, 1046.5, 1174.66, 1318.51, 1567.98, 1760.0];
@@ -123,8 +125,10 @@ export class TvAudio {
         return;
       case "gameOver":
         this.hit(0);
-        this.arp([0, 2, 4, 5, 7, 9], 0.09, 0.3, 0.15);
-        this.arp([5, 7, 9], 0.0, 0.32, 0.9);
+        this.arp([0, 2, 4, 5, 7, 9], 0.09, 0.42, 0.15);
+        this.arp([5, 7, 9], 0.0, 0.45, 0.9);
+        this.drumroll(1.2, 1.4);
+        this.hit(2.65);
         return;
     }
   }
@@ -141,6 +145,7 @@ export class TvAudio {
       this.burst(at(beats.firstDrop + i * beats.stagger + 380), 0.05, 900, 0.8, 0.12);
     }
     const lastDrop = beats.firstDrop + Math.max(0, beats.guesses - 1) * beats.stagger + 500;
+    this.drone(at(beats.firstDrop), Math.max(0.5, at(beats.answer - beats.firstDrop)));
     this.drumroll(at(lastDrop), Math.max(0.4, at(beats.answer - lastDrop)));
     this.hit(at(beats.answer));
     this.arp(beats.exact ? [4, 5, 7, 9] : [2, 4, 5], 0.1, 0.24, at(beats.spotlight));
@@ -155,9 +160,13 @@ export class TvAudio {
 
   /** The last seconds of the timer: a soft woodblock, brighter on the final three. */
   tick(secondsLeft: number) {
-    this.wood(secondsLeft <= 3 ? 1900 : 1500, secondsLeft <= 3 ? 0.42 : 0.3);
+    // The last five seconds climb: each tick higher and louder, with a pulse under the last three.
+    const step = Math.max(0, 5 - secondsLeft);
+    this.wood(1400 + step * 160, 0.26 + step * 0.05);
+    if (secondsLeft <= 3 && secondsLeft > 0) this.voice(98 * (1 + step * 0.06), "sine", 0.22, 0.25, 0);
     if (secondsLeft === 0) this.timeUp();
   }
+  private thinkCount = 0;
 
   // ---------- beds ----------
 
@@ -193,10 +202,19 @@ export class TvAudio {
     void this.load(name).then((buffer) => {
       if (!buffer || this.wanted !== name || this.bed) return;
       const { ctx, beds } = this.context();
+      const rate = name === "think" ? (THINK_RATES[this.thinkCount++ % THINK_RATES.length] ?? 1) : 1;
       const gain = ctx.createGain();
       gain.gain.setValueAtTime(0, ctx.currentTime);
       gain.gain.linearRampToValueAtTime(BED_LEVEL[name], ctx.currentTime + 1.2);
-      gain.connect(beds);
+      if (name === "think") {
+        // The generated thinking bed is dull above ~5 kHz: lift the air a little.
+        const shelf = ctx.createBiquadFilter();
+        shelf.type = "highshelf";
+        shelf.frequency.value = 4500;
+        shelf.gain.value = 5;
+        gain.connect(shelf);
+        shelf.connect(beds);
+      } else gain.connect(beds);
       const bed = { name, gain, timer: 0, sources: [] as AudioBufferSourceNode[] };
       this.bed = bed;
       // Each copy fades in over XFADE while the previous one fades out: no seam, no silent dip.
@@ -204,10 +222,11 @@ export class TvAudio {
         if (this.bed !== bed) return;
         const src = ctx.createBufferSource();
         src.buffer = buffer;
+        src.playbackRate.value = rate;
         const env = ctx.createGain();
         env.gain.setValueAtTime(first ? 1 : 0, at);
         if (!first) env.gain.linearRampToValueAtTime(1, at + XFADE);
-        const end = at + buffer.duration;
+        const end = at + buffer.duration / rate;
         env.gain.setValueAtTime(1, end - XFADE);
         env.gain.linearRampToValueAtTime(0, end);
         src.connect(env);
@@ -329,7 +348,7 @@ export class TvAudio {
       bp.frequency.value = 1300 + 500 * p;
       bp.Q.value = 1.6;
       const g = ctx.createGain();
-      const level = (0.05 + 0.22 * p * p) * (i % 2 ? 0.8 : 1);
+      const level = (0.12 + 0.24 * p * p) * (i % 2 ? 0.8 : 1);
       g.gain.setValueAtTime(0.0001, t);
       g.gain.exponentialRampToValueAtTime(level, t + 0.004);
       g.gain.exponentialRampToValueAtTime(0.0001, t + 0.055);
@@ -347,6 +366,39 @@ export class TvAudio {
     this.voice(65.41, "sine", 0.42, 0.7, delay, 0.012);
     for (const s of [0, 2, 4, 7]) this.mallet(SCALE[s] ?? 523.25, 0.24, 1.2, delay + 0.01);
     this.burst(delay + 0.01, 0.9, 6500, 0.7, 0.05);
+  }
+
+  /** Suspense under the guesses: a low fifth whose tremolo speeds up and swells into the answer. */
+  private drone(delay: number, seconds: number) {
+    const { ctx, out } = this.context();
+    const t = ctx.currentTime + delay;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(0.12, t + seconds * 0.6);
+    g.gain.exponentialRampToValueAtTime(0.2, t + seconds);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + seconds + 0.08);
+    const trem = ctx.createGain();
+    trem.gain.value = 0.6;
+    const lfo = ctx.createOscillator();
+    lfo.frequency.setValueAtTime(3, t);
+    lfo.frequency.linearRampToValueAtTime(11, t + seconds);
+    const depth = ctx.createGain();
+    depth.gain.value = 0.4;
+    lfo.connect(depth);
+    depth.connect(trem.gain);
+    for (const f of [65.41, 98.0, 130.81]) {
+      const osc = ctx.createOscillator();
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(f, t);
+      osc.frequency.linearRampToValueAtTime(f * 1.06, t + seconds);
+      osc.connect(trem);
+      osc.start(t);
+      osc.stop(t + seconds + 0.1);
+    }
+    trem.connect(g);
+    g.connect(out);
+    lfo.start(t);
+    lfo.stop(t + seconds + 0.1);
   }
 
   /** A soft sustained chord (C major add 9) with a slow swell, under a settled moment. */
