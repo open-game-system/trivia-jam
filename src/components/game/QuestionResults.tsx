@@ -32,7 +32,7 @@ export const ResultScoreRow = ({
       <div className="flex-1">
         <div className="text-xl font-medium">{answer.playerName}</div>
         <div className="text-sm text-gray-400">
-          {answer.value} \u2022 {score.timeTaken.toFixed(1)}s
+          {answer.value} • {score.timeTaken.toFixed(1)}s
         </div>
       </div>
       {score.points > 0 && (
