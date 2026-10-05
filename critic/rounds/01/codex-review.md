@@ -1,0 +1,36 @@
+Overall: **5.0/10.** A distinctive, coherent prototype with a real visual voice—but not yet first-party ship quality. The game presents information; it rarely creates a room-sized event.
+
+| Row | Grade | Art-direction judgment |
+|---|---:|---|
+| Art direction & cohesion | **7/10** | The warm paper, halftones, hard outlines, and magenta/cyan/yellow palette are recognizable across `01-lobby-empty-tv`, `10e-q1-reveal-settled-tv`, and `13e-q4-reveal-settled-tv`. But every moment uses essentially the same visual volume. The lobby, reveal, standings, and finale feel like variations of one template rather than distinct emotional acts. |
+| TV staging & couch readability | **4/10** | The lobby and `10a-before-q1-tv` use 16:9 well. Most gameplay does not. `10d-q1-results-tv` reduces the action to a thin number line surrounded by dead space; `10f-q1-standings-tv` occupies only the upper third; `20-game-over-tv` makes the podium feel miniature. Player dots, names, ticks, and point badges will disappear from a couch. |
+| Typography & layout | **5/10** | The logo and large question typography have character. The tiny condensed all-caps labels do not survive television distance or phone density. `12e-q3-reveal-settled-tv` has overlapping answers, badges, markers, and a giant “32” competing for attention. The host screens routinely look viewport-shrunk rather than deliberately composed. |
+| Motion & juice | **4/10** | Inferred from the still sequence: timers animate, answer cards lock in, bursts appear, and the reveal answer enlarges. Those are ingredients, not choreography. `10d`→`10e` and `11e`→`11f` suggest state replacement more than escalating performance. There is no visible score travel, player reaction beat, anticipation pose, or celebratory aftermath. |
+| Reveal & payoff drama | **5/10** | Concealing the answer on the number line is a good Wits & Wagers-style premise. But `10e-q1-reveal-settled-tv` turns an exact answer into a pile of overlapping labels. `12e-q3-reveal-settled-tv` is even less legible. Multiple choice is cleaner in `13e-q4-reveal-settled-tv`, but “B Blue whale” reads like an answer key, not a triumph. |
+| Kid UX | **6/10** | `13b-q4-asked-kid` is the strongest interaction: huge, colored, unmistakable choices. The split numeric keypad in `10b-q1-asked-kid` is sensible for landscape thumb reach, and the “LOCKED IN” state is clear. But waiting, results, and finale screens are small cards floating in empty space (`04-lobby-full-kid`, `10d-q1-results-kid`, `20-game-over-kid`). A five-year-old gets little visible read-aloud support, emotional feedback, or persistent large answer confirmation. |
+| Phone UI polish | **4/10** | The host phone resembles an internal operations panel. `10c-q1-kid-answered-host` and `12d-q3-results-host` contain tiny type, nested borders, dense rows, and several equally loud information blocks. The pink CTA is clear, but almost everything else demands close reading. It is functional, not premium. |
+| Host flow | **7/10** | The sequence is understandable: prepare, start, monitor submissions, review, advance. `10d-q1-results-host` gives the host results plus the next question and one dominant action. That is strong facilitation logic. The weakness is cognitive load: the host must parse too much small information while also running the room. |
+| Replay & payoff | **3/10** | `20-game-over-tv` is far too restrained for the culmination of five questions. The podium is undersized, there is no victory takeover, memorable-stat recap, earned award, or visible rematch path. `20-game-over-kid` gives useful personal placement, but still feels like a modal confirmation. The game ends when it should erupt. |
+
+## Single largest gap
+
+**The shared TV never becomes a stage.**
+
+It behaves like a large data dashboard: accurate, orderly, and mostly static. Jackbox and Nintendo party games aggressively control the room’s attention—anticipation, impact, reaction, then recovery. Here, the most important moments in `10e`, `12e`, `13e`, and `20-game-over-tv` are either visually tangled or dramatically undersized.
+
+## Five highest-impact fixes
+
+1. **Recompose every TV state for the ten-foot rule.**  
+   Give the number line, standings, and podium 70–80% of the usable frame. Make player markers, names, and points readable without supporting microcopy. `10f-q1-standings-tv` should feel like a full-screen leaderboard, not a table placed in the corner. `20-game-over-tv` should be dominated by the winner.
+
+2. **Turn each reveal into a directed four-beat performance.**  
+   Freeze guesses → build anticipation → slam in the correct answer → award players and transfer points. In `10e` and `12e`, temporarily separate stacked players before recombining them. Animate point tokens visibly from each answer to its player, then into the standings. The room should understand who won without reading a badge.
+
+3. **Create device-specific information hierarchies.**  
+   Stop scaling the same dense visual language across TV, host phone, and iPad. Eliminate nonessential TV microtype. On the host phone, collapse secondary calculations and keep only phase, timer, submissions, exceptions, and the next action prominent. Preserve the kid keypad’s split-thumb ergonomics, but make the entered numeral and submit state the center-screen hero.
+
+4. **Make players—not charts—the emotional protagonists.**  
+   Replace tiny initials and dots with substantial player emblems/nameplates that can jump, shake, stack, trail, and celebrate without requiring character faces. In `10e-q1-reveal-settled-tv`, “Mom and Sam both nailed it” should be the first readable fact. The graph should support that story rather than remain the star.
+
+5. **Build a real finale and replay loop.**  
+   Expand `20-game-over-tv` into a full-screen podium reveal with score counting, winner takeover, and two or three recap awards such as Most Exact, Biggest Comeback, or Wildest Guess. Give each kid a large personal outcome on `20-game-over-kid`. Put a clear **Rematch** action on the host, carrying the same players directly into another round.
