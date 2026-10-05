@@ -62,6 +62,33 @@ if audio["hasAudio"] and os.path.getsize(marks["audio"]) > 0:
     loud = subprocess.run(["ffmpeg", "-i", marks["audio"], "-af", "ebur128", "-f", "null", "-"], capture_output=True, text=True).stderr
     audio["ebur128"] = [l.strip() for l in loud.splitlines() if re.match(r"\s*(I:|LRA:)", l)][-2:]
     subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", marks["audio"], "-lavfi", "showspectrumpic=s=1600x500:legend=1:fscale=log:color=intensity", f"{out}/tv-audio-spectrogram.png"])
-metrics = {"tvMeanLumaPerShot(0-255)": luma, "audio": audio, "perf": json.load(open(f"{raw}/perf.json")), "marks": marks["marks"]}
+# ---- Automatic checks (frozen thresholds; each was shown to fail on a forced fault, see critic/rig-proof.md) ----
+layout = json.load(open(f"{raw}/layout.json")) if os.path.exists(f"{raw}/layout.json") else {}
+checks = []
+def check(name, ok, detail=""):
+    checks.append(f"{'PASS' if ok else 'FAIL'}  {name}  {detail}".rstrip())
+dark = [k for k, v in luma.items() if v < 20]
+blown = [k for k, v in luma.items() if v > 245]
+check("tv-not-black (mean luma >= 20)", not dark, ", ".join(dark[:4]))
+check("tv-not-blown (mean luma <= 245)", not blown, ", ".join(blown[:4]))
+tv_small = {k: v for k, v in layout.items() if k.endswith("-tv") and v["minFontPx"] < 28}
+check("tv-text-readable (min font >= 28px on every TV shot)", not tv_small, "; ".join(f"{k}: {v['smallTextSamples'][:2]}" for k, v in list(tv_small.items())[:3]))
+ph_small = {k: v for k, v in layout.items() if not k.endswith("-tv") and v["minFontPx"] < 14}
+check("phone-text-readable (min font >= 14px)", not ph_small, "; ".join(f"{k}: {v['smallTextSamples'][:2]}" for k, v in list(ph_small.items())[:3]))
+clipped = {k: v["clipped"] for k, v in layout.items() if v["clipped"]}
+check("nothing-clipped (no text cut off by a screen edge)", not clipped, "; ".join(f"{k}: {v[:2]}" for k, v in list(clipped.items())[:3]))
+lufs = None
+for l in audio.get("ebur128", []):
+    m = re.match(r"I:\s*(-?[\d.]+)", l)
+    if m: lufs = float(m.group(1))
+audio["integratedLufs"] = lufs
+check("tv-audio-present (integrated loudness > -40 LUFS)", lufs is not None and lufs > -40, f"hasAudio={audio['hasAudio']} lufs={lufs}")
+perf = json.load(open(f"{raw}/perf.json"))
+check("tv-frame-time (p95 <= 20 ms)", perf.get("p95", 99) <= 20, f"p95={perf.get('p95')} max={perf.get('max')}")
+open(f"{out}/checks.log", "w").write("\n".join(checks) + "\n")
+print("\n".join(checks))
+if os.path.exists(f"{raw}/layout.json"): shutil.copy(f"{raw}/layout.json", out)
+
+metrics = {"checks": checks, "tvMeanLumaPerShot(0-255)": luma, "audio": audio, "perf": json.load(open(f"{raw}/perf.json")), "marks": marks["marks"]}
 json.dump(metrics, open(f"{out}/metrics.json", "w"), indent=2)
 print(json.dumps({k: v for k, v in metrics.items() if k != "marks"})[:800])

@@ -80,11 +80,59 @@ function asContext(name: string, landscape = false): BrowserContextOptions & { v
   return { ...opts, viewport };
 }
 
+/** Layout facts per shot, read from the DOM: the smallest visible text, and anything cut off by the viewport. */
+type Layout = { minFontPx: number; smallTextSamples: string[]; clipped: string[] };
+const layouts: Record<string, Layout> = {};
+
+async function measure(page: Page): Promise<Layout> {
+  return page.evaluate(() => {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    let minFontPx = Infinity;
+    const small: { px: number; text: string }[] = [];
+    const clipped: string[] = [];
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT);
+    for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+      const text = (n.textContent ?? "").trim();
+      const el = n.parentElement;
+      if (!text || !el) continue;
+      const style = getComputedStyle(el);
+      if (style.visibility === "hidden" || Number(style.opacity) === 0) continue;
+      const range = document.createRange();
+      range.selectNodeContents(n);
+      const r = range.getBoundingClientRect();
+      if (r.width < 1 || r.height < 1) continue;
+      const onScreen = r.bottom > 0 && r.top < vh && r.right > 0 && r.left < vw;
+      if (!onScreen) continue;
+      const px = parseFloat(style.fontSize);
+      if (px < minFontPx) minFontPx = px;
+      small.push({ px, text: text.slice(0, 40) });
+      // Cut off: text that starts inside the screen but runs past an edge (scrolling content is fine).
+      if (r.top < -2 || r.left < -2 || r.right > vw + 2) clipped.push(`${text.slice(0, 40)} (${Math.round(r.left)},${Math.round(r.top)})`);
+    }
+    small.sort((a, b) => a.px - b.px);
+    return {
+      minFontPx: Number.isFinite(minFontPx) ? minFontPx : 0,
+      smallTextSamples: small.slice(0, 4).map((s) => `${s.px}px "${s.text}"`),
+      clipped: clipped.slice(0, 6),
+    };
+  });
+}
+
 async function shoot(phase: string, screens: Record<string, Page>) {
   for (const [name, page] of Object.entries(screens)) {
     await page.screenshot({ path: `${SHOTS}/${phase}-${name}.png` }).catch((e: unknown) => console.log(`shot ${phase}-${name} failed: ${String(e).slice(0, 120)}`));
+    layouts[`${phase}-${name}`] = await measure(page).catch(() => ({ minFontPx: 0, smallTextSamples: [], clipped: ["measure failed"] }));
   }
 }
+
+/** TJ_FAULT forces a known-bad build so the checks can be shown to fail: black | tiny | clip | mute. */
+const FAULT = process.env.TJ_FAULT ?? "";
+const FAULT_CSS: Record<string, string> = {
+  black: "html, body { filter: brightness(0) !important; }",
+  tiny: "body * { font-size: 9px !important; }",
+  clip: "body { margin-top: -120px !important; }",
+};
 
 /** On a stall: what is each page actually showing? */
 async function dump(screens: Record<string, Page>) {
@@ -136,7 +184,12 @@ async function main() {
   const mom = await offCamera();
   const grandpa = await offCamera();
   const screens = { tv, host, kid };
-  t0 = startedAt[0] ?? Date.now();
+  t0 = Math.max(...startedAt); // the stitched video starts when the last panel started recording
+
+  const faults = FAULT.split(",");
+  const faultCss = faults.map((f) => FAULT_CSS[f] ?? "").join("\n").trim();
+  if (faultCss) for (const p of [tv, host, kid]) await p.addInitScript(`addEventListener("DOMContentLoaded", () => { const s = document.createElement("style"); s.textContent = ${JSON.stringify(faultCss)}; document.head.append(s); });`);
+  if (faults.includes("mute")) await tv.addInitScript(`addEventListener("DOMContentLoaded", () => { const C = window.AudioContext; if (C) C.prototype.resume = function () { return this.suspend(); }; });`);
 
   // The kid's iPad records its own pointer-down time, so latency is press -> TV, not Playwright overhead.
   await kid.addInitScript(`document.addEventListener("pointerdown", () => { window.__pressAt = Date.now(); }, true);`);
@@ -266,7 +319,8 @@ async function main() {
       }),
     );
     await browser.close();
-    writeFileSync(`${RAW}/marks.json`, JSON.stringify({ videos, startedAt, audio: audioPath, hasAudio: hasTap, marks }, null, 2));
+    writeFileSync(`${RAW}/marks.json`, JSON.stringify({ videos, startedAt, audio: audioPath, hasAudio: hasTap, fault: FAULT || null, marks }, null, 2));
+    writeFileSync(`${RAW}/layout.json`, JSON.stringify(layouts, null, 2));
     stitch(videos, recorded.map((s) => s.label), startedAt, { path: audioPath, startedAt: audioStartedAt });
     console.log(`\nSaved ${OUT}`);
   } catch (err) {

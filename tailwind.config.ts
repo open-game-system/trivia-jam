@@ -10,7 +10,18 @@ export default {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
+      fontFamily: {
+        display: ['"Bricolage Grotesque Variable"', "system-ui", "sans-serif"],
+        mono: ['"Space Mono"', "ui-monospace", "monospace"],
+      },
       colors: {
+        // Riso inks (docs/art-style.md). The only colours new UI should use.
+        paper: { DEFAULT: "#F3EEE3", 2: "#E9E2D3" },
+        ink: "#1E1B1A",
+        pink: "#FF48B0",
+        blue: "#3255A4",
+        yellow: "#FFE800",
+        teal: "#00838A",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         card: {
