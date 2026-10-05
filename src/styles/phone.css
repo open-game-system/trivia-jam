@@ -882,3 +882,51 @@ textarea.pfield { padding: 14px 16px; font-size: 18px; line-height: 1.35; font-f
   .pread[data-hint="true"]::after { display: none; }
   .pread[data-hint="true"]::before { animation: none; inset: -8px; }
 }
+
+/* Waiting screens without reading: a big bobbing player token over a halftone ink disc,
+   big printed dots that bounce, and the words small. */
+.pwait-disc { position: relative; flex: none; display: inline-flex; isolation: isolate; }
+.pwait-disc::before {
+  content: "";
+  position: absolute;
+  inset: -9%;
+  z-index: -1;
+  border-radius: 999px;
+  background: radial-gradient(circle at center, var(--yellow) 0 3px, transparent 3.5px) 0 0 / 14px 14px;
+  transform: translate(8%, 8%);
+}
+.pwait-token { animation: pwait-bob 1.6s ease-in-out infinite; }
+@keyframes pwait-bob {
+  0%, 100% { transform: translateY(0) rotate(-2deg); }
+  50% { transform: translateY(-3.5%) rotate(2deg); }
+}
+.pwait .pdots { gap: clamp(14px, 3dvh, 30px); }
+.pwait .pdots > span {
+  width: clamp(22px, 5dvh, 56px);
+  height: clamp(22px, 5dvh, 56px);
+  animation-name: pwait-dot;
+  animation-duration: 1s;
+}
+.pwait .pdots > span:nth-child(1) { border: 3px solid var(--ink); box-sizing: border-box; }
+.pwait .pdots > span:nth-child(2) { border: 3px solid var(--ink); box-sizing: border-box; }
+@keyframes pwait-dot {
+  0%, 60%, 100% { transform: translateY(0) scale(1, 1); }
+  30% { transform: translateY(-1.4em) scale(0.92, 1.1); }
+  45% { transform: translateY(0) scale(1.15, 0.85); }
+}
+.pwait .pwait-title { font-size: clamp(30px, 8vw, 44px); }
+.pwait-sub { opacity: 0.85; }
+@media (orientation: landscape) and (min-height: 480px) {
+  .pwait .pwait-title { font-size: clamp(30px, 5dvh, 52px); }
+  .pwait .pwait-sub { font-size: clamp(20px, 3.2dvh, 30px); }
+  .pwait-token {
+    width: clamp(240px, 48dvh, 440px);
+    height: clamp(240px, 48dvh, 440px);
+    font-size: clamp(140px, 28dvh, 260px);
+    margin: 0 4dvh 0 2dvh;
+  }
+  .pwait .pdots { margin-top: 3dvh; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pwait-token, .pwait .pdots > span { animation: none; }
+}

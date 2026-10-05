@@ -59,7 +59,9 @@ const WaitCard = ({
       transition={{ ease: [0.2, 0.9, 0.2, 1.15], duration: 0.35 }}
       className="pwait-body"
     >
-      <PlayerToken name={name} seat={seat} className="pwait-token" />
+      <div className="pwait-disc">
+        <PlayerToken name={name} seat={seat} className="pwait-token" />
+      </div>
       <div className="pwait-text">
         <span className="pslug">Trivia Jam</span>
         <h1 className="misreg pwait-title">{title}</h1>
