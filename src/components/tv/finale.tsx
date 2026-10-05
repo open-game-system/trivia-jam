@@ -2,16 +2,15 @@ import { motion, useReducedMotion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import type { Question, QuestionResult } from "~/game.types";
 import { type Award, computeAwards } from "./awards";
+import { FINALE_AT as AT } from "./finale-timeline";
 import { InkToken, RisoType, Slug } from "./print";
+import { RollingNumber } from "./standings";
 import { Sunburst } from "./sunburst";
 import { joinNames } from "./tv-model";
 
 type FinalPlayer = { id: string; name: string; score: number };
 
 const INKS = ["var(--pink)", "var(--blue)", "var(--yellow)", "var(--teal)"];
-
-/** Seconds into the finale for each beat (halved with reduced motion). */
-const AT = { third: 0.3, second: 1.0, first: 1.7, takeover: 2.9, title: 4.7, awards: 5.4, calm: 11 } as const;
 
 /** Deterministic pseudo-random so the confetti sheet is the same on every TV. */
 const seeded = (seed: number) => {
@@ -66,8 +65,8 @@ const PaperConfetti = ({ count, start }: { count: number; start: number }) => {
   );
 };
 
-const FLOOR = 900;
-const BLOCK = 372;
+const FLOOR = 940;
+const BLOCK = 380;
 const GAP = 30;
 /** The podium is drawn centred, then slides left to make room for the awards. */
 const PODIUM_LEFT = 96;
@@ -75,11 +74,26 @@ const PODIUM_WIDTH = BLOCK * 3 + GAP * 2;
 const CENTRE_SHIFT = (1920 - PODIUM_WIDTH) / 2 - PODIUM_LEFT;
 
 const PODIUM = [
-  { place: 2, slot: 0, height: 360, ink: "var(--blue)", on: "var(--paper)", at: AT.second, label: "2nd" },
-  { place: 1, slot: 1, height: 450, ink: "var(--pink)", on: "var(--ink)", at: AT.first, label: "1st" },
-  { place: 3, slot: 2, height: 300, ink: "var(--teal)", on: "var(--paper)", at: AT.third, label: "3rd" },
+  { place: 2, slot: 0, height: 420, ink: "var(--blue)", on: "var(--paper)", at: AT.second, label: "2nd" },
+  { place: 1, slot: 1, height: 530, ink: "var(--pink)", on: "var(--ink)", at: AT.first, label: "1st" },
+  { place: 3, slot: 2, height: 340, ink: "var(--teal)", on: "var(--paper)", at: AT.third, label: "3rd" },
 ] as const;
 
+/** A score that sits on 0 until its moment, then counts up to the final total. */
+const CountUp = ({ to, atSeconds, live }: { to: number; atSeconds: number; live: boolean }) => {
+  const [go, setGo] = useState(!live);
+  useEffect(() => {
+    if (!live) return;
+    const t = setTimeout(() => setGo(true), atSeconds * 1000);
+    return () => clearTimeout(t);
+  }, [live, atSeconds]);
+  return <RollingNumber from={0} to={go ? to : 0} run={live && go} duration={AT.countFor} />;
+};
+
+/**
+ * A podium block rises out of the floor already printed with its player (no empty slab), lands with a
+ * squash, and its score counts up from 0 while the room watches.
+ */
 const PodiumStep = ({
   step,
   player,
@@ -92,82 +106,98 @@ const PodiumStep = ({
   speed: number;
 }) => {
   const first = step.place === 1;
-  const token = first ? 132 : 104;
+  const token = first ? 150 : 116;
+  const rise = step.at * speed;
   return (
-    <motion.div
-      className="absolute flex flex-col items-center"
-      style={{
-        left: PODIUM_LEFT + step.slot * (BLOCK + GAP),
-        top: FLOOR - step.height,
-        width: BLOCK,
-        height: step.height,
-        background: step.ink,
-        border: "6px solid var(--ink)",
-        boxShadow: `10px 10px 0 ${first ? "var(--yellow)" : "var(--ink)"}`,
-        transformOrigin: "bottom",
-        paddingTop: 22,
-      }}
-      initial={{ scaleY: 0 }}
-      animate={{ scaleY: 1 }}
-      transition={{ delay: step.at * speed, type: "spring", stiffness: 260, damping: 16 }}
-      data-testid={`player-score-${player.id}`}
+    <div
+      className="absolute overflow-hidden"
+      style={{ left: PODIUM_LEFT + step.slot * (BLOCK + GAP), top: FLOOR - step.height - 40, width: BLOCK + 16, height: step.height + 40 }}
     >
-      <span aria-hidden="true" className="absolute inset-0 halftone-ink" style={{ opacity: 0.22 }} />
       <motion.div
-        className="relative flex flex-col items-center"
-        initial={{ scale: 2.2, opacity: 0, y: -50 }}
-        animate={{ scale: [2.2, 0.86, 1.04, 1], opacity: 1, y: 0 }}
-        transition={{ delay: (step.at + 0.3) * speed, duration: 0.5, times: [0, 0.55, 0.8, 1] }}
+        className="absolute flex flex-col items-center"
+        style={{
+          left: 0,
+          top: 40,
+          width: BLOCK,
+          height: step.height,
+          background: step.ink,
+          border: "6px solid var(--ink)",
+          boxShadow: `10px 10px 0 ${first ? "var(--yellow)" : "var(--ink)"}`,
+          transformOrigin: "50% 100%",
+          paddingTop: 24,
+        }}
+        initial={{ y: step.height + 60 }}
+        animate={{ y: [step.height + 60, -18, 0, 0, 0], scaleY: [1, 1, 0.9, 1.04, 1], scaleX: [1, 1, 1.06, 0.98, 1] }}
+        transition={{ delay: rise, duration: (first ? 0.95 : 0.75) * Math.max(speed, 0.6), times: [0, 0.55, 0.72, 0.86, 1], ease: "easeOut" }}
+        data-testid={`player-score-${player.id}`}
       >
-        <span className="slug" style={{ fontSize: 34, color: step.on, lineHeight: 1 }}>
+        <span aria-hidden="true" className="absolute inset-0 halftone-ink" style={{ opacity: 0.2 }} />
+        <span className="relative slug" style={{ fontSize: 36, color: step.on, lineHeight: 1 }}>
           {step.label}
         </span>
-        <span className="mt-3" style={{ borderRadius: 999, boxShadow: "0 0 0 6px var(--paper)" }}>
+        <span className="relative mt-3" style={{ borderRadius: 999, boxShadow: "0 0 0 7px var(--paper)" }}>
           <InkToken name={player.name} inkIndex={inkIndex} size={token} />
         </span>
         <span
-          className="tv-display truncate text-center mt-3"
-          style={{ fontSize: first ? 72 : 58, lineHeight: 1.02, maxWidth: BLOCK - 28, letterSpacing: "-0.015em", color: step.on }}
+          className="relative tv-display truncate text-center mt-3"
+          style={{ fontSize: first ? 80 : 62, lineHeight: 1.02, maxWidth: BLOCK - 28, letterSpacing: "-0.015em", color: step.on }}
         >
           {player.name}
         </span>
-        <span className="tv-display tabular" style={{ fontSize: first ? 60 : 50, lineHeight: 1, color: step.on }}>
-          {player.score}
-          <span className="slug" style={{ fontSize: 30 }}>
-            {" "}pts
+        <span className="relative tv-display tabular" style={{ fontSize: first ? 96 : 76, lineHeight: 1, color: step.on }} aria-hidden="true">
+          <CountUp to={player.score} atSeconds={AT.count * speed} live />
+        </span>
+        <span className="tv-sr">{player.score} points</span>
+      </motion.div>
+    </div>
+  );
+};
+
+const STAMP_INKS = [
+  { bg: "var(--teal)", fg: "var(--paper)" },
+  { bg: "var(--blue)", fg: "var(--paper)" },
+  { bg: "var(--pink)", fg: "var(--ink)" },
+];
+
+/** One award at a time: the card slides in, then its own stamp slams onto it. */
+const AwardCard = ({ award, index, at }: { award: Award; index: number; at: number }) => {
+  const stamp = STAMP_INKS[index % STAMP_INKS.length];
+  return (
+    <motion.div
+      className="relative flex flex-col justify-center px-7"
+      style={{ height: 186, background: "var(--paper-2)", border: "6px solid var(--ink)", boxShadow: `10px 10px 0 ${INKS[index % INKS.length]}` }}
+      initial={{ x: 640, opacity: 0, rotate: 5 }}
+      animate={{ x: 0, opacity: 1, rotate: index % 2 === 0 ? -1.2 : 1 }}
+      transition={{ delay: at, duration: 0.5, ease: [0.2, 0.9, 0.2, 1.15] }}
+      data-testid={`tv-award-${award.id}`}
+    >
+      <span className="flex items-center gap-5">
+        <span className="flex flex-col flex-1 min-w-0">
+          <span className="slug whitespace-nowrap" style={{ fontSize: 30, lineHeight: 1 }}>
+            {award.title}
+          </span>
+          <span className="tv-display truncate mt-3" style={{ fontSize: 68, lineHeight: 1.05, letterSpacing: "-0.015em" }}>
+            {joinNames(award.names)}
           </span>
         </span>
-      </motion.div>
+        <motion.span
+          className="tv-stamp tabular flex-none"
+          style={{ fontSize: 34, padding: "3px 12px", background: stamp.bg, color: stamp.fg, borderColor: "var(--ink)" }}
+          initial={{ scale: 2.6, opacity: 0, rotate: -22 }}
+          animate={{ scale: [2.6, 0.86, 1.04, 1], opacity: 1, rotate: -8 }}
+          transition={{ delay: at + 0.55, duration: 0.42, times: [0, 0.55, 0.8, 1] }}
+        >
+          {award.detail}
+        </motion.span>
+      </span>
     </motion.div>
   );
 };
 
-const AwardCard = ({ award, index, speed }: { award: Award; index: number; speed: number }) => (
-  <motion.div
-    className="relative flex flex-col justify-center px-7"
-    style={{ height: 178, background: "var(--paper-2)", border: "5px solid var(--ink)", boxShadow: `9px 9px 0 ${INKS[index % INKS.length]}` }}
-    initial={{ x: 520, opacity: 0, rotate: 4 }}
-    animate={{ x: 0, opacity: 1, rotate: index % 2 === 0 ? -1.2 : 1 }}
-    transition={{ delay: (0.25 + index * 0.45) * speed, duration: 0.5, ease: [0.2, 0.9, 0.2, 1.15] }}
-    data-testid={`tv-award-${award.id}`}
-  >
-    <span className="slug" style={{ fontSize: 30, lineHeight: 1 }}>
-      {award.title}
-    </span>
-    <span className="flex items-baseline gap-4 mt-3 min-w-0">
-      <span className="tv-display truncate" style={{ fontSize: 60, lineHeight: 1.05, letterSpacing: "-0.015em" }}>
-        {joinNames(award.names)}
-      </span>
-      <span className="tv-display tabular whitespace-nowrap text-blue" style={{ fontSize: 44, lineHeight: 1 }}>
-        {award.detail}
-      </span>
-    </span>
-  </motion.div>
-);
-
 /**
- * Game over: the podium stamped 3rd, 2nd, 1st (each player on their block), the winner takes over the
- * screen in huge misregistered type with confetti, recap awards slide in, then a calm "thanks" hold.
+ * Game over, as a ceremony: the podium blocks rise out of the floor 3rd, 2nd, 1st with their players on
+ * them, the scores count up, the winner takes over the whole screen with confetti, the title lands, the
+ * recap awards are stamped one at a time, then a calm "thanks for playing" hold.
  */
 export const TvFinale = ({
   players,
@@ -193,31 +223,43 @@ export const TvFinale = ({
   }, [speed]);
   const slid = hasAwards && beat !== "podium";
   const winnerLine = winner ? `${winner.name} Wins!` : "Game Over!";
-  const titleSize = winnerLine.length <= 12 ? 150 : winnerLine.length <= 18 ? 120 : 92;
-  const takeoverSize = winner ? (winner.name.length <= 5 ? 420 : winner.name.length <= 9 ? 280 : 180) : 200;
+  const titleSize = winnerLine.length <= 12 ? 156 : winnerLine.length <= 18 ? 124 : 92;
+  const takeoverSize = winner ? (winner.name.length <= 5 ? 440 : winner.name.length <= 9 ? 290 : 180) : 200;
   return (
     <motion.div key="finale" className="absolute inset-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-      <Sunburst size={1800} x={960} y={600} rays={30} />
+      <Sunburst size={2000} x={960} y={620} rays={30} />
       <div className="absolute flex items-center justify-between" style={{ left: 96, right: 96, top: 48, zIndex: 50 }} data-testid="game-over-title">
         <Slug>
           <span style={{ background: "var(--ink)", color: "var(--paper)", padding: "12px 20px", display: "inline-block" }}>Game over</span>
         </Slug>
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: beat === "calm" ? 1 : 0 }} transition={{ duration: 1.2 }}>
-          <Slug className="text-blue">Thanks for playing</Slug>
-        </motion.div>
+        <motion.span
+          className="tv-display text-blue"
+          style={{ fontSize: 60, lineHeight: 1 }}
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: beat === "calm" ? 1 : 0, y: beat === "calm" ? 0 : -10 }}
+          transition={{ duration: 1.4, ease: "easeOut" }}
+        >
+          Thanks for playing
+        </motion.span>
       </div>
 
       {winner ? (
         <motion.div
           className="absolute text-center"
-          style={{ left: 0, right: 0, top: 112, zIndex: 50 }}
-          initial={{ opacity: 0, y: -30 }}
-          animate={{ opacity: 1, y: 0, x: slid ? PODIUM_LEFT + PODIUM_WIDTH / 2 - 960 : 0 }}
-          transition={{ opacity: { delay: AT.title * speed, duration: 0.3 }, y: { delay: AT.title * speed, duration: 0.4 }, x: { duration: 0.6, ease: [0.2, 0.9, 0.2, 1.1] } }}
+          style={{ left: 0, right: 0, top: 128, zIndex: 50 }}
+          initial={{ opacity: 0, y: -40, scale: 1.4 }}
+          animate={{ opacity: 1, y: 0, scale: 1, x: slid ? PODIUM_LEFT + PODIUM_WIDTH / 2 - 960 : 0 }}
+          transition={{
+            opacity: { delay: AT.title * speed, duration: 0.2 },
+            y: { delay: AT.title * speed, duration: 0.45, ease: [0.2, 0.9, 0.2, 1.2] },
+            scale: { delay: AT.title * speed, duration: 0.45, ease: [0.2, 0.9, 0.2, 1.2] },
+            x: { duration: 0.6, ease: [0.2, 0.9, 0.2, 1.1] },
+          }}
           data-testid="winner-announcement"
         >
           <span className="tv-display" style={{ fontSize: titleSize }}>
-            <RisoType top="var(--blue)" under="var(--pink)" offset={12} rough>
+            {/* Two inks only, a 5 px offset: ink over pink. */}
+            <RisoType top="var(--ink)" under="var(--pink)" offset={5}>
               {winnerLine}
             </RisoType>
           </span>
@@ -238,13 +280,13 @@ export const TvFinale = ({
       </motion.div>
 
       {hasAwards ? (
-        <div className="absolute flex flex-col" style={{ left: 1300, right: 96, top: 330, gap: 26, zIndex: 30 }}>
-          {beat !== "podium" ? awards.map((a, i) => <AwardCard key={a.id} award={a} index={i} speed={speed} />) : null}
+        <div className="absolute flex flex-col" style={{ left: 1340, right: 72, top: 330, gap: 30, zIndex: 30 }}>
+          {beat !== "podium" ? awards.map((a, i) => <AwardCard key={a.id} award={a} index={i} at={(0.2 + i * AT.awardGap) * speed} />) : null}
         </div>
       ) : null}
 
-      <div className="absolute" style={{ left: 0, right: 0, top: FLOOR, height: 6, background: "var(--ink)" }} />
-      <div className="absolute flex items-center gap-8" style={{ left: 96, right: 96, top: FLOOR + 40 }}>
+      <div className="absolute" style={{ left: 0, right: 0, top: FLOOR, height: 6, background: "var(--ink)", zIndex: 20 }} />
+      <div className="absolute flex items-center gap-8" style={{ left: 96, right: 96, top: FLOOR + 30 }}>
         <Slug className="text-ink whitespace-nowrap" testId="final-scores-heading">
           Final scores
         </Slug>
@@ -268,26 +310,25 @@ export const TvFinale = ({
           style={{ zIndex: 55 }}
           initial={{ opacity: 0 }}
           animate={{ opacity: [0, 1, 1, 0] }}
-          transition={{ delay: AT.takeover * speed, duration: (AT.title - AT.takeover) * speed, times: [0, 0.08, 0.82, 1] }}
+          transition={{ delay: AT.takeover * speed, duration: (AT.title - AT.takeover) * speed, times: [0, 0.06, 0.86, 1] }}
         >
           <div className="absolute inset-0" style={{ background: "var(--yellow)", mixBlendMode: "multiply" }} />
-          <Sunburst size={2200} x={960} y={540} rays={26} fill="url(#tv-dots-pink)" spin={false} />
+          <Sunburst size={2400} x={960} y={540} rays={26} fill="url(#tv-dots-pink)" spin={false} />
           <motion.span
             className="tv-display relative whitespace-nowrap"
             style={{ fontSize: takeoverSize, lineHeight: 0.9 }}
             initial={{ scale: 2.4, rotate: -10 }}
-            animate={{ scale: [2.4, 0.9, 1.04, 1], rotate: -4 }}
-            transition={{ delay: AT.takeover * speed, duration: 0.55, times: [0, 0.55, 0.8, 1] }}
+            animate={{ scale: [2.4, 0.9, 1.04, 1, 1.06], rotate: [-10, -4, -4, -4, -3] }}
+            transition={{ delay: AT.takeover * speed, duration: (AT.title - AT.takeover) * speed, times: [0, 0.18, 0.26, 0.32, 1] }}
           >
-            <RisoType top="var(--blue)" under="var(--pink)" offset={18} rough>
+            <RisoType top="var(--ink)" under="var(--pink)" offset={6}>
               {winner.name}
             </RisoType>
           </motion.span>
         </motion.div>
       ) : null}
 
-      <PaperConfetti count={reduced ? 40 : 100} start={AT.takeover * speed} />
+      <PaperConfetti count={reduced ? 40 : 110} start={AT.takeover * speed} />
     </motion.div>
   );
 };
-
