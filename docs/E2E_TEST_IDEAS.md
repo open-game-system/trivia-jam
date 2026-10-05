@@ -26,6 +26,14 @@ for one without, e.g. `--- ??? ---`.
 | 2. Import questions, parse error, failed re-import | `e2e/flows/02-import-questions.e2e.ts` |
 | 3. Player joins; host + TV show them; no duplicates; reload keeps seat | `e2e/flow-03-player-join.spec.ts` |
 | 4. Settings reflected on host/TV/timer; host removes a player | `e2e/flow-04-settings-and-remove.spec.ts` |
+| 5. Question 1 on TV/host/phone; number pad digits, delete, GO; locked in | `e2e/flow-05-numeric-answer.spec.ts` |
+| 6. Multiple choice with the option tiles; right/wrong outcomes | `e2e/flow-06-multiple-choice.spec.ts` |
+| 7. Everyone answers -> auto-advance; TV reveal (answer, points); phone outcomes; host Next | `e2e/flow-07-auto-advance-reveal.spec.ts` |
+| 8. Time runs out -> results; no timer ever jumps back up (incl. a stale 0 before the first tick) | `e2e/flow-08-timer.spec.ts` |
+
+In-game helpers (`startFirstQuestion`, `answerOnPad`, `setAnswerTime`, `answersSubmitted`, ...) live in
+`e2e/helpers/play.ts`. Flow 8 records each value a timer shows with a MutationObserver (instrumentation,
+not a selector for interaction), so a value painted for a single frame is caught.
 
 Known gap: `settings.maxPlayers` is shown but not enforced on join (deciding what a turned-away
 player sees is a design call, not a bug fix).
