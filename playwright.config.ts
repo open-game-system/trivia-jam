@@ -32,8 +32,9 @@ export default defineConfig({
   timeout: 45_000,
   expect: { timeout: 10_000 },
   // In CI, the workflow starts wrangler on :8787 before running tests.
-  // Locally, auto-start the dev server on :3000.
-  ...(!process.env.CI && {
+  // Locally, auto-start the dev server on :3000, unless PLAYWRIGHT_BASE_URL points at one
+  // already running (e.g. `pnpm e2e:serve` on :3101 with the mock LLM).
+  ...(!process.env.CI && !process.env.PLAYWRIGHT_BASE_URL && {
     webServer: {
       command: "pnpm dev",
       url: "http://localhost:3000",

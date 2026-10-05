@@ -25,7 +25,9 @@
     "server/**/*.ts",
     "exports.cloudflare.ts",
     "nitro.config.ts",
-    "vite.config.ts"
+    "vite.config.ts",
+    "e2e.config.ts",
+    "e2e/flows/**/*.ts"
   ],
   "exclude": [
     "node_modules",

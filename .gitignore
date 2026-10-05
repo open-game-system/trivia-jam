@@ -36,3 +36,5 @@ recordings/
 critic/rounds/*/session.mp4
 critic/rounds/*/shots/
 .claude/worktrees/
+# tester-army/e2e results
+.e2e/
