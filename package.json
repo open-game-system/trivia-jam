@@ -4,8 +4,8 @@
   "type": "module",
   "scripts": {
     "build": "vite build",
-    "dev": "pnpm build && cp -f .dev.vars .output/server/.dev.vars 2>/dev/null; wrangler dev -c .output/server/wrangler.json --port 3000 --inspector-port 0",
-    "preview": "pnpm build && wrangler dev -c .output/server/wrangler.json --port 3000 --inspector-port 0",
+    "dev": "pnpm build && cp -f .dev.vars .output/server/.dev.vars 2>/dev/null; wrangler dev -c .output/server/wrangler.json --port 3000 --inspector-port 0 --persist-to .wrangler/state",
+    "preview": "pnpm build && wrangler dev -c .output/server/wrangler.json --port 3000 --inspector-port 0 --persist-to .wrangler/state",
     "deploy": "pnpm build && wrangler deploy -c .output/server/wrangler.json",
     "typecheck": "tsc",
     "test": "vitest",

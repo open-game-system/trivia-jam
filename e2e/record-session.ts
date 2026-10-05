@@ -1,0 +1,306 @@
+/**
+ * Critic evidence: plays a whole game of Trivia Jam through the real UI and records it.
+ *   TV (the /spectate page, 1920x1080) | host phone (grown-up, iPhone 15) | kid iPad (landscape)
+ * plus two off-camera players, stitched side by side with the TV's audio (if the TV exposes a tap).
+ *
+ *   TJ_URL=http://127.0.0.1:3000 TJ_OUT=critic/rounds/00/session.mp4 pnpm exec tsx e2e/record-session.ts
+ *
+ * Writes recordings/raw/: per-panel videos, shots/<phase>-<screen>.png at CSS scale, marks.json, perf.json.
+ */
+import { execFileSync } from "node:child_process";
+import { mkdirSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { chromium, devices, type BrowserContextOptions, type Page } from "playwright";
+
+const BASE = process.env.TJ_URL ?? "http://127.0.0.1:3000";
+const RAW = "recordings/raw";
+const SHOTS = `${RAW}/shots`;
+const OUT = process.env.TJ_OUT ?? "recordings/trivia-jam-session.mp4";
+const FONT = "/System/Library/Fonts/Supplemental/Arial Rounded Bold.ttf";
+const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/** A fixed question set, the same every round: numbers a family can guess, one multiple choice. */
+const QUESTIONS = `How many legs does a spider have?
+8
+
+How many days are in a week?
+7
+
+How many teeth does a grown-up have?
+32
+
+Which animal is the biggest?
+a) Elephant b) Blue whale c) Giraffe d) Hippo
+Correct answer: B
+
+How many minutes are in an hour?
+60`;
+
+/** The same questions, already parsed: the rig never depends on the live Gemini API. */
+const PARSED = {
+  q1: { id: "q1", text: "How many legs does a spider have?", correctAnswer: 8, questionType: "numeric" },
+  q2: { id: "q2", text: "How many days are in a week?", correctAnswer: 7, questionType: "numeric" },
+  q3: { id: "q3", text: "How many teeth does a grown-up have?", correctAnswer: 32, questionType: "numeric" },
+  q4: { id: "q4", text: "Which animal is the biggest?", correctAnswer: "Blue whale", questionType: "multiple-choice", options: ["Elephant", "Blue whale", "Giraffe", "Hippo"] },
+  q5: { id: "q5", text: "How many minutes are in an hour?", correctAnswer: 60, questionType: "numeric" },
+};
+
+/** Swaps the host's PARSE_QUESTIONS for QUESTIONS_PARSED on the wire (no game code involved). */
+async function stubParsing(page: Page) {
+  await page.routeWebSocket(/\/api\//, (ws) => {
+    const server = ws.connectToServer();
+    ws.onMessage((message) => {
+      const text = typeof message === "string" ? message : message.toString();
+      const isParse = text.includes('"PARSE_QUESTIONS"');
+      server.send(isParse ? JSON.stringify({ type: "QUESTIONS_PARSED", questions: PARSED }) : text);
+    });
+  });
+}
+
+/** Answers per question for [kid, mom, grandpa]: some exact, some close, some wrong. */
+const ANSWERS: string[][] = [
+  ["8", "8", "6"],
+  ["7", "7", "7"],
+  ["20", "32", "30"],
+  ["Blue whale", "Blue whale", "Elephant"],
+  ["100", "60", "60"],
+];
+
+const marks: { label: string; t: number }[] = [];
+let t0 = 0;
+const mark = (label: string) => {
+  marks.push({ label, t: Math.round((Date.now() - t0) / 100) / 10 });
+  console.log(`[${marks.at(-1)?.t}s] ${label}`);
+};
+
+function asContext(name: string, landscape = false): BrowserContextOptions & { viewport: { width: number; height: number } } {
+  const d = devices[name];
+  if (!d) throw new Error(`unknown device ${name}`);
+  const { defaultBrowserType: _ignored, ...opts } = d;
+  const viewport = landscape ? { width: d.viewport.height, height: d.viewport.width } : d.viewport;
+  return { ...opts, viewport };
+}
+
+async function shoot(phase: string, screens: Record<string, Page>) {
+  for (const [name, page] of Object.entries(screens)) {
+    await page.screenshot({ path: `${SHOTS}/${phase}-${name}.png` }).catch((e: unknown) => console.log(`shot ${phase}-${name} failed: ${String(e).slice(0, 120)}`));
+  }
+}
+
+/** On a stall: what is each page actually showing? */
+async function dump(screens: Record<string, Page>) {
+  for (const [name, page] of Object.entries(screens)) {
+    const text = await page.locator("body").innerText().catch(() => "");
+    console.log(`--- ${name} ---\n${text.slice(0, 600)}`);
+  }
+}
+
+async function answer(page: Page, value: string) {
+  const option = page.getByRole("button").filter({ hasText: new RegExp(`^[A-D]?\\s*${value}$`) });
+  if (await option.count()) {
+    await option.first().click({ timeout: 3000 });
+    return;
+  }
+  const input = page.getByLabel(/answer/i);
+  await input.waitFor({ timeout: 10_000 });
+  // Typed digit by digit, the way a kid would tap it in.
+  await input.pressSequentially(value, { delay: 260 });
+  await page.getByRole("button", { name: /submit/i }).click({ timeout: 3000 });
+}
+
+async function main() {
+  rmSync(RAW, { recursive: true, force: true });
+  mkdirSync(SHOTS, { recursive: true });
+  const browser = await chromium.launch({
+    channel: "chrome",
+    args: ["--autoplay-policy=no-user-gesture-required", "--use-angle=metal", "--enable-gpu", "--disable-audio-output"],
+  });
+
+  const recorded = [
+    { key: "tv", label: "TV", opts: { viewport: { width: 1920, height: 1080 } } },
+    { key: "host", label: "Grown-up phone (host)", opts: asContext("iPhone 15") },
+    { key: "kid", label: "Kid iPad (landscape)", opts: asContext("iPad (gen 7)", true) },
+  ];
+  const pages: Page[] = [];
+  const startedAt: number[] = [];
+  for (const s of recorded) {
+    const ctx = await browser.newContext({ ...s.opts, recordVideo: { dir: RAW, size: s.opts.viewport } });
+    startedAt.push(Date.now());
+    const page = await ctx.newPage();
+    await page.setContent('<body style="margin:0;background:#111;height:100vh"></body>');
+    page.on("pageerror", (e) => console.log(`[pageerror ${s.key}] ${e.message.slice(0, 300)}`));
+    pages.push(page);
+  }
+  const [tv, host, kid] = pages;
+  if (!tv || !host || !kid) throw new Error("pages missing");
+  const offCamera = async () => (await browser.newContext(asContext("iPhone 15"))).newPage();
+  const mom = await offCamera();
+  const grandpa = await offCamera();
+  const screens = { tv, host, kid };
+  t0 = startedAt[0] ?? Date.now();
+
+  // The kid's iPad records its own pointer-down time, so latency is press -> TV, not Playwright overhead.
+  await kid.addInitScript(`document.addEventListener("pointerdown", () => { window.__pressAt = Date.now(); }, true);`);
+  await tv.addInitScript(`window.__frames = []; let last = performance.now();
+    const tick = (t) => { window.__frames.push(t - last); last = t; requestAnimationFrame(tick); }; requestAnimationFrame(tick);`);
+
+  try {
+    // Host creates a game.
+    if (process.env.TJ_LIVE_GEMINI !== "1") await stubParsing(host);
+    await host.goto(BASE);
+    await shoot("00-home", { host });
+    await host.getByRole("link", { name: /create new game/i }).click();
+    await host.waitForURL(/\/games\/[a-z0-9-]+/i);
+    const gamePath = new URL(host.url()).pathname;
+    const gameUrl = `${BASE}${gamePath}`;
+    await tv.goto(`${BASE}${gamePath.replace(/^\/games\//, "/spectate/")}?record=1&hook=1`);
+    // If the TV exposes an audio tap, record it.
+    const hasTap = await tv.evaluate(() => typeof Reflect.get(window, "__tvAudioTap") === "function");
+    if (hasTap) {
+      await tv.evaluate(`(() => {
+        const rec = new MediaRecorder(window.__tvAudioTap(), { mimeType: "audio/webm;codecs=opus" });
+        window.__chunks = []; rec.ondataavailable = (e) => window.__chunks.push(e.data); rec.start(250); window.__rec = rec;
+      })()`);
+    }
+    const audioStartedAt = Date.now();
+    mark("lobby");
+    await wait(2500);
+    await shoot("01-lobby-empty", { tv, host });
+
+    // Host imports the fixed questions.
+    await host.locator("textarea").fill(QUESTIONS);
+    await host.getByRole("button", { name: /^submit$/i }).click();
+    mark("host imports questions");
+    await wait(1200);
+    await shoot("02-parsing", { host });
+    await host.getByTestId("parsed-question-5").waitFor({ timeout: 60_000 });
+    mark("questions ready");
+
+    // Everyone joins from the link.
+    const join = async (page: Page, name: string) => {
+      await page.goto(gameUrl);
+      await page.getByLabel(/your name/i).waitFor({ timeout: 10_000 });
+      await page.getByLabel(/your name/i).pressSequentially(name, { delay: 120 });
+      await page.getByRole("button", { name: /join game/i }).click();
+    };
+    await kid.goto(gameUrl);
+    await wait(800);
+    await shoot("03-join", { kid });
+    await join(kid, "Sam");
+    mark("kid joined");
+    await wait(1200);
+    await join(mom, "Mom");
+    await join(grandpa, "Grandpa");
+    mark("everyone joined");
+    await wait(1500);
+    await shoot("04-lobby-full", { tv, host, kid });
+
+    await host.getByRole("button", { name: /start game/i }).click();
+    mark("game started");
+    await wait(1500);
+
+    for (let q = 0; q < ANSWERS.length; q++) {
+      const start = host.getByRole("button", { name: /start.*question|next.*question/i });
+      await start.waitFor({ timeout: 40_000 });
+      await shoot(`1${q}a-before-q${q + 1}`, { tv, host, kid });
+      await start.click();
+      mark(`question ${q + 1}`);
+      await kid.getByTestId("question-timer").waitFor({ timeout: 10_000 });
+      await wait(1500);
+      await shoot(`1${q}b-q${q + 1}-asked`, { tv, host, kid });
+      const answers = ANSWERS[q] ?? [];
+      // The kid thinks; grown-ups answer at their own pace.
+      await wait(2500);
+      await answer(mom, answers[1] ?? "1");
+      await wait(1500);
+      await answer(kid, answers[0] ?? "1");
+      mark(`kid answers q${q + 1}`);
+      await wait(600);
+      await shoot(`1${q}c-q${q + 1}-kid-answered`, { tv, host, kid });
+      await wait(1200);
+      await answer(grandpa, answers[2] ?? "1");
+      // Everyone answered: results come up (auto-advance) or after the timer.
+      await wait(2500);
+      mark(`results q${q + 1}`);
+      await shoot(`1${q}d-q${q + 1}-results`, { tv, host, kid });
+      await wait(3500);
+    }
+
+    // The last question ends the game (or the host ends it).
+    const over = tv.getByTestId("game-over-title");
+    if (!(await over.count())) {
+      const end = host.getByTestId("end-game-button");
+      if (await end.count()) await end.click({ timeout: 3000 }).catch(() => undefined);
+    }
+    await over.waitFor({ timeout: 40_000 }).catch(() => undefined);
+    mark("game over");
+    await wait(2500);
+    await shoot("20-game-over", { tv, host, kid });
+    await wait(4000);
+    mark("end");
+
+    const rawFrames: unknown = await tv.evaluate(() => Reflect.get(window, "__frames"));
+    const frames = Array.isArray(rawFrames) ? rawFrames.filter((x): x is number => typeof x === "number") : [];
+    const sorted = frames.slice(60).sort((a, b) => a - b);
+    const at = (p: number) => Math.round((sorted[Math.floor(p * (sorted.length - 1))] ?? 0) * 10) / 10;
+    const pressAt: unknown = await kid.evaluate(() => Reflect.get(window, "__pressAt"));
+    writeFileSync(`${RAW}/perf.json`, JSON.stringify({ frames: sorted.length, p50: at(0.5), p95: at(0.95), p99: at(0.99), max: at(1), lastKidPressAt: pressAt }, null, 2));
+
+    const audioPath = `${RAW}/tv-audio.webm`;
+    if (hasTap) {
+      const b64 = await tv.evaluate<string>(`new Promise((resolve) => {
+        window.__rec.onstop = () => { const r = new FileReader(); r.onload = () => resolve(String(r.result).split(",")[1] ?? ""); r.readAsDataURL(new Blob(window.__chunks, { type: "audio/webm" })); };
+        window.__rec.stop();
+      })`);
+      writeFileSync(audioPath, Buffer.from(b64, "base64"));
+    } else {
+      writeFileSync(audioPath, "");
+      console.error("NO TV AUDIO: the TV page exposes no audio tap (window.__tvAudioTap). The video is silent.");
+    }
+
+    const videos = await Promise.all(
+      pages.map(async (p) => {
+        const v = p.video();
+        await p.context().close();
+        if (!v) throw new Error("no video");
+        return v.path();
+      }),
+    );
+    await browser.close();
+    writeFileSync(`${RAW}/marks.json`, JSON.stringify({ videos, startedAt, audio: audioPath, hasAudio: hasTap, marks }, null, 2));
+    stitch(videos, recorded.map((s) => s.label), startedAt, { path: audioPath, startedAt: audioStartedAt });
+    console.log(`\nSaved ${OUT}`);
+  } catch (err) {
+    console.error("STALL:", err);
+    await shoot("stall", screens);
+    await dump({ ...screens, mom, grandpa });
+    await browser.close();
+    process.exit(1);
+  }
+}
+
+/** Aligns the recordings in wall-clock time and lays them out side by side, 720px tall. */
+function stitch(videos: string[], labels: string[], startedAt: number[], audio: { path: string; startedAt: number }) {
+  const H = 720;
+  const last = Math.max(...startedAt);
+  const inputs = videos.flatMap((v, i) => ["-ss", ((last - (startedAt[i] ?? last)) / 1000).toFixed(3), "-i", v]);
+  const panels = labels.map((label, i) => {
+    const text = label.replace(/:/g, "\\:");
+    return `[${i}:v]scale=-2:${H},pad=iw+24:ih+64:12:64:color=0x111111,drawtext=fontfile='${FONT}':text='${text}':fontcolor=0xeeeeee:fontsize=28:x=(w-tw)/2:y=18[p${i}]`;
+  });
+  const filter = `${panels.join(";")};${labels.map((_, i) => `[p${i}]`).join("")}hstack=inputs=${labels.length}:shortest=1,pad=ceil(iw/2)*2:ceil(ih/2)*2[out]`;
+  const heard = statSync(audio.path).size > 0;
+  const audioIn = heard
+    ? ["-itsoffset", ((audio.startedAt - last) / 1000).toFixed(3), "-i", audio.path]
+    : ["-f", "lavfi", "-i", "anullsrc=r=48000:cl=stereo"];
+  execFileSync(
+    "ffmpeg",
+    ["-y", "-loglevel", "error", ...inputs, ...audioIn, "-filter_complex", filter, "-map", "[out]", "-map", `${videos.length}:a`,
+      "-c:v", "libx264", "-pix_fmt", "yuv420p", "-crf", "20", "-r", "30", "-c:a", "aac", "-b:a", "192k", ...(heard ? [] : ["-shortest"]), OUT],
+    { stdio: "inherit" },
+  );
+}
+
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});
