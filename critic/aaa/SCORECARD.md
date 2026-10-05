@@ -34,3 +34,4 @@ bottom edge, reads little), a toddler who may tap along, and the TV (cast from t
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | 00 | 3 | 3 | 3 | 2 | 2 | 1 | 2 | 3 | 4 | 3 | 2 | 5 | 1 | baseline: DaisyUI dark kit, list reveal with hard cuts, no audio, keyboard text field for the kid, emoji finale, timer resets on submit |
 | 01 | 6 | 5 | 6 | 5 | 4 | 4 | 6 | 6 | 5 | 3 | 3 | 6 | 3 | riso redesign (TV, phones, kid pad), audio beds + SFX, OGS; reveal labels collide, dead air + clipping after reveals, podium missing winner, no rematch |
+| 02 | 7 | 6 | 7 | 6 | 6 | 6 | 6 | 6 | 5 | 4 | 5 | 7 | 4 | number-line solver, focal reveal + headline, full-screen standings, podium + awards, no-spoiler phones, kid result art, audio limiter/no dead air; standings reorder late, labels still collide, flat mix, kid must read |
