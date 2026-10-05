@@ -153,9 +153,10 @@ async function dump(screens: Record<string, Page>) {
 }
 
 async function answer(page: Page, value: string) {
-  const option = page.getByRole("button").filter({ hasText: new RegExp(`^[A-D]?\\s*${value}$`) });
+  // Multiple-choice tiles are named "A) option"; a digit key on the pad must never count as one.
+  const option = page.getByRole("button", { name: new RegExp(`^[A-D]\\) ${value}$`) });
   if (await option.count()) {
-    await option.first().click({ timeout: 3000 });
+    await option.first().click({ force: true, timeout: 3000 });
     return;
   }
   // Tapped on the on-screen number pad, key by key, the way a kid does it.
@@ -224,7 +225,10 @@ async function main() {
     const gameUrl = `${BASE}${gamePath}`;
     await tv.goto(`${BASE}${gamePath.replace(/^\/games\//, "/spectate/")}?record=1&hook=1`);
     // If the TV exposes an audio tap, record it.
-    const hasTap = await tv.evaluate(() => typeof Reflect.get(window, "__tvAudioTap") === "function");
+    const hasTap = await tv
+      .waitForFunction(() => typeof Reflect.get(window, "__tvAudioTap") === "function", null, { timeout: 15_000 })
+      .then(() => true)
+      .catch(() => false);
     if (hasTap) {
       await tv.evaluate(`(() => {
         const rec = new MediaRecorder(window.__tvAudioTap(), { mimeType: "audio/webm;codecs=opus" });

@@ -19,3 +19,5 @@ truncated by an ellipsis counted as clipped (now intersected with clipping ances
 
 ## Rig change before round 01 (2026-10-04)
 The redesigned TV stages its reveal over ~10 s, so the recorder now also shoots `*-reveal-settled` (+7 s) and `*-standings` (+12 s) per question. Thresholds unchanged. Round 00 had no staged reveal (results appeared at once), so its comparison is unaffected.
+
+**Pending:** tv-audio-present on a forced mute. The first TJ_FAULT=mute (patching AudioContext.resume) does not mute a context that autoplay already started, so it proved nothing; needs a fault that cuts the tap.
