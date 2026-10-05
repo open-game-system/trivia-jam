@@ -47,46 +47,38 @@ export const QuestionHeader = ({
   const fraction = totalTime > 0 ? Math.max(0, Math.min(1, timeLeft / totalTime)) : 0;
 
   return (
-    <div className="px-4 pt-2">
-      <div className="flex items-center gap-3">
-        <motion.div
-          className="tabular font-display font-extrabold text-ink leading-none"
-          style={{ fontSize: "clamp(32px, 6dvh, 56px)", minWidth: "2.4ch" }}
-          data-testid="question-timer"
-          animate={{ scale: urgent ? [1, 1.12, 1] : 1 }}
-          transition={{ duration: 1, repeat: urgent ? Infinity : 0 }}
-        >
-          {timeLeft}s
-        </motion.div>
-        <div className="ptimer-track flex-1" aria-hidden="true">
-          <div
-            className="ptimer-fill"
-            style={{ transform: `scaleX(${fraction})` }}
-          />
-        </div>
+    <div className="pqh px-4 pt-2">
+      <motion.div
+        className="pqh-timer tabular font-display font-extrabold text-ink leading-none"
+        style={{ fontSize: "clamp(32px, 6dvh, 56px)", minWidth: "2.4ch" }}
+        data-testid="question-timer"
+        animate={{ scale: urgent ? [1, 1.12, 1] : 1 }}
+        transition={{ duration: 1, repeat: urgent ? Infinity : 0 }}
+      >
+        {timeLeft}s
+      </motion.div>
+      <div className="pqh-bar ptimer-track" aria-hidden="true">
+        <div className="ptimer-fill" style={{ transform: `scaleX(${fraction})` }} />
       </div>
-      <div className="mt-2 flex items-center gap-3">
-        {supported && (
-          <button
-            type="button"
-            role="switch"
-            aria-checked={speaking}
-            className="pread"
-            aria-label="Read it to me"
-            data-speaking={speaking}
-            onClick={onTap}
-          >
-            <SpeakerGlyph speaking={speaking} />
-          </button>
-        )}
-        <h1
-          className="min-w-0 flex-1 font-display font-extrabold text-blue text-center"
-          style={{ fontSize: "clamp(26px, 5.6dvh, 60px)", lineHeight: 1.05, letterSpacing: "-0.02em" }}
+      {supported && (
+        <button
+          type="button"
+          role="switch"
+          aria-checked={speaking}
+          className="pqh-read pread"
+          aria-label="Read it to me"
+          data-speaking={speaking}
+          onClick={onTap}
         >
-          {text}
-        </h1>
-        {supported && <span className="pread-balance" aria-hidden="true" />}
-      </div>
+          <SpeakerGlyph speaking={speaking} />
+        </button>
+      )}
+      <h1
+        className="pqh-title min-w-0 font-display font-extrabold text-blue text-center"
+        style={{ fontSize: "clamp(24px, min(5.6dvh, 8vw), 60px)", lineHeight: 1.05, letterSpacing: "-0.02em", overflowWrap: "anywhere" }}
+      >
+        {text}
+      </h1>
     </div>
   );
 };

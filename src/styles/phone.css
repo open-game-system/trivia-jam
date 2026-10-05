@@ -692,8 +692,28 @@ textarea.pfield { padding: 14px 16px; font-size: 18px; line-height: 1.35; font-f
 .pread:active { transform: translate(4px, 4px); box-shadow: 0 0 0 var(--pink); }
 .pread:focus-visible { outline: 4px solid var(--blue); outline-offset: 3px; }
 .pread[data-speaking="true"] { background: var(--pink); box-shadow: 4px 4px 0 var(--blue); }
-/* Keeps the question centred while the button sits on its left. */
-.pread-balance { flex: none; width: clamp(64px, 11dvh, 92px); }
+/* Header grid. Portrait: [timer][bar][speaker] over the question. Landscape: the
+   speaker sits left of the centred question, the bar spans the top. */
+.pqh {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas: "timer bar read" "title title title";
+  align-items: center;
+  column-gap: 12px;
+  row-gap: 8px;
+}
+.pqh-timer { grid-area: timer; }
+.pqh-bar { grid-area: bar; }
+.pqh-read { grid-area: read; --size: 56px; padding: 10px; }
+.pqh-title { grid-area: title; }
+@media (orientation: landscape) {
+  .pqh {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas: "timer bar bar" "read title balance";
+  }
+  .pqh-read { --size: clamp(64px, 11dvh, 92px); padding: 12px; }
+  .pqh::after { content: ""; grid-area: balance; width: clamp(64px, 11dvh, 92px); }
+}
 .pread-arc { opacity: 0.85; }
 .pread-arc-1 { animation: parc 0.9s steps(1) infinite; }
 .pread-arc-2 { animation: parc 0.9s steps(1) infinite 0.3s; }
@@ -711,7 +731,7 @@ textarea.pfield { padding: 14px 16px; font-size: 18px; line-height: 1.35; font-f
   border: 8px solid var(--ink);
   border-radius: 12px;
   box-shadow: 6px 6px 0 var(--pink);
-  font-size: clamp(36px, 8dvh, 72px);
+  font-size: clamp(30px, 6.2dvh, 64px);
   line-height: 1;
   letter-spacing: 0.01em;
   text-align: center;
