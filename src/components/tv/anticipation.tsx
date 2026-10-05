@@ -21,7 +21,7 @@ export const TvAnticipation = ({
     className="absolute inset-0"
     initial={{ opacity: 0 }}
     animate={{ opacity: 1 }}
-    exit={{ opacity: 0 }}
+   
   >
     <Sunburst size={1500} x={1240} y={470} fill="url(#tv-dots-pink)" rays={22} />
     <div className="absolute flex flex-col items-start" style={{ left: 120, top: 120 }}>

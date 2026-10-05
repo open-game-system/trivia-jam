@@ -1,16 +1,11 @@
-import { AnimatePresence, motion } from "framer-motion";
 import { useState } from "react";
 import { GameContext } from "~/game.context";
 import type { GamePublicContext } from "~/game.types";
 import { useQuestionTimer } from "~/hooks/use-question-timer";
-import {
-  GameBackground,
-  FinalScoresList,
-  WinnerAnnouncement,
-} from "./game";
 import { TvAnticipation } from "./tv/anticipation";
 import { TvQuestion } from "./tv/question";
-import { TvReveal } from "./tv/reveal";
+import { TvResultsBeat } from "./tv/results-beat";
+import { TvFinale } from "./tv/finale";
 import { buildStandings } from "./tv/tv-model";
 import { TvLobby } from "./tv/lobby";
 import { TvStage } from "./tv/stage";
@@ -110,7 +105,6 @@ export const SpectatorView = ({ host }: { host: string }) => {
   return (
     <TvStage>
       <div className="absolute inset-0">
-        <AnimatePresence mode="wait">
           {isLobby && <LobbyDisplay host={host} />}
 
           {isActive && (
@@ -124,7 +118,6 @@ export const SpectatorView = ({ host }: { host: string }) => {
           )}
 
           {isFinished && <GameFinishedDisplay players={players} />}
-        </AnimatePresence>
       </div>
     </TvStage>
   );
@@ -144,34 +137,9 @@ const LobbyDisplay = ({ host }: { host: string }) => {
   );
 };
 
-const GameFinishedDisplay = ({
-  players,
-}: {
-  players: Array<{ id: string; name: string; score: number }>;
-}) => {
-  const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
-  const winner = sortedPlayers[0];
-
-  return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 relative">
-      <GameBackground />
-
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="relative z-10 w-full max-w-4xl bg-gray-800/30 backdrop-blur-sm rounded-2xl p-8 border border-gray-700/50"
-        data-testid="game-over-title"
-      >
-        <h1 className="text-6xl font-bold text-center mb-8 bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">
-          Game Over!
-        </h1>
-
-        <WinnerAnnouncement winner={winner} />
-        <FinalScoresList players={players} />
-      </motion.div>
-    </div>
-  );
-};
+const GameFinishedDisplay = ({ players }: { players: GamePublicContext["players"] }) => (
+  <TvFinale key="finale" players={players} />
+);
 
 const QuestionResultsDisplay = ({
   questionResults,
@@ -188,12 +156,11 @@ const QuestionResultsDisplay = ({
   const question = latestResult ? questions[latestResult.questionId] : undefined;
   if (!latestResult || !question) return null;
   return (
-    <TvReveal
-      key={`reveal-${latestResult.questionId}`}
+    <TvResultsBeat
+      key={`results-${latestResult.questionId}`}
       question={question}
       result={latestResult}
       players={players}
-      number={latestResult.questionNumber}
       total={Object.keys(questions).length}
       live={live}
     />

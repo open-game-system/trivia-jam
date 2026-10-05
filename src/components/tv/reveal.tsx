@@ -25,9 +25,9 @@ type TvPlayer = { id: string; name: string; score: number };
 const AXIS_LEFT = 170;
 const AXIS_WIDTH = 1580;
 const AXIS_Y = 735;
-const LANE_HEIGHT = 168;
-const MAX_LANES = 3;
-const PIN_WIDTH = 240;
+type PinGeometry = { width: number; laneHeight: number; maxLanes: number; token: number; guessSize: number };
+const ROOMY: PinGeometry = { width: 240, laneHeight: 168, maxLanes: 3, token: 64, guessSize: 56 };
+const COMPACT: PinGeometry = { width: 176, laneHeight: 148, maxLanes: 4, token: 52, guessSize: 46 };
 const ROLL = [0.2, 0.9, 0.2, 1.15] as const;
 
 type Pin = {
@@ -103,15 +103,16 @@ const HighlightCallout = ({
   </motion.div>
 );
 
-const GuessPin = ({ pin, phase, live, delay }: { pin: Pin; phase: number; live: boolean; delay: number }) => {
-  const bottom = AXIS_Y - 26 - pin.lane * LANE_HEIGHT;
-  const stem = 26 + pin.lane * LANE_HEIGHT;
+const GuessPin = ({ pin, phase, live, delay, geo }: { pin: Pin; phase: number; live: boolean; delay: number; geo: PinGeometry }) => {
+  const PIN_WIDTH = geo.width;
+  const bottom = AXIS_Y - 26 - pin.lane * geo.laneHeight;
+  const stem = 26 + pin.lane * geo.laneHeight;
   const lit = pin.highlight !== undefined && phase >= PHASE.spotlight;
   const dim = phase >= PHASE.spotlight && pin.highlight === undefined ? 0.5 : 1;
   return (
     <div
       className="absolute"
-      style={{ left: AXIS_LEFT + pin.x - PIN_WIDTH / 2, top: 0, width: PIN_WIDTH, height: AXIS_Y + 8, zIndex: lit ? 30 : 10 + (MAX_LANES - pin.lane) }}
+      style={{ left: AXIS_LEFT + pin.x - PIN_WIDTH / 2, top: 0, width: PIN_WIDTH, height: AXIS_Y + 8, zIndex: lit ? 30 : 10 + (geo.maxLanes - pin.lane) }}
       data-testid={`player-result-${pin.playerId}`}
     >
       <motion.div
@@ -142,16 +143,16 @@ const GuessPin = ({ pin, phase, live, delay }: { pin: Pin; phase: number; live: 
             <circle cx={150} cy={150} r={146} fill="url(#tv-dots-yellow)" />
           </motion.svg>
         ) : null}
-        <span className="relative tv-display tabular" style={{ fontSize: 56, lineHeight: 1, opacity: dim, transition: "opacity .3s" }}>
+        <span className="relative tv-display tabular" style={{ fontSize: geo.guessSize, lineHeight: 1, opacity: dim, transition: "opacity .3s" }}>
           {formatTick(pin.value)}
         </span>
         <span className="relative flex items-center mt-1">
           <span style={{ opacity: dim, transition: "opacity .3s" }}>
-            <InkToken name={pin.name} inkIndex={pin.inkIndex} size={64} />
+            <InkToken name={pin.name} inkIndex={pin.inkIndex} size={geo.token} />
           </span>
           {phase >= PHASE.points && pin.points > 0 ? (
-            <span className="absolute" style={{ left: 74, top: 6 }}>
-              <PointsBadge points={pin.points} live={live} />
+            <span className="absolute" style={{ left: geo.token + 10, top: geo.token / 2 - 26 }}>
+              <PointsBadge points={pin.points} live={live} compact={geo === COMPACT} />
             </span>
           ) : null}
         </span>
@@ -387,7 +388,7 @@ export const TvReveal = ({
       ),
     );
     return (
-      <motion.div key="reveal" className="absolute inset-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+      <motion.div key="reveal" className="absolute inset-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
         <TopBand question={question} number={number} total={total} phase={phase} rows={rows} live={live} />
         <NoGuessNote names={noGuess} />
         <div className="absolute" style={{ left: 96, right: 96, top: 300 }}>
@@ -418,10 +419,21 @@ export const TvReveal = ({
   const placed = numeric
     .map((n) => ({ ...n, x: xOnAxis(n.value, axis, AXIS_WIDTH) }))
     .sort((a, b) => a.x - b.x);
-  const lanes = assignLanes(
+  const priority = placed.flatMap((p, i) => (highlights.has(p.answer.playerId) ? [i] : []));
+  const roomyLanes = assignLanes(
     placed.map((p) => p.x),
-    PIN_WIDTH - 10,
+    ROOMY.width - 10,
+    priority,
   );
+  const geo = Math.max(0, ...roomyLanes) + 1 > ROOMY.maxLanes ? COMPACT : ROOMY;
+  const lanes =
+    geo === ROOMY
+      ? roomyLanes
+      : assignLanes(
+          placed.map((p) => p.x),
+          COMPACT.width - 6,
+          priority,
+        );
   // Farthest guess drops first, so the closest lands last, right before the answer.
   const dropOrder = [...placed].sort((a, b) => Math.abs(b.value - correct) - Math.abs(a.value - correct));
   const pins: Pin[] = placed.map((p, i) => ({
@@ -429,7 +441,7 @@ export const TvReveal = ({
     name: p.answer.playerName,
     value: p.value,
     x: p.x,
-    lane: lanes[i] % MAX_LANES,
+    lane: lanes[i] % geo.maxLanes,
     order: dropOrder.indexOf(p),
     inkIndex: inkOf(p.answer.playerId, p.i),
     points: pointsOf.get(p.answer.playerId) ?? 0,
@@ -453,13 +465,13 @@ export const TvReveal = ({
       : undefined;
 
   return (
-    <motion.div key="reveal" className="absolute inset-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+    <motion.div key="reveal" className="absolute inset-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <TopBand question={question} number={number} total={total} phase={phase} rows={rows} live={live} />
       <NoGuessNote names={noGuess} />
       <NumberLine ticks={ticks} live={live} />
       {phase === PHASE.suspense ? <SuspenseMarker /> : null}
       {pins.map((pin) => (
-        <GuessPin key={pin.playerId} pin={pin} phase={phase} live={live} delay={firstDrop + pin.order * stagger} />
+        <GuessPin key={pin.playerId} pin={pin} phase={phase} live={live} delay={firstDrop + pin.order * stagger} geo={geo} />
       ))}
       {phase >= PHASE.answer ? <AnswerNumeral value={String(question.correctAnswer)} x={correctX} live={live} /> : null}
       {phase >= PHASE.spotlight && callout ? (

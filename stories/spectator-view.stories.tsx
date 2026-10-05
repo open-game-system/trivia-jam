@@ -813,3 +813,88 @@ export const TvRevealMultipleChoiceLive: Story = {
     AFTER_Q1,
   ),
 };
+
+export const TvGameOverFamily: Story = {
+  play: mountFamily(
+    familySnapshot(
+      { players: withScores({ "p-sam": 9, "p-mom": 14, "p-grandpa": 7, "p-lou": 11 }), winner: "p-mom", questionNumber: 5 },
+      "finished",
+    ),
+  ),
+};
+
+/** Ten players, close guesses: the crowded case for lanes and the two-column standings board. */
+export const TvRevealCrowdedLive: Story = {
+  play: mountFamily(
+    familySnapshot(
+      {
+        players: [
+          ...withScores(AFTER_Q1),
+          { id: "p5", name: "Auntie Bea", score: 3 },
+          { id: "p6", name: "Uncle Ray", score: 1 },
+          { id: "p7", name: "Nana", score: 5 },
+          { id: "p8", name: "Ollie", score: 2 },
+          { id: "p9", name: "Maximiliana", score: 0 },
+          { id: "p10", name: "Dad", score: 4 },
+        ],
+        questionNumber: 2,
+        currentQuestion: { questionId: "q2", startTime: now, answers: [] },
+      },
+      { active: "questionActive" },
+    ),
+    (client) => {
+      const result = resultFor("q2", 2, [
+        ["p-sam", "Sam", 30, 1],
+        ["p-mom", "Mom", 28, 3],
+        ["p-grandpa", "Grandpa", 14, 0],
+        ["p-lou", "Lou", 27, 5],
+        ["p5", "Auntie Bea", 29, 2],
+        ["p6", "Uncle Ray", 26, 4],
+        ["p7", "Nana", 31, 0],
+        ["p8", "Ollie", 100, 0],
+        ["p9", "Maximiliana", 27, 5],
+        ["p10", "Dad", 25, 1],
+      ]);
+      setTimeout(() => {
+        client.produce((draft) => {
+          draft.public.currentQuestion = null;
+          draft.public.questionResults.push(result);
+          for (const p of draft.public.players) p.score += result.scores.find((s) => s.playerId === p.id)?.points ?? 0;
+          draft.value = { active: "questionPrep" };
+        });
+      }, 600);
+    },
+  ),
+};
+
+const CROWD = [
+  ...withScores({ "p-sam": 5, "p-mom": 6, "p-grandpa": 2, "p-lou": 5 }),
+  { id: "p5", name: "Auntie Bea", score: 5 },
+  { id: "p6", name: "Uncle Ray", score: 5 },
+  { id: "p7", name: "Nana", score: 5 },
+  { id: "p8", name: "Ollie", score: 2 },
+  { id: "p9", name: "Maximiliana", score: 5 },
+  { id: "p10", name: "Dad", score: 5 },
+];
+
+/** A TV that loads between questions with ten players: settled reveal, then the two-column board. */
+export const TvStandingsCrowdedSettled: Story = {
+  play: mountFamily(
+    familySnapshot(
+      {
+        players: CROWD,
+        questionNumber: 2,
+        questionResults: [
+          resultFor("q2", 2, [
+            ["p-sam", "Sam", 30, 1],
+            ["p-mom", "Mom", 28, 3],
+            ["p-lou", "Lou", 27, 5],
+            ["p9", "Maximiliana", 27, 5],
+            ["p10", "Dad", 25, 1],
+          ]),
+        ],
+      },
+      { active: "questionPrep" },
+    ),
+  ),
+};

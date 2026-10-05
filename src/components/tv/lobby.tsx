@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import { QRCodeSVG } from "qrcode.react";
 import { InkToken, RisoType, Slug } from "./print";
 import { Sunburst } from "./sunburst";
@@ -60,7 +60,6 @@ const JoinCard = ({ joinUrl, host, gameCode }: { joinUrl: string; host: string; 
 
 const Seat = ({ player, index }: { player: LobbyPlayer | undefined; index: number }) => (
   <div className="flex flex-col items-center" style={{ width: 168 }}>
-    <AnimatePresence mode="wait" initial={false}>
       {player ? (
         <motion.div
           key={player.id}
@@ -73,7 +72,6 @@ const Seat = ({ player, index }: { player: LobbyPlayer | undefined; index: numbe
       ) : (
         <motion.div key={`seat-${index}`} className="tv-seat" style={{ width: 120, height: 120 }} />
       )}
-    </AnimatePresence>
     {player ? (
       <span
         className="tv-display text-[38px] mt-3 max-w-full truncate text-ink"
@@ -108,7 +106,7 @@ export const TvLobby = ({
       className="absolute inset-0"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
+     
     >
       <Sunburst size={1400} x={560} y={330} />
       <div className="absolute" style={{ left: 96, top: 84 }}>

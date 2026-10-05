@@ -34,6 +34,17 @@ describe("buildAxis", () => {
     for (const t of axis.ticks) expect(Number.isInteger(t)).toBe(true);
   });
 
+  it("leaves a wild outlier off the scale so close guesses stay readable", () => {
+    const axis = buildAxis([25, 26, 27, 28, 29, 30, 31, 14, 100], 27);
+    expect(axis.max).toBeLessThan(100);
+    expect(axis.min).toBeLessThanOrEqual(14);
+  });
+
+  it("keeps a moderately far guess on the scale", () => {
+    const axis = buildAxis([30, 28, 14, 27], 27);
+    expect(axis.min).toBeLessThanOrEqual(14);
+  });
+
   it("handles no guesses", () => {
     const axis = buildAxis([], 0);
     expect(axis.max).toBeGreaterThan(axis.min);
@@ -63,6 +74,10 @@ describe("assignLanes", () => {
   });
   it("reuses a freed lane", () => {
     expect(assignLanes([0, 100, 300], 200)).toEqual([0, 1, 0]);
+  });
+  it("gives the bottom lane to priority items first", () => {
+    // item 1 (the exact guess) keeps lane 0; its neighbours move up.
+    expect(assignLanes([0, 100, 200], 150, [1])).toEqual([1, 0, 1]);
   });
 });
 

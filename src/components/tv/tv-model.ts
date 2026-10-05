@@ -51,9 +51,27 @@ const niceStep = (rough: number, integersOnly: boolean): number => {
   return integersOnly ? Math.max(1, Math.round(step)) : step;
 };
 
-/** A number line that spans every guess and the answer, with 3-9 round ticks. */
+const median = (xs: number[]): number => {
+  if (xs.length === 0) return 0;
+  const s = [...xs].sort((a, b) => a - b);
+  const mid = Math.floor(s.length / 2);
+  return s.length % 2 === 1 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
+};
+
+/**
+ * Guesses far beyond the pack (more than 8x the median miss, and more than half
+ * the answer) stay off the scale: they are pinned to the end of the line.
+ */
+export const onScaleGuesses = (guesses: number[], correct: number): number[] => {
+  const finite = guesses.filter((g) => Number.isFinite(g));
+  const misses = finite.map((g) => Math.abs(g - correct));
+  const cutoff = Math.max(8 * median(misses), 0.5 * Math.abs(correct), 1);
+  return finite.filter((g) => Math.abs(g - correct) <= cutoff);
+};
+
+/** A number line that spans the guesses and the answer, with 3-9 round ticks. */
 export const buildAxis = (guesses: number[], correct: number): Axis => {
-  const values = [...guesses, correct].filter((v) => Number.isFinite(v));
+  const values = [...onScaleGuesses(guesses, correct), correct].filter((v) => Number.isFinite(v));
   if (values.length === 0) return { min: 0, max: 10, ticks: [0, 5, 10] };
   const integersOnly = values.every((v) => Number.isInteger(v));
   let lo = Math.min(...values);
@@ -92,18 +110,20 @@ export const xOnAxis = (value: number, axis: Axis, width: number): number => {
   return t * width;
 };
 
-/** Greedy lanes for labels sorted by x: a label goes in the first lane it fits. */
-export const assignLanes = (sortedXs: number[], minGap: number): number[] => {
-  const laneEnds: number[] = [];
-  return sortedXs.map((x) => {
-    const free = laneEnds.findIndex((end) => x - end >= minGap);
-    if (free >= 0) {
-      laneEnds[free] = x;
-      return free;
-    }
-    laneEnds.push(x);
-    return laneEnds.length - 1;
-  });
+/**
+ * Lanes for labels sorted by x: each label goes in the lowest lane with no label
+ * closer than `minGap`. Indexes in `priority` are placed first, so they keep the
+ * lanes nearest the axis.
+ */
+export const assignLanes = (sortedXs: number[], minGap: number, priority: number[] = []): number[] => {
+  const lanes: number[] = sortedXs.map(() => -1);
+  const order = [...priority.filter((i) => i >= 0 && i < sortedXs.length), ...sortedXs.map((_, i) => i).filter((i) => !priority.includes(i))];
+  for (const i of order) {
+    let lane = 0;
+    while (sortedXs.some((x, j) => lanes[j] === lane && Math.abs(x - sortedXs[i]) < minGap)) lane++;
+    lanes[i] = lane;
+  }
+  return lanes;
 };
 
 export type Highlight = "exact" | "closest";
