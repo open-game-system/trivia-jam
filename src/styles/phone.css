@@ -296,12 +296,41 @@ body:has(.phone-shell) {
   box-shadow: none;
   cursor: not-allowed;
 }
-.pkey-go:not(:disabled) { animation: pgo 1.6s ease-in-out infinite; }
+/* The live GO key bobs, but only its painted face (::before) and label move:
+   the button box itself stays put, so the tap target never slides away from
+   a thumb (and automation sees a stable element). */
+.pkey-go:not(:disabled) {
+  isolation: isolate;
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+.pkey-go:not(:disabled)::before {
+  content: "";
+  position: absolute;
+  inset: -4px;
+  z-index: -1;
+  background: var(--pink);
+  border: 4px solid var(--ink);
+  border-radius: 6px;
+  box-shadow: 4px 4px 0 var(--shadow);
+  transition: box-shadow 60ms var(--roll);
+}
+.pkey-go:not(:disabled)::before,
+.pkey-go:not(:disabled) > [aria-hidden="true"] { animation: pgo 1.6s ease-in-out infinite; }
+.pkey-go > [aria-hidden="true"] { display: inline-block; }
 @keyframes pgo {
   0%, 100% { transform: none; }
   50% { transform: translateY(-3px); }
 }
-.pkey-go:active:not(:disabled) { animation: none; background: var(--yellow); }
+.pkey-go:active:not(:disabled),
+.pkey-go[data-pressed="true"]:not(:disabled) { animation: none; background: transparent; }
+.pkey-go:active:not(:disabled)::before,
+.pkey-go[data-pressed="true"]:not(:disabled)::before,
+.pkey-go:active:not(:disabled) > [aria-hidden="true"],
+.pkey-go[data-pressed="true"]:not(:disabled) > [aria-hidden="true"] { animation: none; }
+.pkey-go:active:not(:disabled)::before,
+.pkey-go[data-pressed="true"]:not(:disabled)::before { background: var(--yellow); box-shadow: 0 0 0 var(--shadow); }
 
 /* Landscape (iPad, phone on its side): two thumb clusters at the bottom
    corners, display + question stay in the middle. */
@@ -502,7 +531,8 @@ textarea.pfield { padding: 14px 16px; font-size: 18px; line-height: 1.35; font-f
 .psheet-in { animation: psheet-in 260ms var(--roll) both; }
 
 @media (prefers-reduced-motion: reduce) {
-  .pkey-go:not(:disabled),
+  .pkey-go:not(:disabled)::before,
+  .pkey-go:not(:disabled) > [aria-hidden="true"],
   .pcaret,
   .pdots > span { animation: none; }
   .pkey, .pbtn, .ptile, .ptimer-fill { transition: none; }
