@@ -100,7 +100,16 @@ async function measure(page: Page): Promise<Layout> {
       if (style.visibility === "hidden" || Number(style.opacity) === 0) continue;
       const range = document.createRange();
       range.selectNodeContents(n);
-      const r = range.getBoundingClientRect();
+      const box = range.getBoundingClientRect();
+      // What is actually visible: the text box cut by every ancestor that clips (truncate, scroll areas).
+      let r = { left: box.left, top: box.top, right: box.right, bottom: box.bottom, width: box.width, height: box.height };
+      for (let a: HTMLElement | null = el; a && a !== document.body; a = a.parentElement) {
+        const cs = getComputedStyle(a);
+        if (cs.overflowX === "visible" && cs.overflowY === "visible") continue;
+        const c = a.getBoundingClientRect();
+        const left = Math.max(r.left, c.left), top = Math.max(r.top, c.top), right = Math.min(r.right, c.right), bottom = Math.min(r.bottom, c.bottom);
+        r = { left, top, right, bottom, width: right - left, height: bottom - top };
+      }
       if (r.width < 1 || r.height < 1) continue;
       const onScreen = r.bottom > 0 && r.top < vh && r.right > 0 && r.left < vw;
       if (!onScreen) continue;
@@ -132,6 +141,7 @@ const FAULT_CSS: Record<string, string> = {
   black: "html, body { filter: brightness(0) !important; }",
   tiny: "body * { font-size: 9px !important; }",
   clip: "body { margin-top: -120px !important; }",
+  white: "html, body { filter: brightness(20) !important; }",
 };
 
 /** On a stall: what is each page actually showing? */
@@ -189,6 +199,7 @@ async function main() {
   const faults = FAULT.split(",");
   const faultCss = faults.map((f) => FAULT_CSS[f] ?? "").join("\n").trim();
   if (faultCss) for (const p of [tv, host, kid]) await p.addInitScript(`addEventListener("DOMContentLoaded", () => { const s = document.createElement("style"); s.textContent = ${JSON.stringify(faultCss)}; document.head.append(s); });`);
+  if (faults.includes("jank")) await tv.addInitScript(`const burn = () => { const t = performance.now(); while (performance.now() - t < 30) {} requestAnimationFrame(burn); }; requestAnimationFrame(burn);`);
   if (faults.includes("mute")) await tv.addInitScript(`addEventListener("DOMContentLoaded", () => { const C = window.AudioContext; if (C) C.prototype.resume = function () { return this.suspend(); }; });`);
 
   // The kid's iPad records its own pointer-down time, so latency is press -> TV, not Playwright overhead.
@@ -200,6 +211,8 @@ async function main() {
     // Host creates a game.
     if (process.env.TJ_LIVE_GEMINI !== "1") await stubParsing(host);
     await host.goto(BASE);
+    await host.getByRole("link", { name: /create new game/i }).waitFor({ timeout: 15_000 });
+    await wait(800);
     await shoot("00-home", { host });
     await host.getByRole("link", { name: /create new game/i }).click();
     await host.waitForURL(/\/games\/[a-z0-9-]+/i);
