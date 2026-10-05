@@ -23,7 +23,13 @@ export const PlayerLedger = ({
 }) => (
   <section aria-labelledby="players-heading">
     <h2 id="players-heading" className="pslug mb-2" style={{ fontSize: 16 }}>
-      Players ({players.length}/{maxPlayers})
+      <span aria-hidden="true">
+        {players.length} {players.length === 1 ? "Player" : "Players"}
+      </span>
+      {/* The cap is a setting, not something the TV shows; kept for assistive tech and e2e. */}
+      <span className="sr-only">
+        Players ({players.length}/{maxPlayers})
+      </span>
     </h2>
     {players.length === 0 ? (
       <p className="prow" style={{ minHeight: 60 }}>

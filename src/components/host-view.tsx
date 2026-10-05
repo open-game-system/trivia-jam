@@ -111,7 +111,7 @@ const HostGameView = ({ host }: { host: string }) => {
   const lastQuestionResult = questionResults[questionResults.length - 1];
 
   return (
-    <PhoneShell className="flex flex-col">
+    <PhoneShell fill className="flex flex-col">
       {isLobby && (
         <LobbyControls
           players={players}
@@ -433,8 +433,8 @@ const QuestionListDisplay = ({
   questions: Record<string, Question>;
   onEditQuestions: () => void;
 }) => (
-  <section className="mb-6">
-    <div className="mb-3 flex items-center justify-between gap-3">
+  <section className="mb-5">
+    <div className="mb-2 flex items-center justify-between gap-3">
       <h3 className="text-3xl font-extrabold">
         {Object.keys(questions).length} Questions
       </h3>
@@ -442,42 +442,25 @@ const QuestionListDisplay = ({
         Edit Questions
       </button>
     </div>
-    <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
+    <div className="space-y-1.5">
       {Object.entries(questions).map(([id, question], index) => (
         <div
           key={id}
           data-testid={`parsed-question-${index + 1}`}
-          className="prow items-start"
-          style={{ alignItems: "flex-start" }}
+          className="prow"
+          style={{ minHeight: 48, padding: "6px 10px" }}
         >
-          <span className="prank" aria-hidden="true">
+          <span className="prank" aria-hidden="true" style={{ minWidth: 34, height: 34, fontSize: 16 }}>
             {index + 1}
           </span>
-          <div className="min-w-0 flex-1">
-            <div className="text-lg font-bold leading-snug">
-              <span className="sr-only">Q{index + 1}: </span>
-              {question.text}
-            </div>
-            {question.questionType === "multiple-choice" && question.options && (
-              <ul className="mt-1 text-base font-semibold">
-                {question.options.map((option, optIndex) => (
-                  <li
-                    key={optIndex}
-                    className={option === question.correctAnswer ? "font-extrabold text-teal" : ""}
-                  >
-                    {String.fromCharCode(97 + optIndex)}) {option}
-                    {option === question.correctAnswer && " (correct)"}
-                  </li>
-                ))}
-              </ul>
-            )}
+          <div className="min-w-0 flex-1 truncate text-base font-bold leading-snug">
+            <span className="sr-only">Q{index + 1}: </span>
+            {question.text}
           </div>
-          {question.questionType === "numeric" && (
-            <span className="tabular whitespace-nowrap text-xl font-extrabold">
-              <span className="pslug">Answer: </span>
-              {question.correctAnswer}
-            </span>
-          )}
+          <span className="tabular max-w-[34%] truncate text-xl font-extrabold">
+            <span className="sr-only">Answer: </span>
+            {question.correctAnswer}
+          </span>
         </div>
       ))}
     </div>
@@ -506,8 +489,8 @@ const GameLinkSection = ({ gameUrl }: { gameUrl: string }) => {
   };
 
   return (
-    <section className="mb-6">
-      <h2 className="mb-3 text-3xl font-extrabold">Share Game Link</h2>
+    <section className="mb-5">
+      <h2 className="mb-2 text-3xl font-extrabold">Share Game Link</h2>
       <button
         type="button"
         onClick={shareGameLink}
@@ -651,7 +634,7 @@ const LobbyControls = ({
 
   return (
     <>
-      <div className="flex-1 pb-6">
+      <div className="phost-scroll">
         <Page>
           <Masthead>
             <button
@@ -664,7 +647,7 @@ const LobbyControls = ({
               <Settings size={26} strokeWidth={2.6} aria-hidden="true" />
             </button>
           </Masthead>
-          <h1 className="misreg mb-6 text-5xl font-extrabold">Game Setup</h1>
+          <h1 className="misreg mb-4 text-5xl font-extrabold">Game Setup</h1>
 
           {(!hasQuestions || isEditingQuestions) && (
             <QuestionImportForm
@@ -676,6 +659,8 @@ const LobbyControls = ({
             />
           )}
 
+          <GameLinkSection gameUrl={gameUrl} />
+
           {hasQuestions && !isEditingQuestions && (
             <QuestionListDisplay
               questions={questions}
@@ -685,8 +670,6 @@ const LobbyControls = ({
               }}
             />
           )}
-
-          <GameLinkSection gameUrl={gameUrl} />
 
           <PlayerLedger
             players={players}
@@ -730,53 +713,65 @@ const LiveQuestionPanel = ({
   question: Question | undefined;
   timeLeft: number;
   players: Person[];
-}) => (
-  <motion.section
-    initial={{ opacity: 0, y: 12 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ ease: [0.2, 0.9, 0.2, 1.15], duration: 0.3 }}
-  >
-    <div className="mb-4 flex items-center gap-4">
-      <motion.div
-        className="tabular font-display text-6xl font-extrabold leading-none"
-        data-testid="question-timer"
-        animate={{ scale: timeLeft <= 5 ? [1, 1.1, 1] : 1 }}
-        transition={{ duration: 1, repeat: timeLeft <= 5 ? Infinity : 0 }}
-      >
-        {timeLeft}s
-      </motion.div>
-      <div className="min-w-0 flex-1">
-        <AnswerProgress
-          answersCount={currentQuestion.answers.length}
-          playersCount={players.length}
-        />
-      </div>
-    </div>
-
-    <div className="sheet p-4">
-      <p
-        className="font-display font-extrabold text-blue"
-        style={{ fontSize: "clamp(24px, 6.4vw, 34px)", lineHeight: 1.1, letterSpacing: "-0.02em" }}
-      >
-        {question?.text}
-      </p>
-      <div className="mt-3 border-t-4 border-ink pt-3">
-        <div className="pslug">Correct Answer</div>
-        <div className="tabular text-4xl font-extrabold leading-tight">
-          {question?.correctAnswer}
+}) => {
+  const answered = new Set(currentQuestion.answers.map((a) => a.playerId));
+  const missing = players.filter((p) => !answered.has(p.id));
+  return (
+    <motion.section
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ ease: [0.2, 0.9, 0.2, 1.15], duration: 0.3 }}
+    >
+      <div className="mb-4 flex items-center gap-4">
+        <motion.div
+          className="tabular font-display text-7xl font-extrabold leading-none"
+          data-testid="question-timer"
+          animate={{ scale: timeLeft <= 5 ? [1, 1.1, 1] : 1 }}
+          transition={{ duration: 1, repeat: timeLeft <= 5 ? Infinity : 0 }}
+        >
+          {timeLeft}s
+        </motion.div>
+        <div className="min-w-0 flex-1">
+          <AnswerProgress
+            answersCount={currentQuestion.answers.length}
+            playersCount={players.length}
+          />
         </div>
       </div>
-    </div>
 
-    {question && currentQuestion.answers.length > 0 && (
-      <div className="mt-4 flex flex-col gap-2">
-        {currentQuestion.answers.map((answer) => (
-          <LiveAnswer key={answer.playerId} answer={answer} question={question} />
-        ))}
+      <div className="sheet p-4">
+        <p
+          className="font-display font-extrabold text-blue"
+          style={{ fontSize: "clamp(22px, 5.6vw, 30px)", lineHeight: 1.1, letterSpacing: "-0.02em" }}
+        >
+          {question?.text}
+        </p>
+        <div className="mt-3 flex items-baseline gap-3 border-t-4 border-ink pt-3">
+          <span className="pslug">Answer</span>
+          <span className="tabular text-4xl font-extrabold leading-tight">
+            {question?.correctAnswer}
+          </span>
+        </div>
       </div>
-    )}
-  </motion.section>
-);
+
+      {missing.length > 0 && (
+        <section className="mt-4" aria-label="Waiting on">
+          <h2 className="pslug mb-2" style={{ fontSize: 16 }}>
+            Waiting on
+          </h2>
+          <ul className="flex flex-wrap gap-2">
+            {missing.map((player) => (
+              <li key={player.id} className="prow" style={{ minHeight: 48, padding: "4px 12px 4px 6px" }}>
+                <PlayerToken name={player.name} seat={Math.max(0, players.findIndex((p) => p.id === player.id))} />
+                <span className="text-xl font-extrabold">{player.name}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+    </motion.section>
+  );
+};
 
 const QuestionControls = ({
   currentQuestion,
@@ -800,10 +795,6 @@ const QuestionControls = ({
   const timeLeft = useQuestionTimer(currentQuestion, answerTimeWindow, isQuestionActive);
 
   const nextQuestion: Question | undefined = Object.values(questions)[questionNumber];
-  const answeredIds = useMemo(
-    () => new Set(currentQuestion?.answers.map((a) => a.playerId) ?? []),
-    [currentQuestion],
-  );
 
   const handleNextQuestion = () => {
     if (!nextQuestion) return;
@@ -816,7 +807,7 @@ const QuestionControls = ({
 
   return (
     <>
-      <div className="flex-1 pb-6">
+      <div className="phost-scroll">
         <Page>
           <div className="pt-2" />
           {currentQuestion ? (
@@ -854,23 +845,30 @@ const QuestionControls = ({
             </>
           )}
 
-          <div className="mt-6">
-            <PlayerLedger
-              players={players}
-              hostId={hostId}
-              maxPlayers={maxPlayers}
-              answeredIds={currentQuestion ? answeredIds : undefined}
-              onRemove={(playerId) => send({ type: "REMOVE_PLAYER", playerId })}
-            />
-          </div>
+          {!currentQuestion && (
+            <div className="mt-6">
+              <PlayerLedger
+                players={players}
+                hostId={hostId}
+                maxPlayers={maxPlayers}
+                onRemove={(playerId) => send({ type: "REMOVE_PLAYER", playerId })}
+              />
+            </div>
+          )}
 
-          {showEndGameDemoted && (
+          {showEndGameDemoted && !currentQuestion && (
             <div className="mt-10 border-t-4 border-dashed border-ink pt-5">
-              <EndGameControl onEnd={endGame} confirm={currentQuestion !== null} />
+              <EndGameControl onEnd={endGame} confirm={false} />
             </div>
           )}
         </Page>
       </div>
+
+      {currentQuestion && (
+        <ActionBar>
+          <EndGameControl onEnd={endGame} confirm />
+        </ActionBar>
+      )}
 
       {!currentQuestion && (
         <ActionBar>
@@ -902,7 +900,7 @@ const QuestionControls = ({
 const GameFinishedDisplay = ({ players }: { players: Person[] }) => {
   const winner = byScore(players)[0];
   return (
-    <div className="flex-1 pb-10">
+    <div className="phost-scroll">
       <Page>
         <Masthead />
         <h1 className="misreg mb-5 text-center text-5xl font-extrabold">Game Over!</h1>

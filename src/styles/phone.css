@@ -566,3 +566,14 @@ textarea.pfield { padding: 14px 16px; font-size: 18px; line-height: 1.35; font-f
   letter-spacing: -0.03em;
   line-height: 1;
 }
+
+/* Host shell: the page never scrolls; this region does, and ends where the action bar begins. */
+.phost-scroll {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-bottom: 28px;
+  scroll-padding-bottom: 28px;
+}
+.phost-scroll + .pbar { flex: none; position: relative; }
