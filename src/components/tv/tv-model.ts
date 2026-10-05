@@ -188,6 +188,17 @@ export const buildStandings = (
   return rows.sort((a, b) => b.score - a.score || a.inkIndex - b.inkIndex);
 };
 
+/**
+ * Places climbed (+) or dropped (-) since the last question. With no earlier
+ * order to compare against (everyone level, e.g. all on 0 after question 1)
+ * nobody moved.
+ */
+export const rankMove = (row: StandingRow, rows: ReadonlyArray<StandingRow>): number => {
+  const before = new Set(rows.map((r) => r.prevScore));
+  if (before.size <= 1) return 0;
+  return row.prevRank - row.rank;
+};
+
 /** A multiple-choice answer may be the option text or its letter. */
 export const matchOptionIndex = (value: string | number, options: ReadonlyArray<string>): number => {
   const text = String(value).trim();

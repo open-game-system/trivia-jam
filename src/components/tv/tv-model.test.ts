@@ -4,6 +4,7 @@ import {
   buildAxis,
   buildStandings,
   choiceWinners,
+  rankMove,
   joinNames,
   findHighlights,
   inkForIndex,
@@ -243,5 +244,51 @@ describe("choiceWinners", () => {
   });
   it("is empty when nobody got it", () => {
     expect(choiceWinners([{ playerId: "a", value: "Mars" }], "Jupiter", options)).toEqual([]);
+  });
+});
+
+describe("rankMove", () => {
+  it("shows no movement after the first question, when everyone was tied at 0", () => {
+    const rows = buildStandings(
+      [
+        { id: "mom", name: "Mom", score: 4 },
+        { id: "sam", name: "Sam", score: 3 },
+        { id: "gp", name: "Grandpa", score: 2 },
+      ],
+      [
+        { playerId: "mom", points: 4 },
+        { playerId: "sam", points: 3 },
+        { playerId: "gp", points: 2 },
+      ],
+    );
+    expect(rows.map((r) => rankMove(r, rows))).toEqual([0, 0, 0]);
+  });
+  it("is up for a climber and down for whoever they passed", () => {
+    const rows = buildStandings(
+      [
+        { id: "a", name: "A", score: 5 },
+        { id: "b", name: "B", score: 6 },
+        { id: "c", name: "C", score: 1 },
+      ],
+      [
+        { playerId: "a", points: 0 },
+        { playerId: "b", points: 3 },
+        { playerId: "c", points: 0 },
+      ],
+    );
+    const byId = new Map(rows.map((r) => [r.id, rankMove(r, rows)]));
+    expect(byId.get("b")).toBe(1);
+    expect(byId.get("a")).toBe(-1);
+    expect(byId.get("c")).toBe(0);
+  });
+  it("shows no movement when nobody scored", () => {
+    const rows = buildStandings(
+      [
+        { id: "a", name: "A", score: 5 },
+        { id: "b", name: "B", score: 2 },
+      ],
+      [],
+    );
+    expect(rows.map((r) => rankMove(r, rows))).toEqual([0, 0]);
   });
 });
