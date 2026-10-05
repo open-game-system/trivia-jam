@@ -69,6 +69,8 @@ export const QuestionHeader = ({
         {supported && (
           <button
             type="button"
+            role="switch"
+            aria-checked={speaking}
             className="pread"
             aria-label="Read it to me"
             data-speaking={speaking}
