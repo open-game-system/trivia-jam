@@ -1,5 +1,7 @@
 @import "@fontsource-variable/bricolage-grotesque/index.css";
 @import "@fontsource/space-mono/700.css";
+@import "./styles/tv.css";
+@import "./styles/phone.css";
 
 @tailwind base;
 @tailwind components;
