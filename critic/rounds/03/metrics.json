@@ -1,0 +1,187 @@
+{
+  "checks": [
+    "PASS  tv-not-black (mean luma >= 20)",
+    "PASS  tv-not-blown (mean luma <= 245)",
+    "PASS  tv-text-readable (min font >= 28px on every TV shot)",
+    "PASS  phone-text-readable (min font >= 14px)",
+    "PASS  nothing-clipped (no text cut off by a screen edge)",
+    "PASS  tv-audio-present (integrated loudness > -40 LUFS)  hasAudio=True lufs=-23.4",
+    "PASS  tv-audio-no-clipping (sample peak <= -0.5 dBFS)  peak=-1.29 dBFS",
+    "PASS  tv-audio-no-dead-air (no silence > 4 s under -50 dBFS)  longest=0.4 s",
+    "PASS  tv-frame-time (p95 <= 20 ms)  p95=16.8 max=66.6"
+  ],
+  "tvMeanLumaPerShot(0-255)": {
+    "01-lobby-empty-tv": 203.7,
+    "04-lobby-full-tv": 201.2,
+    "10a-before-q1-tv": 213.7,
+    "10b-q1-asked-tv": 219.0,
+    "10c-q1-kid-answered-tv": 218.4,
+    "10d-q1-results-tv": 224.0,
+    "10e-q1-reveal-settled-tv": 212.1,
+    "10f-q1-standings-tv": 203.3,
+    "11a-before-q2-tv": 201.4,
+    "11b-q2-asked-tv": 220.1,
+    "11c-q2-kid-answered-tv": 219.5,
+    "11d-q2-results-tv": 224.7,
+    "11e-q2-reveal-settled-tv": 210.0,
+    "11f-q2-standings-tv": 203.3,
+    "12a-before-q3-tv": 201.3,
+    "12b-q3-asked-tv": 218.3,
+    "12c-q3-kid-answered-tv": 217.7,
+    "12d-q3-results-tv": 222.7,
+    "12e-q3-reveal-settled-tv": 214.2,
+    "12f-q3-standings-tv": 203.2,
+    "13a-before-q4-tv": 201.2,
+    "13b-q4-asked-tv": 211.6,
+    "13c-q4-kid-answered-tv": 210.9,
+    "13d-q4-results-tv": 214.2,
+    "13e-q4-reveal-settled-tv": 210.2,
+    "13f-q4-standings-tv": 203.0,
+    "14a-before-q5-tv": 201.1,
+    "14b-q5-asked-tv": 219.6,
+    "14c-q5-kid-answered-tv": 219.1,
+    "14d-q5-results-tv": 223.2,
+    "14e-q5-reveal-settled-tv": 209.9,
+    "14f-q5-standings-tv": 203.9,
+    "20-game-over-tv": 208.6,
+    "21-game-over-settled-tv": 188.3
+  },
+  "audio": {
+    "hasAudio": true,
+    "ebur128": [
+      "I:         -23.4 LUFS",
+      "LRA:         7.6 LU"
+    ],
+    "integratedLufs": -23.4,
+    "peakDbfs": -1.29,
+    "longestSilenceS": 0.4
+  },
+  "perf": {
+    "frames": 9317,
+    "p50": 16.7,
+    "p95": 16.8,
+    "p99": 16.8,
+    "max": 66.6,
+    "lastKidPressAt": 1791211593191,
+    "kid": {
+      "frames": 8781,
+      "p50": 16.7,
+      "p95": 16.7,
+      "max": 250
+    }
+  },
+  "marks": [
+    {
+      "label": "lobby",
+      "t": 3.1
+    },
+    {
+      "label": "host imports questions",
+      "t": 6.3
+    },
+    {
+      "label": "questions ready",
+      "t": 7.8
+    },
+    {
+      "label": "kid joined",
+      "t": 10.1
+    },
+    {
+      "label": "everyone joined",
+      "t": 14.3
+    },
+    {
+      "label": "game started",
+      "t": 16.7
+    },
+    {
+      "label": "question 1",
+      "t": 18.9
+    },
+    {
+      "label": "kid answers q1",
+      "t": 25.7
+    },
+    {
+      "label": "results q1",
+      "t": 31.1
+    },
+    {
+      "label": "standings q1",
+      "t": 41.7
+    },
+    {
+      "label": "question 2",
+      "t": 43.7
+    },
+    {
+      "label": "kid answers q2",
+      "t": 50.5
+    },
+    {
+      "label": "results q2",
+      "t": 55.9
+    },
+    {
+      "label": "standings q2",
+      "t": 66.4
+    },
+    {
+      "label": "question 3",
+      "t": 68.3
+    },
+    {
+      "label": "kid answers q3",
+      "t": 75.6
+    },
+    {
+      "label": "results q3",
+      "t": 81.2
+    },
+    {
+      "label": "standings q3",
+      "t": 91.6
+    },
+    {
+      "label": "question 4",
+      "t": 93.5
+    },
+    {
+      "label": "kid answers q4",
+      "t": 99.8
+    },
+    {
+      "label": "results q4",
+      "t": 104.9
+    },
+    {
+      "label": "standings q4",
+      "t": 115.3
+    },
+    {
+      "label": "question 5",
+      "t": 117.2
+    },
+    {
+      "label": "kid answers q5",
+      "t": 124.8
+    },
+    {
+      "label": "results q5",
+      "t": 130.5
+    },
+    {
+      "label": "standings q5",
+      "t": 141
+    },
+    {
+      "label": "game over",
+      "t": 142.2
+    },
+    {
+      "label": "end",
+      "t": 158.8
+    }
+  ]
+}
