@@ -106,6 +106,13 @@ export const gameMachine = setup({
         draft.players = draft.players.filter((p) => p.id !== playerId);
       }),
     })),
+    setSettings: assign(
+      ({ context }, settings: { maxPlayers: number; answerTimeWindow: number }) => ({
+        public: produce(context.public, (draft) => {
+          draft.settings = settings;
+        }),
+      })
+    ),
     submitAnswer: assign(({ context, event }) => ({
       public: produce(context.public, (draft) => {
         if (draft.currentQuestion && event.type === "SUBMIT_ANSWER") {
@@ -330,6 +337,14 @@ export const gameMachine = setup({
             }) => ({
               playerId: event.playerId,
             }),
+          },
+        },
+        UPDATE_SETTINGS: {
+          guard: "isHost",
+          actions: {
+            type: "setSettings",
+            params: ({ event }: { event: Extract<GameEvent, { type: "UPDATE_SETTINGS" }> }) =>
+              event.settings,
           },
         },
       },
