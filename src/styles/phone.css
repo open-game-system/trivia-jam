@@ -930,3 +930,18 @@ textarea.pfield { padding: 14px 16px; font-size: 18px; line-height: 1.35; font-f
 @media (prefers-reduced-motion: reduce) {
   .pwait-token, .pwait .pdots > span { animation: none; }
 }
+
+/* Multiple choice, kid landscape: the letter is a huge printed disc, the option text large. */
+@media (orientation: landscape) and (min-height: 480px) {
+  .ptiles[data-dense="true"] .ptile { font-size: clamp(22px, 3.6dvh, 34px); }
+  .ptiles { gap: 16px; padding-bottom: calc(18px + env(safe-area-inset-bottom)); }
+  .ptiles[data-dense="false"] .ptile { gap: clamp(16px, 3dvh, 32px); padding: 12px clamp(16px, 3dvh, 32px); font-size: clamp(34px, 6.6dvh, 64px); }
+  .ptiles[data-dense="false"] .ptile-letter {
+    width: clamp(96px, 24dvh, 190px);
+    height: clamp(96px, 24dvh, 190px);
+    border-width: 6px;
+    font-size: clamp(64px, 15dvh, 120px);
+    line-height: 1;
+    box-shadow: 5px 5px 0 var(--shadow);
+  }
+}
