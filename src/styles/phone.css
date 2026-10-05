@@ -16,6 +16,7 @@ body:has(.phone-shell) {
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
   -webkit-text-size-adjust: 100%;
+  overflow-x: clip;
 }
 /* A screen that must never scroll (answering): fills the visible height. */
 .phone-fill {
@@ -28,7 +29,9 @@ body:has(.phone-shell) {
 
 .phone-shell h1,
 .phone-shell h2,
-.phone-shell h3 {
+.phone-shell h3,
+.psheet-drawer h2,
+.psheet-drawer h3 {
   font-weight: 800;
   letter-spacing: -0.02em;
   line-height: 1.05;
@@ -523,4 +526,24 @@ textarea.pfield { padding: 14px 16px; font-size: 18px; line-height: 1.35; font-f
   --dot: 14px;
   mask-image: radial-gradient(circle at 100% 0%, #000 0%, transparent 70%);
   -webkit-mask-image: radial-gradient(circle at 100% 0%, #000 0%, transparent 70%);
+}
+
+/* Bottom sheet (vaul drawer): paper, pinned to the bottom. Not .riso, whose
+   position:relative would win over the drawer's fixed positioning. */
+.psheet-drawer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  max-height: 92vh;
+  max-height: 92dvh;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: "Bricolage Grotesque Variable", system-ui, sans-serif;
+  color-scheme: light;
+  border-top: 8px solid var(--ink);
+  outline: none;
 }

@@ -48,9 +48,12 @@ export const PlayerLedger = ({
               </span>
               {isHost && <span className="pchip pchip-ink">Host</span>}
               {answeredIds && (
-                <span className={`pchip ${answered ? "pchip-teal" : ""}`}>
-                  {answered ? "In" : "..."}
-                </span>
+                <span
+                  className="inline-block h-5 w-5 flex-none rounded-full border-4 border-ink"
+                  style={{ background: answered ? "var(--teal)" : "transparent" }}
+                  role="img"
+                  aria-label={answered ? "Answered" : "Not answered yet"}
+                />
               )}
               <motion.span
                 key={`score-${player.score}`}
@@ -60,7 +63,7 @@ export const PlayerLedger = ({
               >
                 {player.score}
               </motion.span>
-              {onRemove && !isHost && (
+              {onRemove && !isHost && !answeredIds && (
                 <button
                   type="button"
                   onClick={() => onRemove(player.id)}

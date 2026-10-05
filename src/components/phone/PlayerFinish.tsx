@@ -29,7 +29,7 @@ export const PlayerFinish = ({
               Game Over!
             </h1>
             <motion.div
-              className="sheet sheet-pink flex flex-col items-center px-8 py-5"
+              className="sheet sheet-pink flex flex-col items-center px-6 py-5"
               initial={{ scale: 1.5, rotate: -10, opacity: 0 }}
               animate={{ scale: [1.5, 0.96, 1], rotate: -3, opacity: 1 }}
               transition={{ duration: 0.5, times: [0, 0.7, 1], ease: "easeOut" }}

@@ -27,8 +27,7 @@ export function HelpModal({ $showHelp }: HelpModalProps) {
           style={{ background: "rgba(30,27,26,0.55)" }}
         />
         <Drawer.Content
-          className="phone-shell riso fixed bottom-0 left-0 right-0 z-50 flex max-h-[92dvh] flex-col border-t-8 border-ink"
-          style={{ minHeight: 0 }}
+          className="psheet-drawer"
         >
           <div className="flex-1 overflow-y-auto px-5 pb-6 pt-4">
             <div className="mx-auto mb-4 h-2 w-16 bg-ink" aria-hidden="true" />
