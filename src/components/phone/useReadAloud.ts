@@ -10,6 +10,7 @@ const synth = (): SpeechSynthesis | null =>
  */
 export const useReadAloud = (text: string, questionId: string | null) => {
   const [speaking, setSpeaking] = useState(false);
+  const [tappedBefore, setTappedBefore] = useState(readAloudWanted);
   const textRef = useRef(text);
   textRef.current = text;
   const supported = synth() !== null;
@@ -31,6 +32,7 @@ export const useReadAloud = (text: string, questionId: string | null) => {
 
   const onTap = useCallback(() => {
     rememberReadAloud();
+    setTappedBefore(true);
     speak();
   }, [speak]);
 
@@ -42,5 +44,5 @@ export const useReadAloud = (text: string, questionId: string | null) => {
     };
   }, [questionId, speak]);
 
-  return { supported, speaking, onTap };
+  return { supported, speaking, onTap, tappedBefore };
 };

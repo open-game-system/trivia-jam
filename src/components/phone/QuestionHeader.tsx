@@ -32,7 +32,10 @@ export const QuestionHeader = ({
   totalTime,
   questionId = null,
   options,
+  hint = false,
 }: {
+  /** The first question of the game: ring the speaker until it has been tapped once. */
+  hint?: boolean;
   questionId?: string | null;
   options?: readonly string[];
   text: string;
@@ -40,7 +43,7 @@ export const QuestionHeader = ({
   totalTime: number;
 }) => {
   const urgent = timeLeft <= 5;
-  const { supported, speaking, onTap } = useReadAloud(
+  const { supported, speaking, onTap, tappedBefore } = useReadAloud(
     buildReadAloudText({ text, options }),
     questionId,
   );
@@ -68,6 +71,7 @@ export const QuestionHeader = ({
           className="pqh-read pread"
           aria-label="Read it to me"
           data-speaking={speaking}
+          data-hint={hint && !tappedBefore && !speaking}
           onClick={onTap}
         >
           <SpeakerGlyph speaking={speaking} />

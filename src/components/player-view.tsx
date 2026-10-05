@@ -150,6 +150,9 @@ const ActiveQuestionDisplay = ({
   onSubmitNumeric: () => void;
   onChoose: (value: string) => void;
 }) => {
+  const isFirstQuestion = GameContext.useSelector(
+    (state) => state.public.questionResults.length === 0,
+  );
   const question = questions[currentQuestion.questionId];
   const isMultipleChoice = question?.questionType === "multiple-choice";
   const myAnswer = currentQuestion.answers.find((a) => a.playerId === userId);
@@ -163,6 +166,7 @@ const ActiveQuestionDisplay = ({
         timeLeft={timeLeft}
         totalTime={totalTime}
         questionId={currentQuestion.questionId}
+        hint={isFirstQuestion}
         options={isMultipleChoice ? options : undefined}
       />
       {hasAnswered && myAnswer ? (
