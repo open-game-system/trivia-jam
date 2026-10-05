@@ -1,5 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Check, Copy, Loader2, Settings, Share2 } from "lucide-react";
+import { QRCodeSVG } from "qrcode.react";
 import { useMemo, useState } from "react";
 import { Drawer } from "vaul";
 import { GameContext } from "~/game.context";
@@ -12,10 +13,13 @@ import { AnswerProgress } from "./answer-progress";
 import { FinalScores, Winner, byScore } from "./phone/FinalScores";
 import {
   ActionBar,
+  BigStatus,
+  Details,
   EndGameControl,
   LiveAnswer,
   PlayerLedger,
-  QuestionPreview,
+  QuestionExtras,
+  QuestionHeadline,
 } from "./phone/HostParts";
 import { PlayerToken } from "./phone/ink";
 import { PhoneShell } from "./phone/PhoneShell";
@@ -197,6 +201,7 @@ const PreviousQuestionResults = ({
   players: Person[];
 }) => {
   const question = questions[lastQuestionResult.questionId];
+  const shortAnswer = String(question.correctAnswer).length <= 6;
   return (
     <motion.section
       initial={{ opacity: 0, y: 12 }}
@@ -204,17 +209,15 @@ const PreviousQuestionResults = ({
       transition={{ ease: [0.2, 0.9, 0.2, 1.15], duration: 0.3 }}
       aria-labelledby="results-heading"
     >
-      <h1
-        className="font-display font-extrabold text-blue"
-        style={{ fontSize: "clamp(26px, 7vw, 38px)", lineHeight: 1.08, letterSpacing: "-0.02em" }}
-      >
-        {question.text}
-      </h1>
-      <div className="mt-2 flex items-baseline gap-3">
-        <span className="pslug">Answer</span>
-        <span className="tabular misreg misreg-sm text-5xl font-extrabold leading-none">
+      <h1 className="h-head text-blue">{question.text}</h1>
+      <div className="hstatus-card mt-4">
+        <div className="pslug">Answer</div>
+        <div
+          className={`tabular ${shortAnswer ? "hstatus-figure" : "h-head"}`}
+          style={shortAnswer ? undefined : { marginTop: 4 }}
+        >
           {question.correctAnswer}
-        </span>
+        </div>
       </div>
       <h2 id="results-heading" className="pslug mb-2 mt-5" style={{ fontSize: 16 }}>
         Results
@@ -355,6 +358,9 @@ const SettingsModal = ({
   );
 };
 
+const EXAMPLE_QUESTIONS = `How many legs does a spider have?
+8`;
+
 const QuestionImportForm = ({
   documentContent,
   onDocumentContentChange,
@@ -369,10 +375,10 @@ const QuestionImportForm = ({
   isParsing: boolean;
 }) => (
   <section className="mb-6">
-    <h2 className="mb-3 text-3xl font-extrabold">Import Questions</h2>
+    <h2 className="h-head mb-3">Import Questions</h2>
     {parsingErrorMessage && (
       <div
-        className="mb-3 border-4 border-ink bg-yellow p-3 text-lg font-bold"
+        className="mb-3 border-4 border-ink bg-yellow p-3 h-detail"
         role="alert"
       >
         <strong>Could not parse questions:</strong> {parsingErrorMessage}
@@ -389,7 +395,9 @@ const QuestionImportForm = ({
         <p className="pslug mt-2">This may take a few moments</p>
       </div>
     ) : (
-      <>
+      <div className="hform">
+        <p className="h-detail mb-2">Question, then answer. Blank line between.</p>
+        <pre className="hform-example" aria-label="Example">{EXAMPLE_QUESTIONS}</pre>
         <textarea
           value={documentContent}
           onChange={(e) => onDocumentContentChange(e.target.value)}
@@ -401,27 +409,19 @@ Answer
 For multiple choice questions:
 Question?
 a) Option 1 b) Option 2 c) Option 3 d) Option 4
-Correct answer: B
-
-Example:
-How many bones in human body?
-206
-
-What major canal opened in 1914?
-a) Suez Canal b) Panama Canal c) Erie Canal d) English Channel
 Correct answer: B`}
           className="pfield mb-3"
-          rows={8}
+          rows={5}
         />
         <button
           type="button"
           onClick={onParseDocument}
           disabled={!documentContent.trim()}
-          className="pbtn pbtn-yellow pbtn-lg pbtn-block"
+          className="pbtn pbtn-pink pbtn-lg pbtn-block"
         >
-          Submit
+          Submit questions
         </button>
-      </>
+      </div>
     )}
   </section>
 );
@@ -435,7 +435,7 @@ const QuestionListDisplay = ({
 }) => (
   <section className="mb-5">
     <div className="mb-2 flex items-center justify-between gap-3">
-      <h3 className="text-3xl font-extrabold">
+      <h3 className="h-head">
         {Object.keys(questions).length} Questions
       </h3>
       <button type="button" onClick={onEditQuestions} className="pbtn pbtn-quiet">
@@ -467,8 +467,15 @@ const QuestionListDisplay = ({
   </section>
 );
 
-const GameLinkSection = ({ gameUrl }: { gameUrl: string }) => {
+const GameLinkSection = ({
+  gameUrl,
+  playerCount,
+}: {
+  gameUrl: string;
+  playerCount: number;
+}) => {
   const [copied, setCopied] = useState(false);
+  const [showQr, setShowQr] = useState(false);
 
   const copyGameLink = async () => {
     await navigator.clipboard.writeText(gameUrl);
@@ -489,51 +496,78 @@ const GameLinkSection = ({ gameUrl }: { gameUrl: string }) => {
   };
 
   return (
-    <section className="mb-5">
-      <h2 className="mb-2 text-3xl font-extrabold">Share Game Link</h2>
-      <button
-        type="button"
-        onClick={shareGameLink}
-        className="pbtn pbtn-yellow pbtn-lg pbtn-block"
-      >
-        <Share2 size={26} strokeWidth={3} aria-hidden="true" />
-        Share
-      </button>
-      <button
-        type="button"
-        onClick={copyGameLink}
-        className="prow mt-3 w-full text-left"
-        aria-label={gameUrl}
-        data-testid="game-link-button"
-      >
-        <span className="pslug min-w-0 flex-1 truncate" style={{ fontSize: 15 }} aria-hidden="true">
-          {gameUrl.replace(/^https?:\/\//, "")}
-        </span>
-        <AnimatePresence mode="wait">
-          {copied ? (
-            <motion.span
-              key="check"
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0 }}
-              className="text-teal"
-              data-testid="copy-success-icon"
-            >
-              <Check size={26} strokeWidth={3} />
-            </motion.span>
-          ) : (
-            <motion.span
-              key="copy"
-              initial={{ scale: 0 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0 }}
-              data-testid="copy-icon"
-            >
-              <Copy size={26} strokeWidth={3} />
-            </motion.span>
-          )}
-        </AnimatePresence>
-      </button>
+    <section className="mb-6" aria-label="Invite players">
+      <div className="hstatus-card">
+        <BigStatus
+          figure={playerCount}
+          label={playerCount === 1 ? "player joined" : "players joined"}
+        />
+        <button
+          type="button"
+          onClick={shareGameLink}
+          className="pbtn pbtn-yellow pbtn-lg pbtn-block mt-4"
+        >
+          <Share2 size={26} strokeWidth={3} aria-hidden="true" />
+          Share
+        </button>
+        <div className="mt-3 grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={copyGameLink}
+            className="pbtn pbtn-quiet"
+            aria-label={gameUrl}
+            data-testid="game-link-button"
+          >
+            <AnimatePresence mode="wait">
+              {copied ? (
+                <motion.span
+                  key="check"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  exit={{ scale: 0 }}
+                  className="text-teal"
+                  data-testid="copy-success-icon"
+                >
+                  <Check size={24} strokeWidth={3} />
+                </motion.span>
+              ) : (
+                <motion.span
+                  key="copy"
+                  initial={{ scale: 0 }}
+                  animate={{ scale: 1 }}
+                  exit={{ scale: 0 }}
+                  data-testid="copy-icon"
+                >
+                  <Copy size={24} strokeWidth={3} />
+                </motion.span>
+              )}
+            </AnimatePresence>
+            <span aria-hidden="true">{copied ? "Copied" : "Copy link"}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowQr((v) => !v)}
+            className="pbtn pbtn-quiet"
+            aria-expanded={showQr}
+          >
+            {showQr ? "Hide QR" : "Show QR"}
+          </button>
+        </div>
+        {showQr && (
+          <div className="hqr mt-4" data-testid="join-qr">
+            <QRCodeSVG
+              value={gameUrl}
+              size={240}
+              level="M"
+              marginSize={0}
+              fgColor="#1E1B1A"
+              bgColor="#F3EEE3"
+              title="Scan to join the game"
+              style={{ width: "100%", maxWidth: 260, height: "auto" }}
+            />
+          </div>
+        )}
+      </div>
     </section>
   );
 };
@@ -647,7 +681,7 @@ const LobbyControls = ({
               <Settings size={26} strokeWidth={2.6} aria-hidden="true" />
             </button>
           </Masthead>
-          <h1 className="misreg mb-4 text-5xl font-extrabold">Game Setup</h1>
+          <h1 className="misreg mb-4 text-4xl font-extrabold">Game Setup</h1>
 
           {(!hasQuestions || isEditingQuestions) && (
             <QuestionImportForm
@@ -659,7 +693,7 @@ const LobbyControls = ({
             />
           )}
 
-          <GameLinkSection gameUrl={gameUrl} />
+          <GameLinkSection gameUrl={gameUrl} playerCount={players.length} />
 
           {hasQuestions && !isEditingQuestions && (
             <QuestionListDisplay
@@ -722,36 +756,22 @@ const LiveQuestionPanel = ({
       animate={{ opacity: 1, y: 0 }}
       transition={{ ease: [0.2, 0.9, 0.2, 1.15], duration: 0.3 }}
     >
-      <div className="mb-4 flex items-center gap-4">
+      <p className="h-head text-blue">{question?.text}</p>
+
+      <div className="hstatus-card relative mt-4">
         <motion.div
-          className="tabular font-display text-7xl font-extrabold leading-none"
+          className="tabular h-head absolute right-3 top-3 border-4 border-ink px-3 py-1"
           data-testid="question-timer"
           animate={{ scale: timeLeft <= 5 ? [1, 1.1, 1] : 1 }}
           transition={{ duration: 1, repeat: timeLeft <= 5 ? Infinity : 0 }}
+          style={{ background: timeLeft <= 5 ? "var(--pink)" : "var(--paper)" }}
         >
           {timeLeft}s
         </motion.div>
-        <div className="min-w-0 flex-1">
-          <AnswerProgress
-            answersCount={currentQuestion.answers.length}
-            playersCount={players.length}
-          />
-        </div>
-      </div>
-
-      <div className="sheet p-4">
-        <p
-          className="font-display font-extrabold text-blue"
-          style={{ fontSize: "clamp(22px, 5.6vw, 30px)", lineHeight: 1.1, letterSpacing: "-0.02em" }}
-        >
-          {question?.text}
-        </p>
-        <div className="mt-3 flex items-baseline gap-3 border-t-4 border-ink pt-3">
-          <span className="pslug">Answer</span>
-          <span className="tabular text-4xl font-extrabold leading-tight">
-            {question?.correctAnswer}
-          </span>
-        </div>
+        <AnswerProgress
+          answersCount={currentQuestion.answers.length}
+          playersCount={players.length}
+        />
       </div>
 
       {missing.length > 0 && (
@@ -763,12 +783,25 @@ const LiveQuestionPanel = ({
             {missing.map((player) => (
               <li key={player.id} className="prow" style={{ minHeight: 48, padding: "4px 12px 4px 6px" }}>
                 <PlayerToken name={player.name} seat={Math.max(0, players.findIndex((p) => p.id === player.id))} />
-                <span className="text-xl font-extrabold">{player.name}</span>
+                <span className="h-detail">{player.name}</span>
               </li>
             ))}
           </ul>
         </section>
       )}
+
+      <div className="mt-4">
+        <Details>
+          {question && <QuestionExtras question={question} />}
+          {currentQuestion.answers.length > 0 && question && (
+            <div className="flex flex-col gap-2">
+              {currentQuestion.answers.map((answer) => (
+                <LiveAnswer key={answer.playerId} answer={answer} question={question} />
+              ))}
+            </div>
+          )}
+        </Details>
+      </div>
     </motion.section>
   );
 };
@@ -826,40 +859,58 @@ const QuestionControls = ({
                   players={players}
                 />
               )}
-              {!(lastQuestionResult && isLastQuestion) && (
-                <section className="sheet sheet-pink mt-6 p-4" aria-label="Up next">
-                  <div className="pslug mb-2">
-                    {isFirst ? "First up" : "Up next"}
+              {isFirst && (
+                <>
+                  <p className="pslug mb-2">First up</p>
+                  {nextQuestion ? (
+                    <QuestionHeadline question={nextQuestion} />
+                  ) : (
+                    <p className="h-head">No questions available</p>
+                  )}
+                  <div className="hstatus-card mt-4">
+                    <BigStatus
+                      figure={players.length}
+                      label={players.length === 1 ? "player ready" : "players ready"}
+                    />
                   </div>
-                  <QuestionPreview
-                    question={nextQuestion}
-                    emptyMessage={isFirst ? "No questions available" : "No more questions available"}
-                  />
-                </section>
+                </>
               )}
               {lastQuestionResult && isLastQuestion && (
-                <section className="sheet sheet-yellow mt-6 p-4 text-center">
-                  <p className="text-2xl font-extrabold">That was the last question.</p>
+                <section className="sheet sheet-yellow mt-5 p-4 text-center">
+                  <p className="h-detail">That was the last question.</p>
                 </section>
               )}
+
+              <div className="mt-5">
+                <Details summary={isFirst ? "Details" : "Details: up next, players"}>
+                  {!(lastQuestionResult && isLastQuestion) && (
+                    <section aria-label="Up next">
+                      {!isFirst && <p className="pslug mb-2">Up next</p>}
+                      {!isFirst && nextQuestion && <QuestionHeadline question={nextQuestion} />}
+                      {!isFirst && !nextQuestion && (
+                        <p className="h-detail">No more questions available</p>
+                      )}
+                      {nextQuestion && (
+                        <div className="mt-3 flex flex-col gap-3">
+                          <QuestionExtras question={nextQuestion} />
+                        </div>
+                      )}
+                    </section>
+                  )}
+                  <PlayerLedger
+                    players={players}
+                    hostId={hostId}
+                    maxPlayers={maxPlayers}
+                    onRemove={(playerId) => send({ type: "REMOVE_PLAYER", playerId })}
+                  />
+                  {showEndGameDemoted && (
+                    <div className="border-t-4 border-dashed border-ink pt-4">
+                      <EndGameControl onEnd={endGame} confirm={false} />
+                    </div>
+                  )}
+                </Details>
+              </div>
             </>
-          )}
-
-          {!currentQuestion && (
-            <div className="mt-6">
-              <PlayerLedger
-                players={players}
-                hostId={hostId}
-                maxPlayers={maxPlayers}
-                onRemove={(playerId) => send({ type: "REMOVE_PLAYER", playerId })}
-              />
-            </div>
-          )}
-
-          {showEndGameDemoted && !currentQuestion && (
-            <div className="mt-10 border-t-4 border-dashed border-ink pt-5">
-              <EndGameControl onEnd={endGame} confirm={false} />
-            </div>
           )}
         </Page>
       </div>

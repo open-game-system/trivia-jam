@@ -115,46 +115,80 @@ export const LiveAnswer = ({
   );
 };
 
-/** What the host is about to read out (and the answer, host eyes only). */
-export const QuestionPreview = ({
-  question,
-  emptyMessage,
+/** The question as the screen's headline. */
+export const QuestionHeadline = ({ question }: { question: Question }) => (
+  <p className="h-head text-blue">{question.text}</p>
+);
+
+/** Host-eyes extras for a question: the answer and, for multiple choice, the options. */
+export const QuestionExtras = ({ question }: { question: Question }) => (
+  <>
+    <div className="flex items-baseline gap-3">
+      <span className="pslug">Answer</span>
+      <span className="tabular h-head">{question.correctAnswer}</span>
+    </div>
+    {question.questionType === "multiple-choice" && question.options && (
+      <div className="grid grid-cols-2 gap-2">
+        {question.options.map((option, index) => (
+          <div
+            key={`${index}-${option}`}
+            className={`border-4 border-ink px-3 py-2 h-detail ${
+              option === question.correctAnswer ? "bg-teal text-paper" : "bg-paper"
+            }`}
+          >
+            {String.fromCharCode(65 + index)}) {option}
+          </div>
+        ))}
+      </div>
+    )}
+  </>
+);
+
+/**
+ * "Details": everything the host can look up but does not need at a glance.
+ * Native <details>, so it is keyboard and screen-reader friendly and closed by default.
+ */
+export const Details = ({
+  summary = "Details",
+  children,
+  testId,
 }: {
-  question: Question | undefined;
-  emptyMessage: string;
-}) => {
-  if (!question) {
-    return <p className="py-3 text-center text-xl font-bold">{emptyMessage}</p>;
-  }
-  return (
-    <>
-      <div
-        className="font-display font-extrabold text-blue"
-        style={{ fontSize: "clamp(24px, 6vw, 34px)", lineHeight: 1.1 }}
-      >
-        {question.text}
-      </div>
-      <div className="mt-3 flex items-baseline gap-3">
-        <span className="pslug">Answer</span>
-        <span className="tabular text-3xl font-extrabold">{question.correctAnswer}</span>
-      </div>
-      {question.questionType === "multiple-choice" && question.options && (
-        <div className="mt-3 grid grid-cols-2 gap-2">
-          {question.options.map((option, index) => (
-            <div
-              key={`${index}-${option}`}
-              className={`border-4 border-ink px-3 py-2 text-base font-bold ${
-                option === question.correctAnswer ? "bg-teal text-paper" : "bg-paper"
-              }`}
-            >
-              {String.fromCharCode(65 + index)}) {option}
-            </div>
-          ))}
-        </div>
-      )}
-    </>
-  );
-};
+  summary?: string;
+  children: ReactNode;
+  testId?: string;
+}) => (
+  <details className="hdetails" data-testid={testId}>
+    <summary className="hdetails-summary">
+      <span>{summary}</span>
+      <svg className="hdetails-caret" width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">
+        <path d="M4 7.5 11 15l7-7.5" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="square" />
+      </svg>
+    </summary>
+    <div className="hdetails-body">{children}</div>
+  </details>
+);
+
+/** The one big fact on a host screen: a huge figure over a plain label. */
+export const BigStatus = ({
+  figure,
+  of,
+  label,
+  tone = "ink",
+}: {
+  figure: string | number;
+  /** Optional "of N" printed smaller beside the figure. */
+  of?: string | number;
+  label: string;
+  tone?: "ink" | "teal";
+}) => (
+  <div className={`hstatus ${tone === "teal" ? "hstatus-teal" : ""}`}>
+    <div className="hstatus-figure">
+      <span className="tabular">{figure}</span>
+      {of !== undefined && <span className="hstatus-of">of {of}</span>}
+    </div>
+    <div className="hstatus-label">{label}</div>
+  </div>
+);
 
 /** The one thing to press, pinned to the bottom edge within thumb reach. */
 export const ActionBar = ({ children }: { children: ReactNode }) => (
