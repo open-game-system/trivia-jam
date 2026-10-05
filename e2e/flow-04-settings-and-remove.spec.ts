@@ -82,7 +82,7 @@ test.describe("Flow 4: settings and removing players", () => {
       await expect(hostPlayerRows(room.hostPage, "Ada")).toHaveCount(1);
       await expect(tvSeatName(room.tvPage, "Ben")).toHaveCount(0);
       await expect(tvSeatName(room.tvPage, "Ada")).toBeVisible();
-      await expect(room.tvPage.getByText("Players 1/10")).toBeVisible();
+      await expect(room.tvPage.getByText("1 player", { exact: true })).toBeVisible();
       await expect(ben.playerPage.getByRole("heading", { name: "Join Game" })).toBeVisible();
       await expect(ada.playerPage.getByRole("heading", { name: "Welcome, Ada!" })).toBeVisible();
 

@@ -16,7 +16,7 @@ test.describe("Flow 3: player joins from the game link", () => {
     const room = await openRoom(browser);
     try {
       await expect(hostPlayersHeading(room.hostPage, 0)).toBeVisible();
-      await expect(room.tvPage.getByText("Players 0/10")).toBeVisible();
+      await expect(room.tvPage.getByText("Waiting for players", { exact: true })).toBeVisible();
 
       const ada = await joinAndWait(browser, room.gamePath, "Ada");
       room.contexts.push(ada.playerContext);
@@ -24,14 +24,14 @@ test.describe("Flow 3: player joins from the game link", () => {
       await expect(hostPlayersHeading(room.hostPage, 1)).toBeVisible();
       await expect(hostPlayerRows(room.hostPage, "Ada")).toHaveCount(1);
       await expect(tvSeatName(room.tvPage, "Ada")).toBeVisible();
-      await expect(room.tvPage.getByText("Players 1/10")).toBeVisible();
+      await expect(room.tvPage.getByText("1 player", { exact: true })).toBeVisible();
 
       const ben = await joinAndWait(browser, room.gamePath, "Ben");
       room.contexts.push(ben.playerContext);
 
       await expect(hostPlayersHeading(room.hostPage, 2)).toBeVisible();
       await expect(tvSeatName(room.tvPage, "Ben")).toBeVisible();
-      await expect(room.tvPage.getByText("Players 2/10")).toBeVisible();
+      await expect(room.tvPage.getByText("2 players", { exact: true })).toBeVisible();
     } finally {
       await room.close();
     }
@@ -79,7 +79,7 @@ test.describe("Flow 3: player joins from the game link", () => {
       await expect(hostPlayersHeading(room.hostPage, 1)).toBeVisible();
       await expect(hostPlayerRows(room.hostPage, "Ada")).toHaveCount(1);
       await expect(tvSeatName(room.tvPage, "Ada")).toHaveCount(1);
-      await expect(room.tvPage.getByText("Players 1/10")).toBeVisible();
+      await expect(room.tvPage.getByText("1 player", { exact: true })).toBeVisible();
     } finally {
       await phone.close();
       await room.close();
