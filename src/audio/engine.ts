@@ -33,26 +33,44 @@ export class TvAudio {
   private wanted: Bed | null = null;
   private paused = false;
 
-  private context(): { ctx: Ctx; out: GainNode } {
-    if (!this.ctx || !this.master) {
+  private context(): { ctx: Ctx; out: GainNode; beds: GainNode } {
+    if (!this.ctx || !this.master || !this.sfx) {
       audioSessionPlayback();
       const ctx = new AudioContext({ latencyHint: "interactive" });
+      // Glue compressor, then a fast brickwall-style limiter so stacked hits never clip (peaks < -1 dBFS).
       const comp = ctx.createDynamicsCompressor();
-      comp.threshold.value = -14;
+      comp.threshold.value = -16;
       comp.ratio.value = 3;
       comp.attack.value = 0.004;
       comp.release.value = 0.2;
+      const limiter = ctx.createDynamicsCompressor();
+      limiter.threshold.value = -4;
+      limiter.knee.value = 0;
+      limiter.ratio.value = 20;
+      limiter.attack.value = 0.001;
+      limiter.release.value = 0.08;
+      const trim = ctx.createGain();
+      trim.gain.value = 0.82;
       const master = ctx.createGain();
       master.gain.value = 0.9;
+      // Sound effects sit ~2 LU over the music, not 6.
+      const sfx = ctx.createGain();
+      sfx.gain.value = 0.6;
+      sfx.connect(master);
       master.connect(comp);
-      comp.connect(ctx.destination);
+      comp.connect(limiter);
+      limiter.connect(trim);
+      trim.connect(ctx.destination);
       this.ctx = ctx;
       this.master = master;
-      this.comp = comp;
+      this.sfx = sfx;
+      this.comp = trim;
     }
-    return { ctx: this.ctx, out: this.master };
+    return { ctx: this.ctx, out: this.sfx, beds: this.master };
   }
-  private comp: DynamicsCompressorNode | null = null;
+  private sfx: GainNode | null = null;
+  /** The final output node (after the limiter): what the speakers and the recording tap hear. */
+  private comp: AudioNode | null = null;
 
   /** Resume after a user gesture (or immediately where autoplay is allowed). */
   unlock() {
@@ -116,7 +134,7 @@ export class TvAudio {
    * a mallet per guess dropping in, a drumroll through the suspense, the answer hit, a fanfare on the
    * spotlight (brighter for an exact guess), and a counting run as points stamp on.
    */
-  revealScore(beats: { firstDrop: number; stagger: number; guesses: number; answer: number; spotlight: number; points: number; exact: boolean }) {
+  revealScore(beats: { firstDrop: number; stagger: number; guesses: number; answer: number; spotlight: number; points: number; standings: number; exact: boolean }) {
     const at = (ms: number) => ms / 1000;
     for (let i = 0; i < beats.guesses; i++) {
       this.mallet(SCALE[Math.min(SCALE.length - 1, 2 + i)] ?? 880, 0.26, 0.35, at(beats.firstDrop + i * beats.stagger + 380));
@@ -127,6 +145,12 @@ export class TvAudio {
     this.hit(at(beats.answer));
     this.arp(beats.exact ? [4, 5, 7, 9] : [2, 4, 5], 0.1, 0.24, at(beats.spotlight));
     this.arp([5, 6, 7], 0.07, 0.16, at(beats.points));
+    // No dead air after the answer: a warm chord holds under the spotlight, then the lobby groove comes
+    // back for the standings (unless the next question or the finale has already taken over).
+    this.pad(at(beats.answer) + 0.25, Math.max(2, at(beats.standings - beats.answer)));
+    window.setTimeout(() => {
+      if (this.wanted === null) this.setBed("lobby");
+    }, Math.max(0, beats.standings - 600));
   }
 
   /** The last seconds of the timer: a soft woodblock, brighter on the final three. */
@@ -168,11 +192,11 @@ export class TvAudio {
     if (!name) return;
     void this.load(name).then((buffer) => {
       if (!buffer || this.wanted !== name || this.bed) return;
-      const { ctx, out } = this.context();
+      const { ctx, beds } = this.context();
       const gain = ctx.createGain();
       gain.gain.setValueAtTime(0, ctx.currentTime);
       gain.gain.linearRampToValueAtTime(BED_LEVEL[name], ctx.currentTime + 1.2);
-      gain.connect(out);
+      gain.connect(beds);
       const bed = { name, gain, timer: 0, sources: [] as AudioBufferSourceNode[] };
       this.bed = bed;
       // Each copy fades in over XFADE while the previous one fades out: no seam, no silent dip.
@@ -288,11 +312,32 @@ export class TvAudio {
     this.voice(band / 2, "sine", level * 0.5, 0.06, 0);
   }
 
+  /** A snare roll: band-limited noise (no fizz above ~6 kHz), 18 strokes a second, rising into the answer. */
   private drumroll(delay: number, seconds: number) {
-    const hits = Math.floor(seconds / 0.055);
+    const { ctx, out } = this.context();
+    const hits = Math.floor(seconds * 18);
+    const lp = ctx.createBiquadFilter();
+    lp.type = "lowpass";
+    lp.frequency.value = 5500;
+    lp.connect(out);
     for (let i = 0; i < hits; i++) {
       const p = i / hits;
-      this.burst(delay + i * 0.055, 0.07, 1700, 1.2, 0.05 + 0.2 * p * p);
+      const t = ctx.currentTime + delay + i / 18;
+      const src = this.noise(0.06);
+      const bp = ctx.createBiquadFilter();
+      bp.type = "bandpass";
+      bp.frequency.value = 1300 + 500 * p;
+      bp.Q.value = 1.6;
+      const g = ctx.createGain();
+      const level = (0.05 + 0.22 * p * p) * (i % 2 ? 0.8 : 1);
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(level, t + 0.004);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.055);
+      src.connect(bp);
+      bp.connect(g);
+      g.connect(lp);
+      src.start(t);
+      src.stop(t + 0.07);
     }
   }
 
@@ -302,6 +347,30 @@ export class TvAudio {
     this.voice(65.41, "sine", 0.6, 0.7, delay);
     for (const s of [0, 2, 4, 7]) this.mallet(SCALE[s] ?? 523.25, 0.24, 1.2, delay + 0.01);
     this.burst(delay + 0.01, 0.9, 6500, 0.7, 0.05);
+  }
+
+  /** A soft sustained chord (C major add 9) with a slow swell, under a settled moment. */
+  private pad(delay: number, seconds: number) {
+    for (const f of [261.63, 329.63, 392.0, 587.33]) {
+      const { ctx, out } = this.context();
+      const t = ctx.currentTime + delay;
+      const osc = ctx.createOscillator();
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(f, t);
+      const lp = ctx.createBiquadFilter();
+      lp.type = "lowpass";
+      lp.frequency.value = 1800;
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.linearRampToValueAtTime(0.045, t + 0.6);
+      g.gain.setValueAtTime(0.045, t + Math.max(0.7, seconds - 0.8));
+      g.gain.linearRampToValueAtTime(0.0001, t + seconds);
+      osc.connect(lp);
+      lp.connect(g);
+      g.connect(out);
+      osc.start(t);
+      osc.stop(t + seconds + 0.05);
+    }
   }
 
   private timeUp() {
