@@ -948,3 +948,33 @@ export const TvGameOverWithAwards: Story = {
     ),
   ),
 };
+
+/** Nobody nails it: the closest guess breaks forward with a smaller CLOSEST stamp and how far off it was. */
+export const TvRevealClosestLive: Story = {
+  play: liveReveal(
+    "q5",
+    5,
+    resultFor("q5", 5, [
+      ["p-sam", "Sam", 180, 2],
+      ["p-mom", "Mom", 212, 4],
+      ["p-grandpa", "Grandpa", 150, 1],
+      ["p-lou", "Lou", 300, 0],
+    ]),
+    AFTER_Q1,
+  ),
+};
+
+/** Nobody picked the right tile: a gentle comic beat instead of a winner. */
+export const TvRevealMultipleChoiceNobodyLive: Story = {
+  play: liveReveal(
+    "q3",
+    3,
+    resultFor("q3", 3, [
+      ["p-sam", "Sam", "Saturn", 0],
+      ["p-mom", "Mom", "Mars", 0],
+      ["p-grandpa", "Grandpa", "Neptune", 0],
+      ["p-lou", "Lou", "Mars", 0],
+    ]),
+    AFTER_Q1,
+  ),
+};

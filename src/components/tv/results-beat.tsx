@@ -6,7 +6,7 @@ import { TvStandingsBoard } from "./standings-board";
 import { buildStandings, revealSchedule } from "./tv-model";
 
 /** How long the settled reveal holds before the standings board takes over. */
-const HOLD_MS = 3000;
+const HOLD_MS = 2400;
 /** The reveal clears fully before the board lands: no two layers on screen at once. */
 const CLEAR_MS = 280;
 

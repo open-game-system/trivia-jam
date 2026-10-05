@@ -234,10 +234,12 @@ export const revealSchedule = (guessCount: number, reducedMotion: boolean): Reve
   const lastDrop = firstDrop + Math.max(0, guessCount - 1) * stagger;
   // The anticipation beat: the "?" swings between the guesses before the answer slams.
   const answer = lastDrop + dropDuration + 2500;
-  const spotlight = answer + 700;
-  const points = spotlight + 700;
-  const standings = points + 900;
-  const end = standings + 700;
+  // Each beat owns the screen: the answer lands alone, then the winners break forward,
+  // then their points travel into their totals.
+  const spotlight = answer + 1100;
+  const points = spotlight + 1300;
+  const standings = points + 1000;
+  const end = standings + 600;
   return {
     axis: 0,
     firstDrop: firstDrop * scale,

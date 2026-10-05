@@ -377,3 +377,18 @@ export const sweepStops = (xs: ReadonlyArray<number>): number[] => {
   }
   return seq.length >= 4 ? seq : [...seq, ...seq];
 };
+
+/** Where each shown member's chip sits on the poster (its centre), for chips that break forward off the line. */
+export const memberChipCentres = (group: GuessGroup, size: LineSize): Map<string, { x: number; y: number }> => {
+  const shown = group.members.slice(0, size.maxRows);
+  const widths = shown.map((m) => columnWidth(m, m.playerId === group.fastest, size));
+  const total = widths.reduce((a, b) => a + b, 0) + COL_GAP * (shown.length - 1);
+  let left = group.x - total / 2;
+  const y = group.bottom - group.height + size.chip / 2;
+  const out = new Map<string, { x: number; y: number }>();
+  shown.forEach((m, i) => {
+    out.set(m.playerId, { x: left + widths[i] / 2, y });
+    left += widths[i] + COL_GAP;
+  });
+  return out;
+};

@@ -1,23 +1,23 @@
 import { tvAudio } from "~/audio/engine";
 import { motion, useReducedMotion } from "framer-motion";
-import { useEffect, useMemo, useRef } from "react";
+import { type ReactNode, useEffect, useMemo, useRef } from "react";
 import type { Question, QuestionResult } from "~/game.types";
 import { InkToken, RisoType, Slug } from "./print";
 import { OptionTiles, QuestionSlug } from "./question";
-import { type LineGuess, layoutNumberLine, REVEAL_FRAME, sweepStops } from "./number-line-layout";
+import { type LineGuess, layoutNumberLine, memberChipCentres, REVEAL_FRAME, sweepStops } from "./number-line-layout";
 import { GuessGroupView, Leaders, NumberLineAxis } from "./number-line-reveal";
 import { RollingNumber } from "./standings";
 import {
   choiceWinners,
   findHighlights,
-  joinNames,
-  type Highlight,
+  formatTick,
   matchOptionIndex,
   optionLetter,
   revealSchedule,
   toNumber,
 } from "./tv-model";
 import { PHASE, useRevealPhase } from "./use-reveal-phase";
+import { type Winner, WinnersCard, type WinnersKind } from "./winners-card";
 
 type TvPlayer = { id: string; name: string; score: number };
 
@@ -40,108 +40,87 @@ const PointsBadge = ({ points, live, compact = false }: { points: number; live: 
   </motion.span>
 );
 
-type HeadlineKind = Highlight | "right" | "nobody";
+/** Exact answers shake the poster for two or three frames as the answer lands. Nothing else does. */
+const Shake = ({ on, children }: { on: boolean; children: ReactNode }) => (
+  <motion.div className="absolute inset-0" animate={on ? { x: [0, -14, 11, -6, 0], y: [0, 6, -5, 2, 0] } : { x: 0, y: 0 }} transition={{ duration: 0.11, delay: on ? 0.16 : 0 }}>
+    {children}
+  </motion.div>
+);
 
-/** After the slam, the first readable fact: who nailed it, huge, with a stamp. */
-const Headline = ({ kind, names, live }: { kind: HeadlineKind; names: string; live: boolean }) => {
-  const text = kind === "nobody" ? "Nobody got it" : names;
-  const size = text.length <= 10 ? 140 : text.length <= 18 ? 116 : 92;
-  const stamp =
-    kind === "exact"
-      ? { label: "Exact!", bg: "var(--teal)", fg: "var(--paper)" }
-      : kind === "closest"
-        ? { label: "Closest!", bg: "var(--yellow)", fg: "var(--ink)" }
-        : kind === "right"
-          ? { label: "Got it!", bg: "var(--teal)", fg: "var(--paper)" }
-          : null;
+/** Everything on the line steps back when the winners break forward. */
+const LineLayer = ({ back, children }: { back: boolean; children: ReactNode }) => (
+  <motion.div
+    className="absolute inset-0"
+    style={{ transformOrigin: "50% 75%" }}
+    initial={false}
+    animate={back ? { opacity: 0.09, scale: 0.97 } : { opacity: 1, scale: 1 }}
+    transition={{ duration: 0.35, ease: [0.2, 0.9, 0.2, 1] }}
+  >
+    {children}
+  </motion.div>
+);
+
+const answerCenter = (x: number) => Math.min(REVEAL_FRAME.right - 260, Math.max(REVEAL_FRAME.left + 240, x));
+
+/** The pin where the answer lands on the line: a pink stem and diamond. */
+const AnswerPin = ({ x, live }: { x: number; live: boolean }) => (
+  <>
+    <motion.div
+      aria-hidden="true"
+      className="absolute overprint"
+      style={{ left: x - 5, width: 10, top: AXIS_Y - 40, height: 40, background: "var(--pink)", transformOrigin: "bottom", zIndex: 3 }}
+      initial={live ? { scaleY: 0 } : false}
+      animate={{ scaleY: 1 }}
+      transition={{ duration: 0.22, ease: "easeIn" }}
+    />
+    <motion.div
+      aria-hidden="true"
+      className="absolute"
+      style={{ left: x - 26, top: AXIS_Y - 26, width: 52, height: 52, background: "var(--pink)", border: "6px solid var(--ink)", rotate: 45, zIndex: 5 }}
+      initial={live ? { scale: 0 } : false}
+      animate={{ scale: 1 }}
+      transition={{ delay: 0.2, type: "spring", stiffness: 500, damping: 14 }}
+    />
+  </>
+);
+
+/** The answer, huge, under the line: it stays printed while everything else steps back. */
+const AnswerNumeral = ({ value, x, live }: { value: string; x: number; live: boolean }) => {
+  const center = answerCenter(x);
   return (
     <motion.div
-      className="absolute flex items-center gap-10"
-      style={{ left: 96, right: 96, top: 128, height: 150, zIndex: 40 }}
-      data-testid="tv-highlight"
+      className="absolute tv-display tabular"
+      style={{ top: AXIS_Y + 78, fontSize: 200, lineHeight: 0.86, x: "-50%", zIndex: 35 }}
+      initial={live ? { scale: 2.4, opacity: 0, y: -120, left: center } : false}
+      animate={{ scale: [2.4, 0.9, 1.03, 1], opacity: 1, y: 0, left: center }}
+      transition={{ duration: 0.5, times: [0, 0.55, 0.8, 1], delay: 0.12, left: { type: "spring", stiffness: 200, damping: 22 } }}
+      data-testid="correct-answer"
     >
-      <motion.span
-        className="tv-display whitespace-nowrap"
-        style={{ fontSize: size, lineHeight: 0.9 }}
-        initial={live ? { scale: 1.8, opacity: 0, y: -40 } : false}
-        animate={{ scale: [1.8, 0.94, 1], opacity: 1, y: 0 }}
-        transition={{ duration: 0.45, times: [0, 0.6, 1], delay: live ? 0.22 : 0 }}
-      >
-        <RisoType top={kind === "nobody" ? "var(--ink)" : "var(--blue)"} under="var(--pink)" offset={9} rough>
-          {text}
-        </RisoType>
-      </motion.span>
-      {stamp ? (
+      <span className="tv-riso-type">
         <motion.span
-          className="tv-stamp"
-          style={{ fontSize: 60, color: stamp.fg, background: stamp.bg, borderColor: "var(--ink)" }}
-          initial={live ? { scale: 2.6, opacity: 0, rotate: -24 } : false}
-          animate={{ scale: [2.6, 0.86, 1], opacity: 1, rotate: -6 }}
-          transition={{ duration: 0.42, times: [0, 0.6, 1], delay: live ? 0.5 : 0 }}
+          aria-hidden="true"
+          className="tv-riso-under tv-rough"
+          style={{ color: "var(--pink)" }}
+          initial={live ? { x: 0, y: 0 } : false}
+          animate={{ x: [0, 22, -10, 14, 9], y: [0, -12, 16, 6, 9] }}
+          transition={{ duration: 0.5, delay: 0.42 }}
         >
-          {stamp.label}
+          {value}
         </motion.span>
-      ) : null}
+        <span className="tv-riso-top tv-rough" style={{ color: "var(--blue)" }}>
+          {value}
+        </span>
+      </span>
     </motion.div>
   );
 };
 
-const answerCenter = (x: number) => Math.min(REVEAL_FRAME.right - 260, Math.max(REVEAL_FRAME.left + 240, x));
-
-const AnswerNumeral = ({ value, x, live }: { value: string; x: number; live: boolean }) => {
-  const center = answerCenter(x);
-  return (
-    <>
-      <motion.div
-        aria-hidden="true"
-        className="absolute overprint"
-        style={{ left: x - 5, width: 10, top: AXIS_Y - 40, height: 40, background: "var(--pink)", transformOrigin: "bottom", zIndex: 3 }}
-        initial={live ? { scaleY: 0 } : false}
-        animate={{ scaleY: 1 }}
-        transition={{ duration: 0.22, ease: "easeIn" }}
-      />
-      <motion.div
-        aria-hidden="true"
-        className="absolute"
-        style={{ left: x - 26, top: AXIS_Y - 26, width: 52, height: 52, background: "var(--pink)", border: "6px solid var(--ink)", rotate: 45, zIndex: 5 }}
-        initial={live ? { scale: 0 } : false}
-        animate={{ scale: 1 }}
-        transition={{ delay: 0.2, type: "spring", stiffness: 500, damping: 14 }}
-      />
-      <motion.div
-        className="absolute tv-display tabular"
-        style={{ left: center, top: AXIS_Y + 78, fontSize: 200, lineHeight: 0.86, x: "-50%" }}
-        initial={live ? { scale: 2.4, opacity: 0, y: -120 } : false}
-        animate={{ scale: [2.4, 0.9, 1.03, 1], opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, times: [0, 0.55, 0.8, 1], delay: 0.12 }}
-        data-testid="correct-answer"
-      >
-        <span className="tv-riso-type">
-          <motion.span
-            aria-hidden="true"
-            className="tv-riso-under tv-rough"
-            style={{ color: "var(--pink)" }}
-            initial={live ? { x: 0, y: 0 } : false}
-            animate={{ x: [0, 22, -10, 14, 9], y: [0, -12, 16, 6, 9] }}
-            transition={{ duration: 0.5, delay: 0.42 }}
-          >
-            {value}
-          </motion.span>
-          <span className="tv-riso-top tv-rough" style={{ color: "var(--blue)" }}>
-            {value}
-          </span>
-        </span>
-      </motion.div>
-    </>
-  );
-};
-
 const ChoiceAnswerLine = ({ letter, text, live }: { letter: string; text: string; live: boolean }) => {
-  const size = text.length <= 10 ? 190 : text.length <= 18 ? 130 : 88;
+  const size = text.length <= 10 ? 180 : text.length <= 18 ? 130 : 88;
   return (
     <motion.div
-      className="absolute flex items-end gap-10"
-      style={{ left: 96, right: 96, top: 730 }}
+      className="absolute flex items-end justify-center gap-10"
+      style={{ left: 96, right: 96, top: 850, zIndex: 35 }}
       initial={live ? { scale: 1.8, opacity: 0, y: -80 } : false}
       animate={{ scale: [1.8, 0.94, 1], opacity: 1, y: 0 }}
       transition={{ duration: 0.5, times: [0, 0.65, 1] }}
@@ -182,42 +161,39 @@ const SuspenseMarker = ({ stops, seconds }: { stops: number[]; seconds: number }
   );
 };
 
-/** The question stays readable while the guesses land; after the slam the headline takes its place. */
+/** The question stays readable while the guesses land; when the winners break forward it clears the stage. */
 const TopBand = ({
   question,
   number,
   total,
   phase,
-  headline,
   live,
 }: {
   question: Question;
   number: number;
   total: number;
   phase: number;
-  headline: { kind: HeadlineKind; names: string } | null;
   live: boolean;
 }) => {
-  const showHeadline = headline !== null && phase >= PHASE.spotlight;
+  const clear = phase >= PHASE.spotlight;
   const caption = phase < PHASE.suspense ? "The guesses" : phase < PHASE.answer ? "And the answer is..." : "The answer";
   const qSize = question.text.length <= 56 ? 72 : question.text.length <= 90 ? 60 : 56;
   return (
     <>
-      <div className="absolute flex items-center gap-6" style={{ left: 96, top: 56 }}>
+      <motion.div className="absolute flex items-center gap-6" style={{ left: 96, top: 56, zIndex: 40 }} animate={{ opacity: clear ? 0 : 1 }} transition={{ duration: 0.2 }}>
         <QuestionSlug number={number} total={total} />
         <motion.span key={caption} initial={live ? { opacity: 0, x: -20 } : false} animate={{ opacity: 1, x: 0 }}>
           <Slug className="text-blue">{caption}</Slug>
         </motion.span>
-      </div>
+      </motion.div>
       <motion.h2
         className="absolute tv-display text-ink"
         style={{ left: 96, top: 136, maxWidth: 1728, fontSize: qSize, lineHeight: 1.04, letterSpacing: "-0.02em" }}
-        animate={{ opacity: showHeadline ? 0 : 1, y: showHeadline ? -24 : 0 }}
+        animate={{ opacity: clear ? 0 : 1, y: clear ? -24 : 0 }}
         transition={{ duration: 0.18 }}
       >
         {question.text}
       </motion.h2>
-      {showHeadline && headline ? <Headline kind={headline.kind} names={headline.names} live={live} /> : null}
     </>
   );
 };
@@ -266,6 +242,13 @@ export const TvReveal = ({
   }, [live, schedule, guessCount, exact]);
   const stagger = schedule.stagger / 1000;
   const firstDrop = schedule.firstDrop / 1000;
+  const scoreOf = new Map(players.map((p) => [p.id, p.score]));
+  const winner = (id: string, name: string, inkIndex: number, from?: Winner["from"]): Winner => {
+    const points = pointsOf.get(id) ?? 0;
+    return { id, name, inkIndex, points, prevScore: (scoreOf.get(id) ?? points) - points, from };
+  };
+  const forward = phase >= PHASE.spotlight;
+  const shaking = live && exact && phase === PHASE.answer;
 
   if (isChoice && question.options) {
     const options = question.options;
@@ -306,24 +289,35 @@ export const TvReveal = ({
         </>
       ),
     );
-    const winnerNames = result.answers.filter((a) => winnerIds.has(a.playerId)).map((a) => a.playerName);
-    const choiceHeadline: { kind: HeadlineKind; names: string } | null =
-      correctIndex < 0 ? null : winnerNames.length > 0 ? { kind: "right", names: joinNames(winnerNames) } : { kind: "nobody", names: "" };
+    // Where each token sat on its tile, so the winners can break forward from there.
+    const TILE_W = (1728 - 40) / 2;
+    const tokenAt = (optionIndex: number, k: number, n: number) => ({
+      x: 96 + (optionIndex % 2) * (TILE_W + 40) + TILE_W - 20 - (n - 1 - k) * 80 - 36,
+      y: 300 + Math.floor(optionIndex / 2) * (150 + 32) - 38 + 36,
+      size: 72,
+    });
+    const winners: Winner[] = byOption.flatMap((list, oi) =>
+      list.flatMap((t, k) => (winnerIds.has(t.playerId) ? [winner(t.playerId, t.name, t.inkIndex, tokenAt(oi, k, list.length))] : [])),
+    );
+    const kind: WinnersKind = winners.length > 0 ? "right" : "nobody";
     return (
       <motion.div key="reveal" className="absolute inset-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-        <TopBand question={question} number={number} total={total} phase={phase} headline={choiceHeadline} live={live} />
+        <TopBand question={question} number={number} total={total} phase={phase} live={live} />
         <NoGuessNote names={noGuess} />
-        <div className="absolute" style={{ left: 96, right: 96, top: 300 }}>
-          <OptionTiles
-            options={options}
-            height={150}
-            correctIndex={phase >= PHASE.answer && correctIndex >= 0 ? correctIndex : undefined}
-            tokens={tokens}
-          />
-        </div>
+        <LineLayer back={forward && correctIndex >= 0}>
+          <div className="absolute" style={{ left: 96, right: 96, top: 300 }}>
+            <OptionTiles
+              options={options}
+              height={150}
+              correctIndex={phase >= PHASE.answer && correctIndex >= 0 ? correctIndex : undefined}
+              tokens={tokens}
+            />
+          </div>
+        </LineLayer>
         {phase >= PHASE.answer && correctIndex >= 0 ? (
           <ChoiceAnswerLine letter={optionLetter(correctIndex)} text={options[correctIndex]} live={live} />
         ) : null}
+        {forward && correctIndex >= 0 ? <WinnersCard kind={kind} winners={winners} scoring={phase >= PHASE.points} live={live} /> : null}
       </motion.div>
     );
   }
@@ -345,29 +339,43 @@ export const TvReveal = ({
   const suspenseStops = sweepStops(layout.groups.map((g) => g.axisX));
   const litGroups = layout.groups.filter((g) => g.highlight !== undefined);
   const litKind = litGroups[0]?.highlight;
-  const headline = litKind ? { kind: litKind, names: joinNames(litGroups.flatMap((g) => g.members.map((m) => m.name))) } : null;
+  const winners: Winner[] = litGroups.flatMap((g) => {
+    const chips = memberChipCentres(g, layout.size);
+    return g.members.map((m) => {
+      const at = chips.get(m.playerId);
+      return winner(m.playerId, m.name, m.inkIndex, at ? { ...at, size: layout.size.chip } : undefined);
+    });
+  });
+  const miss = litGroups[0] ? Math.abs(litGroups[0].value - correct) : 0;
+  const detail = litKind === "closest" ? `off by ${formatTick(Number(miss.toFixed(4)))}` : undefined;
 
   return (
     <motion.div key="reveal" className="absolute inset-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-      <TopBand question={question} number={number} total={total} phase={phase} headline={headline} live={live} />
-      <NoGuessNote names={noGuess} />
-      <NumberLineAxis layout={layout} axisY={AXIS_Y} live={live} />
-      {phase === PHASE.suspense ? <SuspenseMarker stops={suspenseStops} seconds={suspenseSeconds} /> : null}
-      {phase >= PHASE.answer ? <AnswerNumeral value={String(question.correctAnswer)} x={layout.correctX} live={live} /> : null}
-      <Leaders groups={layout.groups} axisY={AXIS_Y} delays={delays} live={live} />
-      {layout.groups.map((g) => (
-        <GuessGroupView
-          key={g.key}
-          group={g}
-          size={layout.size}
-          showPoints={phase >= PHASE.points}
-          lit={g.highlight !== undefined && phase >= PHASE.spotlight}
-          dim={phase >= PHASE.spotlight && g.highlight === undefined}
-          shiver={phase === PHASE.suspense}
-          live={live}
-          delay={delays.get(g.key) ?? 0}
-        />
-      ))}
+      <Shake on={shaking}>
+        <TopBand question={question} number={number} total={total} phase={phase} live={live} />
+        <NoGuessNote names={noGuess} />
+        <LineLayer back={forward && winners.length > 0}>
+          <NumberLineAxis layout={layout} axisY={AXIS_Y} live={live} />
+          {phase === PHASE.suspense ? <SuspenseMarker stops={suspenseStops} seconds={suspenseSeconds} /> : null}
+          <Leaders groups={layout.groups} axisY={AXIS_Y} delays={delays} live={live} />
+          {layout.groups.map((g) => (
+            <GuessGroupView
+              key={g.key}
+              group={g}
+              size={layout.size}
+              showPoints={phase >= PHASE.points}
+              lit={g.highlight !== undefined && phase >= PHASE.answer}
+              dim={phase >= PHASE.answer && g.highlight === undefined}
+              shiver={phase === PHASE.suspense}
+              live={live}
+              delay={delays.get(g.key) ?? 0}
+            />
+          ))}
+          {phase >= PHASE.answer ? <AnswerPin x={layout.correctX} live={live} /> : null}
+        </LineLayer>
+        {phase >= PHASE.answer ? <AnswerNumeral value={String(question.correctAnswer)} x={forward && winners.length > 0 ? 960 : layout.correctX} live={live} /> : null}
+        {forward && litKind ? <WinnersCard kind={litKind} winners={winners} detail={detail} scoring={phase >= PHASE.points} live={live} /> : null}
+      </Shake>
     </motion.div>
   );
 };
