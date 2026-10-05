@@ -1,0 +1,52 @@
+[
+  {
+    "files": [
+      "assets/art/hero-clean.png"
+    ],
+    "source": "Codex image_generation (gpt-image, ChatGPT plan) (generated)",
+    "input": {
+      "prompt": "Risograph print, three spot inks only: fluorescent pink #FF48B0, medium blue #3255A4, yellow #FFE800, plus warm black, on natural cream paper #F3EEE3. Visible halftone dots, slight ink misregistration, paper grain, flat shapes, bold Swiss-poster graphic design, no gradients, no 3D, no photorealism, no faces, no characters, no people, no emoji. Wide 16:9 key art for a family trivia game show where every answer is a number. Composition: giant overlapping numerals (7, 42, 365, 1000) printed in pink and blue overprint so they mix to purple where they cross, a long horizontal number line with tick marks across the lower third with a yellow pointer flag, a halftone sunburst radiating from behind the numbers, scattered printed paper confetti shapes (circles, stars, rectangles). Lots of cream paper showing. Absolutely no text, no letters, no words, no logo, no UI.",
+      "references": []
+    },
+    "date": "2026-10-05"
+  },
+  {
+    "files": [
+      "assets/art/logo.png"
+    ],
+    "source": "Codex image_generation (gpt-image, ChatGPT plan) (generated)",
+    "input": {
+      "prompt": "Risograph print, three spot inks only: fluorescent pink #FF48B0, medium blue #3255A4, yellow #FFE800, plus warm black. Visible halftone dots, slight ink misregistration, flat shapes, bold Swiss-poster graphic design, no gradients, no 3D, no photorealism, no faces, no characters, no emoji. Match the style of the reference image. A wordmark logo that reads exactly TRIVIA JAM on two lines (TRIVIA above, JAM below, JAM larger), chunky heavy grotesque letters printed in blue with a pink misregistered second-ink offset, small yellow halftone burst behind. Spelling must be exactly T-R-I-V-I-A and J-A-M. Transparent background, nothing else in the image.",
+      "references": [
+        "assets/art/hero-clean.png"
+      ]
+    },
+    "date": "2026-10-05"
+  },
+  {
+    "files": [
+      "assets/art/cover.png"
+    ],
+    "source": "Codex image_generation (gpt-image, ChatGPT plan) (generated)",
+    "input": {
+      "prompt": "Risograph print, three spot inks only: fluorescent pink #FF48B0, medium blue #3255A4, yellow #FFE800, plus warm black. Visible halftone dots, slight ink misregistration, flat shapes, bold Swiss-poster graphic design, no gradients, no 3D, no photorealism, no faces, no characters, no emoji. Match the style of the reference image. Portrait 2:3 game box cover on cream paper #F3EEE3: the title TRIVIA JAM in huge chunky misregistered riso letters (blue with pink offset) across the top third, spelled exactly TRIVIA JAM and no other words; below it giant overlapping numerals 8 and 42 in pink and blue overprint, a horizontal number line with a yellow pointer flag, halftone sunburst and paper confetti. No other text.",
+      "references": [
+        "assets/art/hero-clean.png"
+      ]
+    },
+    "date": "2026-10-05"
+  },
+  {
+    "files": [
+      "assets/art/icon.png"
+    ],
+    "source": "Codex image_generation (gpt-image, ChatGPT plan) (generated)",
+    "input": {
+      "prompt": "Risograph print, three spot inks only: fluorescent pink #FF48B0, medium blue #3255A4, yellow #FFE800, plus warm black. Visible halftone dots, slight ink misregistration, flat shapes, bold Swiss-poster graphic design, no gradients, no 3D, no photorealism, no faces, no characters, no emoji. Match the style of the reference image. Square 1:1 app icon on cream paper #F3EEE3: one giant bold numeral 7 printed in pink overprinted with a blue offset 7, over a yellow halftone sunburst, a short number line with a yellow flag along the bottom. Centred, reads at small sizes. No letters, no words.",
+      "references": [
+        "assets/art/hero-clean.png"
+      ]
+    },
+    "date": "2026-10-05"
+  }
+]
