@@ -547,3 +547,21 @@ textarea.pfield { padding: 14px 16px; font-size: 18px; line-height: 1.35; font-f
   border-top: 8px solid var(--ink);
   outline: none;
 }
+
+/* ---------- Big printed stat (points, place, total) ---------- */
+.pstat {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: min(26dvh, 38vw);
+  padding: 0.05em 0.3em 0.1em;
+  border: 6px solid var(--ink);
+  border-radius: 6px;
+  box-shadow: 4px 4px 0 var(--blue);
+  font-family: "Bricolage Grotesque Variable", system-ui, sans-serif;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  font-size: clamp(40px, min(13dvh, 14vw), 112px);
+  letter-spacing: -0.03em;
+  line-height: 1;
+}

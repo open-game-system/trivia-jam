@@ -31,3 +31,27 @@ describe("ordinal", () => {
     ]);
   });
 });
+
+import { resultHeadline } from "./outcome";
+
+describe("resultHeadline", () => {
+  it("never says NOT THIS TIME to someone who scored", () => {
+    expect(resultHeadline("miss", 2, "numeric")).not.toBe("NOT THIS TIME");
+    expect(resultHeadline("miss", 2, "numeric")).toBe("GOOD GUESS!");
+  });
+
+  it("says NOT THIS TIME only for an answered question worth 0", () => {
+    expect(resultHeadline("miss", 0, "numeric")).toBe("NOT THIS TIME");
+    expect(resultHeadline("close", 0, "numeric")).toBe("NOT THIS TIME");
+  });
+
+  it("says TIME'S UP when nothing was submitted", () => {
+    expect(resultHeadline("none", 0, "numeric")).toBe("TIME'S UP");
+  });
+
+  it("celebrates exact and close answers", () => {
+    expect(resultHeadline("exact", 4, "numeric")).toBe("EXACT!");
+    expect(resultHeadline("exact", 4, "multiple-choice")).toBe("YES!");
+    expect(resultHeadline("close", 3, "numeric")).toBe("SO CLOSE!");
+  });
+});

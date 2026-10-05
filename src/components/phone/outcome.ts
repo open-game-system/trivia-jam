@@ -20,3 +20,16 @@ export const ordinal = (n: number): string => {
   const endings: Record<number, string> = { 1: "st", 2: "nd", 3: "rd" };
   return `${n}${endings[n % 10] ?? "th"}`;
 };
+
+/** The big word on the result card. Scoring anything is never "not this time". */
+export const resultHeadline = (
+  outcome: Outcome,
+  points: number,
+  questionType: "numeric" | "multiple-choice",
+): string => {
+  if (outcome === "none") return "TIME'S UP";
+  if (points <= 0) return "NOT THIS TIME";
+  if (outcome === "exact") return questionType === "multiple-choice" ? "YES!" : "EXACT!";
+  if (outcome === "close") return "SO CLOSE!";
+  return "GOOD GUESS!";
+};

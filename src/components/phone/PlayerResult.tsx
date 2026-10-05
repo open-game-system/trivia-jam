@@ -1,24 +1,46 @@
 import { motion, useReducedMotion } from "framer-motion";
 import type { Question, QuestionResult } from "~/game.types";
-import { PlayerToken, RankDisc } from "./ink";
+import type { ReactNode } from "react";
+import { PlayerToken } from "./ink";
 import { LookAtTv } from "./LookAtTv";
 import { useSpoilerGate } from "./useSpoilerGate";
-import { describeOutcome, ordinal, type Outcome } from "./outcome";
+import { describeOutcome, ordinal, resultHeadline, type Outcome } from "./outcome";
 import { useCountUp } from "./useCountUp";
 
 type Person = { id: string; name: string; score: number };
 
-const OUTCOME_COPY: Record<Outcome, { word: string; tone: string }> = {
-  exact: { word: "EXACT!", tone: "bg-teal text-paper" },
-  close: { word: "CLOSE!", tone: "bg-yellow text-ink" },
-  miss: { word: "NOT THIS TIME", tone: "bg-paper-2 text-ink" },
-  none: { word: "TIME'S UP", tone: "bg-paper-2 text-ink" },
+const TONE: Record<Outcome, string> = {
+  exact: "bg-teal text-paper",
+  close: "bg-yellow text-ink",
+  miss: "bg-paper-2 text-ink",
+  none: "bg-paper-2 text-ink",
 };
 
-const copyFor = (outcome: Outcome, question: Question) =>
-  outcome === "exact" && question.questionType === "multiple-choice"
-    ? { word: "YES!", tone: OUTCOME_COPY.exact.tone }
-    : OUTCOME_COPY[outcome];
+/** A big printed number on a coloured block: points, place, total. */
+const Stat = ({
+  tone,
+  children,
+  label,
+  testId,
+  tilt,
+}: {
+  tone: string;
+  children: ReactNode;
+  label: string;
+  testId?: string;
+  tilt: number;
+}) => (
+  <motion.div
+    data-testid={testId}
+    aria-label={label}
+    className={`pstat ${tone}`}
+    initial={{ scale: 1.6, rotate: tilt * 3, opacity: 0 }}
+    animate={{ scale: [1.6, 0.95, 1], rotate: tilt, opacity: 1 }}
+    transition={{ duration: 0.4, times: [0, 0.7, 1], ease: "easeOut" }}
+  >
+    {children}
+  </motion.div>
+);
 
 /** The player's own result: big, short, and happy about it. */
 const MyOutcome = ({
@@ -26,19 +48,20 @@ const MyOutcome = ({
   result,
   me,
   overallRank,
-  playerCount,
 }: {
   question: Question;
   result: QuestionResult;
   me: Person;
   overallRank: number;
-  playerCount: number;
 }) => {
   const myAnswer = result.answers.find((a) => a.playerId === me.id);
   const myScore = result.scores.find((s) => s.playerId === me.id);
   const outcome = describeOutcome(question, myAnswer?.value);
-  const copy = copyFor(outcome, question);
-  const points = useCountUp(myScore?.points ?? 0);
+  const earned = myScore?.points ?? 0;
+  const headline = resultHeadline(outcome, earned, question.questionType);
+  const tone = earned > 0 && outcome === "miss" ? "bg-yellow text-ink" : TONE[outcome];
+  const points = useCountUp(earned);
+  const total = useCountUp(me.score);
   const numeric = question.questionType === "numeric";
 
   return (
@@ -50,10 +73,10 @@ const MyOutcome = ({
       transition={{ type: "spring", stiffness: 380, damping: 22 }}
     >
       <div
-        className={`${copy.tone} border-4 border-ink px-3 py-3 text-center font-display font-extrabold`}
+        className={`${tone} border-4 border-ink px-3 py-3 text-center font-display font-extrabold`}
         style={{ fontSize: "clamp(36px, 8dvh, 72px)", lineHeight: 1, letterSpacing: "-0.02em" }}
       >
-        {copy.word}
+        {headline}
       </div>
 
       <div className="mt-4 grid grid-cols-2 gap-3 text-center">
@@ -79,23 +102,27 @@ const MyOutcome = ({
         </div>
       </div>
 
-      <div className="mt-4 flex items-center justify-between gap-3 border-t-4 border-ink pt-3">
-        <div className="flex items-baseline gap-2">
-          <span
-            className="tabular font-display font-extrabold leading-none text-ink misreg misreg-sm"
-            style={{ fontSize: "clamp(44px, 8dvh, 72px)" }}
-            aria-label={`${myScore?.points ?? 0} points`}
-          >
-            +{points}
-          </span>
-          <span className="pslug">pts</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="pslug text-right leading-tight">
-            {ordinal(overallRank)} of {playerCount}
-          </span>
-          <RankDisc rank={overallRank} />
-        </div>
+      <div className="mt-5 flex items-center justify-center gap-4 border-t-4 border-ink pt-4">
+        <Stat tone="bg-pink text-ink" label={`${earned} points`} tilt={-4}>
+          +{points}
+        </Stat>
+        <Stat tone="bg-yellow text-ink" label={`Place ${overallRank}`} tilt={3}>
+          {ordinal(overallRank)}
+        </Stat>
+      </div>
+
+      <div
+        className="mt-4 flex items-baseline justify-center gap-3 border-t-4 border-ink pt-3"
+        aria-label={`${me.score} points in total`}
+      >
+        <span className="pslug">Total</span>
+        <span
+          className="tabular font-display font-extrabold leading-none misreg"
+          style={{ fontSize: "clamp(64px, 16dvh, 140px)" }}
+          data-testid="my-total"
+        >
+          {total}
+        </span>
       </div>
     </motion.section>
   );
@@ -136,9 +163,9 @@ const Everyone = ({
               <div className="truncate text-xl font-extrabold leading-tight">
                 {answer.playerName}
               </div>
-              <div className="pslug truncate">
-                {answer.value} - {score.timeTaken.toFixed(1)}s
-              </div>
+            </div>
+            <div className="tabular whitespace-nowrap text-2xl font-extrabold text-blue">
+              {answer.value}
             </div>
             {score.points > 0 ? (
               <div className="tabular whitespace-nowrap text-2xl font-extrabold">
@@ -195,7 +222,6 @@ export const PlayerResult = ({
           result={result}
           me={me}
           overallRank={overallRank}
-          playerCount={players.length}
         />
         <Everyone result={result} players={players} meId={me.id} />
       </div>

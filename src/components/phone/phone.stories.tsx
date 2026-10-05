@@ -207,6 +207,33 @@ const HoldHarness = ({ ageMs }: { ageMs: number }) => {
   );
 };
 
+/** A miss that still scored: lead with the points and the place, never "NOT THIS TIME". */
+export const ResultsScoredSecondPlace: Story = {
+  render: () => {
+    const base = resultFor(5);
+    const result = {
+      ...base,
+      scores: base.scores.map((sc) => (sc.playerId === ME ? { ...sc, points: 2 } : sc)),
+    };
+    return (
+      <PhoneShell>
+        <PlayerResult
+          question={{ ...numericQuestion }}
+          result={result}
+          me={{ ...people[0], score: 13 }}
+          players={[{ ...people[0], score: 13 }, { ...people[1], score: 15 }, people[2]]}
+        />
+      </PhoneShell>
+    );
+  },
+  play: async ({ canvasElement }) => {
+    const mine = await within(canvasElement).findByTestId("my-result");
+    expect(mine).not.toHaveTextContent("NOT THIS TIME");
+    expect(mine).toHaveTextContent("GOOD GUESS!");
+    expect(mine).toHaveTextContent("2nd");
+  },
+};
+
 /** The result just arrived: the phone says LOOK AT THE TV and does not spoil the outcome. */
 export const ResultsHeldForTheTv: Story = {
   render: () => <HoldHarness ageMs={0} />,
