@@ -47,6 +47,11 @@ Create a mobile question control interface for the host that shows:
 - Next question button
 Make it efficient for quick game management.
 
+Current host controller (2026-10): during a live question the bottom bar has two quiet controls,
+"Skip question" (ends the question now: results and the TV reveal, then Next) and "End game"
+(asks first). Between questions Next is the big action and a quiet "End game" sits under the
+Details fold (no confirm: nothing is live); after the last question End Game is the big action.
+
 ## Mobile Player Screens
 
 ### Player Join

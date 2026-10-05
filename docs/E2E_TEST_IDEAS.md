@@ -30,6 +30,9 @@ for one without, e.g. `--- ??? ---`.
 | 6. Multiple choice with the option tiles; right/wrong outcomes | `e2e/flow-06-multiple-choice.spec.ts` |
 | 7. Everyone answers -> auto-advance; TV reveal (answer, points); phone outcomes; host Next | `e2e/flow-07-auto-advance-reveal.spec.ts` |
 | 8. Time runs out -> results; no timer ever jumps back up (incl. a stale 0 before the first tick) | `e2e/flow-08-timer.spec.ts` |
+| 9. Host skips a live question (results at once, Next starts q2); host ends the game between questions -> game over on host, phone, TV | `e2e/flow-09-skip-and-end.spec.ts` |
+| 10. Full game (numeric + multiple choice) -> End Game -> final standings on TV, host, phones | `e2e/flow-10-full-game.spec.ts` |
+| 11. Host/player reload mid-question keep role and seat; late TV shows the live question; TV refreshed after results shows the settled reveal | `e2e/flow-11-refresh.spec.ts` |
 
 In-game helpers (`startFirstQuestion`, `answerOnPad`, `setAnswerTime`, `answersSubmitted`, ...) live in
 `e2e/helpers/play.ts`. Flow 8 records each value a timer shows with a MutationObserver (instrumentation,
