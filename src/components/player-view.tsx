@@ -158,6 +158,8 @@ const ActiveQuestionDisplay = ({
         text={question ? question.text : "Loading question..."}
         timeLeft={timeLeft}
         totalTime={totalTime}
+        questionId={currentQuestion.questionId}
+        options={isMultipleChoice ? options : undefined}
       />
       {hasAnswered && myAnswer ? (
         <LockedIn

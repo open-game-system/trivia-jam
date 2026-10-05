@@ -671,3 +671,31 @@ textarea.pfield { padding: 14px 16px; font-size: 18px; line-height: 1.35; font-f
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+
+/* ---------- "Read it to me": the kid's speaker button ---------- */
+.pread {
+  --size: clamp(64px, 11dvh, 92px);
+  flex: none;
+  width: var(--size);
+  height: var(--size);
+  padding: 12px;
+  color: var(--ink);
+  background: var(--yellow);
+  border: 4px solid var(--ink);
+  border-radius: 999px;
+  box-shadow: 4px 4px 0 var(--pink);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  transition: transform 70ms var(--roll), box-shadow 70ms var(--roll);
+}
+.pread:active { transform: translate(4px, 4px); box-shadow: 0 0 0 var(--pink); }
+.pread:focus-visible { outline: 4px solid var(--blue); outline-offset: 3px; }
+.pread[data-speaking="true"] { background: var(--pink); box-shadow: 4px 4px 0 var(--blue); }
+/* Keeps the question centred while the button sits on its left. */
+.pread-balance { flex: none; width: clamp(64px, 11dvh, 92px); }
+.pread-arc { opacity: 0.85; }
+.pread-arc-1 { animation: parc 0.9s steps(1) infinite; }
+.pread-arc-2 { animation: parc 0.9s steps(1) infinite 0.3s; }
+@keyframes parc { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
+@media (prefers-reduced-motion: reduce) { .pread-arc-1, .pread-arc-2 { animation: none; } }
