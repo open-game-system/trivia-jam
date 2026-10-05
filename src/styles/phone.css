@@ -847,3 +847,17 @@ textarea.pfield { padding: 14px 16px; font-size: 18px; line-height: 1.35; font-f
   .pwait-title { font-size: clamp(64px, 14dvh, 140px); text-shadow: none; }
   .pwait-sub { font-size: clamp(24px, 4dvh, 36px); }
 }
+
+/* ---------- pass 04 kid ---------- */
+/* Per-question result: three printed stars (the overall standing is a small line by the total). */
+.pstars { display: flex; justify-content: center; gap: clamp(6px, 1.4dvh, 16px); }
+.pstar {
+  width: clamp(52px, 17dvh, 150px);
+  height: clamp(52px, 17dvh, 150px);
+  fill: var(--paper-2);
+  stroke: var(--ink);
+  stroke-width: 2.6;
+  stroke-linejoin: round;
+}
+.pstar-on { fill: var(--yellow); filter: drop-shadow(3px 3px 0 var(--pink)); }
+.pres-overall { align-self: center; opacity: 0.8; }
