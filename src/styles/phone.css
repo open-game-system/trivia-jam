@@ -203,15 +203,15 @@ body:has(.phone-shell) {
   line-height: 1;
   text-align: center;
   color: var(--ink);
-  font-size: clamp(64px, 17dvh, 168px);
-  text-shadow: 4px 4px 0 var(--pink);
+  font-size: clamp(72px, 22dvh, 240px);
+  text-shadow: 5px 5px 0 var(--pink);
   min-height: 1em;
   white-space: nowrap;
 }
 .pdisplay[data-len="6"],
 .pdisplay[data-len="7"],
 .pdisplay[data-len="8"] {
-  font-size: clamp(48px, 12dvh, 120px);
+  font-size: clamp(56px, 15dvh, 160px);
 }
 .pdisplay-empty {
   color: color-mix(in srgb, var(--ink) 25%, var(--paper));
@@ -274,11 +274,12 @@ body:has(.phone-shell) {
   transform: translate(4px, 4px) scale(0.96);
   box-shadow: 0 0 0 var(--shadow);
   background: var(--yellow);
-  animation: pinkflash 160ms ease-out;
+  animation: pinkflash 160ms steps(1, end);
 }
+/* Two flat inks, no tween between them (pink to yellow passes through orange). */
 @keyframes pinkflash {
   0% { background: var(--pink); }
-  100% { background: var(--yellow); }
+  50% { background: var(--yellow); }
 }
 .pkey:focus-visible { outline: 4px solid var(--blue); outline-offset: 3px; }
 .pkey-del { background: var(--paper-2); }
@@ -328,10 +329,10 @@ body:has(.phone-shell) {
   .ppad > [data-key="9"] { grid-column: 5; grid-row: 2; }
   .ppad > [data-key="0"] { grid-column: 6; grid-row: 2; }
   .ppad > [data-key="go"] { grid-column: 7; grid-row: 2; }
-  .pdisplay { font-size: clamp(64px, 20dvh, 180px); }
+  .pdisplay { font-size: clamp(96px, 36dvh, 340px); text-shadow: 7px 7px 0 var(--pink); }
   .pdisplay[data-len="6"],
   .pdisplay[data-len="7"],
-  .pdisplay[data-len="8"] { font-size: clamp(48px, 14dvh, 130px); }
+  .pdisplay[data-len="8"] { font-size: clamp(64px, 24dvh, 230px); }
 }
 /* Portrait iPad: bigger keys than a phone. */
 @media (orientation: portrait) and (min-width: 700px) {

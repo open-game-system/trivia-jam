@@ -32,7 +32,11 @@ export const PlayerFinish = ({
               className="sheet sheet-pink flex flex-col items-center px-6 py-5"
               initial={{ scale: 1.5, rotate: -10, opacity: 0 }}
               animate={{ scale: [1.5, 0.96, 1], rotate: -3, opacity: 1 }}
-              transition={{ duration: 0.5, times: [0, 0.7, 1], ease: "easeOut" }}
+              transition={{
+                scale: { duration: 0.5, times: [0, 0.7, 1], ease: "easeOut" },
+                rotate: { duration: 0.5, ease: "easeOut" },
+                opacity: { duration: 0.1 },
+              }}
             >
               <span className="pslug">You finished</span>
               <span

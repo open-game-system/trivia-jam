@@ -36,7 +36,11 @@ const Stat = ({
     className={`pstat ${tone}`}
     initial={{ scale: 1.6, rotate: tilt * 3, opacity: 0 }}
     animate={{ scale: [1.6, 0.95, 1], rotate: tilt, opacity: 1 }}
-    transition={{ duration: 0.4, times: [0, 0.7, 1], ease: "easeOut" }}
+    transition={{
+      scale: { duration: 0.4, times: [0, 0.7, 1], ease: "easeOut" },
+      rotate: { duration: 0.4, ease: "easeOut" },
+      opacity: { duration: 0.1 },
+    }}
   >
     {children}
   </motion.div>
