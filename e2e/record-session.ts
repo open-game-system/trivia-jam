@@ -205,7 +205,8 @@ async function main() {
   const faultCss = faults.map((f) => FAULT_CSS[f] ?? "").join("\n").trim();
   if (faultCss) for (const p of [tv, host, kid]) await p.addInitScript(`addEventListener("DOMContentLoaded", () => { const s = document.createElement("style"); s.textContent = ${JSON.stringify(faultCss)}; document.head.append(s); });`);
   if (faults.includes("jank")) await tv.addInitScript(`const burn = () => { const t = performance.now(); while (performance.now() - t < 30) {} requestAnimationFrame(burn); }; requestAnimationFrame(burn);`);
-  if (faults.includes("mute")) await tv.addInitScript(`addEventListener("DOMContentLoaded", () => { const C = window.AudioContext; if (C) C.prototype.resume = function () { return this.suspend(); }; });`);
+  // mute: nothing reaches the recording tap (the TV's mix is silent as captured).
+  if (faults.includes("mute")) await tv.addInitScript(`{ const connect = AudioNode.prototype.connect; AudioNode.prototype.connect = function (dest, ...rest) { if (dest instanceof MediaStreamAudioDestinationNode) return dest; return connect.call(this, dest, ...rest); }; }`);
 
   // The kid's iPad records its own pointer-down time, so latency is press -> TV, not Playwright overhead.
   await kid.addInitScript(`document.addEventListener("pointerdown", () => { window.__pressAt = Date.now(); }, true);`);

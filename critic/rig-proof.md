@@ -11,7 +11,7 @@ re-shooting the previous round with the new rig.
 | tv-text-readable (>= 28px) | baseline build (16px "Scan to join the game", 14px "#") |
 | phone-text-readable (>= 14px) | baseline build (12px "Exact" chips on the host) |
 | nothing-clipped | baseline build (host results heading at y=-55) and TJ_FAULT=clip |
-| tv-audio-present (> -40 LUFS) | baseline build (no audio). Re-prove with TJ_FAULT=mute once the TV has sound. |
+| tv-audio-present (> -40 LUFS) | baseline build (no audio), and TJ_FAULT=mute (tap cut) once the TV had sound |
 | tv-frame-time (p95 <= 20 ms) | TJ_FAULT=jank (p95 33.4 ms) |
 
 False positives fixed before freezing: the home shot was taken before paint (now waits for the page), and text
@@ -20,4 +20,4 @@ truncated by an ellipsis counted as clipped (now intersected with clipping ances
 ## Rig change before round 01 (2026-10-04)
 The redesigned TV stages its reveal over ~10 s, so the recorder now also shoots `*-reveal-settled` (+7 s) and `*-standings` (+12 s) per question. Thresholds unchanged. Round 00 had no staged reveal (results appeared at once), so its comparison is unaffected.
 
-**Pending:** tv-audio-present on a forced mute. The first TJ_FAULT=mute (patching AudioContext.resume) does not mute a context that autoplay already started, so it proved nothing; needs a fault that cuts the tap.
+tv-audio-present re-proven on 2026-10-04 with TJ_FAULT=mute (every connection into the recording tap dropped): FAIL, lufs=None. The first mute fault (patching AudioContext.resume) muted nothing, because autoplay had already started the context.
