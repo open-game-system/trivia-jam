@@ -21,3 +21,6 @@ truncated by an ellipsis counted as clipped (now intersected with clipping ances
 The redesigned TV stages its reveal over ~10 s, so the recorder now also shoots `*-reveal-settled` (+7 s) and `*-standings` (+12 s) per question. Thresholds unchanged. Round 00 had no staged reveal (results appeared at once), so its comparison is unaffected.
 
 tv-audio-present re-proven on 2026-10-04 with TJ_FAULT=mute (every connection into the recording tap dropped): FAIL, lufs=None. The first mute fault (patching AudioContext.resume) muted nothing, because autoplay had already started the context.
+
+## Rig change before round 02 (2026-10-04)
+Added tv-audio-no-clipping (sample peak <= -0.5 dBFS) and tv-audio-no-dead-air (no silence > 4 s under -50 dBFS). Both shown failing on round 01's captured TV audio (peak +4.06 dBFS, 8.9 s silence after a reveal). Round 01 graded Audio 4 partly for exactly these.

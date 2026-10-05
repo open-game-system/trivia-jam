@@ -83,6 +83,24 @@ for l in audio.get("ebur128", []):
     if m: lufs = float(m.group(1))
 audio["integratedLufs"] = lufs
 check("tv-audio-present (integrated loudness > -40 LUFS)", lufs is not None and lufs > -40, f"hasAudio={audio['hasAudio']} lufs={lufs}")
+# Clipping and dead air, measured on the captured TV mix (16 kHz mono float; 0.1 s blocks).
+def audio_faults(path):
+    pcm = subprocess.run(["ffmpeg", "-v", "error", "-i", path, "-ac", "1", "-ar", "16000", "-f", "f32le", "-"], capture_output=True).stdout
+    import array
+    x = array.array("f"); x.frombytes(pcm[: len(pcm) // 4 * 4])
+    if not x: return None, None
+    peak = max(abs(v) for v in x)
+    B = 1600; silent_run = longest = 0.0
+    for i in range(0, len(x) - B, B):
+        blk = x[i:i + B]; rms = (sum(v * v for v in blk) / B) ** 0.5
+        silent_run = silent_run + 0.1 if rms < 0.00316 else 0.0  # -50 dBFS
+        longest = max(longest, silent_run)
+    import math
+    return round(20 * math.log10(peak + 1e-9), 2), round(longest, 1)
+peak_db, dead = audio_faults(marks["audio"]) if audio["hasAudio"] else (None, None)
+audio["peakDbfs"] = peak_db; audio["longestSilenceS"] = dead
+check("tv-audio-no-clipping (sample peak <= -0.5 dBFS)", peak_db is not None and peak_db <= -0.5, f"peak={peak_db} dBFS")
+check("tv-audio-no-dead-air (no silence > 4 s under -50 dBFS)", dead is not None and dead <= 4, f"longest={dead} s")
 perf = json.load(open(f"{raw}/perf.json"))
 check("tv-frame-time (p95 <= 20 ms)", perf.get("p95", 99) <= 20, f"p95={perf.get('p95')} max={perf.get('max')}")
 open(f"{out}/checks.log", "w").write("\n".join(checks) + "\n")
