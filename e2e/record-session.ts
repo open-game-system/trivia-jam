@@ -8,7 +8,8 @@
  * Writes recordings/raw/: per-panel videos, shots/<phase>-<screen>.png at CSS scale, marks.json, perf.json.
  */
 import { execFileSync } from "node:child_process";
-import { mkdirSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { mkdirSync, rmSync, statSync, symlinkSync, writeFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { chromium, devices, type BrowserContextOptions, type Page } from "playwright";
 
 const BASE = process.env.TJ_URL ?? "http://127.0.0.1:3000";
@@ -81,7 +82,7 @@ function asContext(name: string, landscape = false): BrowserContextOptions & { v
 }
 
 /** Layout facts per shot, read from the DOM: the smallest visible text, and anything cut off by the viewport. */
-type Layout = { minFontPx: number; smallTextSamples: string[]; clipped: string[] };
+type Layout = { minFontPx: number; smallTextSamples: string[]; clipped: string[]; truncated: string[] };
 const layouts: Record<string, Layout> = {};
 
 async function measure(page: Page): Promise<Layout> {
@@ -120,10 +121,21 @@ async function measure(page: Page): Promise<Layout> {
       if (r.top < -2 || r.left < -2 || r.right > vw + 2) clipped.push(`${text.slice(0, 40)} (${Math.round(r.left)},${Math.round(r.top)})`);
     }
     small.sort((a, b) => a.px - b.px);
+    // Text cut short inside its own box (ellipsis or overflow:hidden): "Gra..." passes the edge check.
+    const truncated: string[] = [];
+    for (const el of Array.from(document.body.querySelectorAll<HTMLElement>("*"))) {
+      const cs = getComputedStyle(el);
+      if (cs.visibility === "hidden" || el.offsetParent === null) continue;
+      const clips = cs.textOverflow === "ellipsis" || cs.overflowX === "hidden" || cs.overflowX === "clip";
+      const text = (el.textContent ?? "").trim();
+      if (!clips || !text || el.children.length > 0 || el.clientWidth <= 2) continue;
+      if (el.scrollWidth > el.clientWidth + 1) truncated.push(text.slice(0, 40));
+    }
     return {
       minFontPx: Number.isFinite(minFontPx) ? minFontPx : 0,
       smallTextSamples: small.slice(0, 4).map((s) => `${s.px}px "${s.text}"`),
       clipped: clipped.slice(0, 6),
+      truncated: truncated.slice(0, 6),
     };
   });
 }
@@ -131,7 +143,7 @@ async function measure(page: Page): Promise<Layout> {
 async function shoot(phase: string, screens: Record<string, Page>) {
   for (const [name, page] of Object.entries(screens)) {
     await page.screenshot({ path: `${SHOTS}/${phase}-${name}.png` }).catch((e: unknown) => console.log(`shot ${phase}-${name} failed: ${String(e).slice(0, 120)}`));
-    layouts[`${phase}-${name}`] = await measure(page).catch(() => ({ minFontPx: 0, smallTextSamples: [], clipped: ["measure failed"] }));
+    layouts[`${phase}-${name}`] = await measure(page).catch(() => ({ minFontPx: 0, smallTextSamples: [], clipped: ["measure failed"], truncated: [] }));
   }
 }
 
@@ -154,11 +166,12 @@ const even = (n: number) => Math.ceil(n / 2) * 2;
 async function startScreencast(page: Page, dir: string, size: { width: number; height: number }) {
   mkdirSync(dir, { recursive: true });
   const cdp = await page.context().newCDPSession(page);
-  const frames: { path: string; t: number }[] = [];
+  const frames: { path: string; t: number; arrived: number }[] = [];
   cdp.on("Page.screencastFrame", (f) => {
     const path = `${dir}/${String(frames.length).padStart(6, "0")}.jpg`;
     writeFileSync(path, Buffer.from(f.data, "base64"));
-    frames.push({ path, t: f.metadata.timestamp ?? Date.now() / 1000 });
+    const arrived = Date.now() / 1000;
+    frames.push({ path, t: f.metadata.timestamp ?? arrived, arrived });
     void cdp.send("Page.screencastFrameAck", { sessionId: f.sessionId }).catch(() => undefined);
   });
   await cdp.send("Page.startScreencast", { format: "jpeg", quality: 82, maxWidth: size.width, maxHeight: size.height, everyNthFrame: 1 });
@@ -170,18 +183,28 @@ async function startScreencast(page: Page, dir: string, size: { width: number; h
       const stoppedAt = Date.now();
       await cdp.send("Page.stopScreencast").catch(() => undefined);
       if (frames.length === 0) throw new Error(`no screencast frames for ${dir}`);
-      const lines: string[] = [];
-      frames.forEach((f, i) => {
-        const from = i === 0 ? startedAt / 1000 : f.t;
-        const to = frames[i + 1]?.t ?? stoppedAt / 1000;
-        lines.push(`file '${f.path.split("/").pop()}'`, `duration ${Math.max(0.001, to - from).toFixed(4)}`);
-      });
-      lines.push(`file '${frames[frames.length - 1]?.path.split("/").pop()}'`);
-      writeFileSync(`${dir}/frames.txt`, lines.join("\n"));
+      // Frames are placed by arrival time. The screencast's own timestamps proved unreliable (per-page
+      // bases that differed by seconds); arrival is close to real time because Chrome sends the next
+      // frame only after the previous one is acked, so no backlog builds.
+      for (const f of frames) f.t = f.arrived;
+      // Resample onto an exact 30 fps grid: output frame k (time k/30 from startedAt) is the latest frame
+      // that had swapped by then. (The concat demuxer rounds each duration to its 1/25 s timebase, which
+      // made one run's panes 3.4 s short and 8.3 s long.)
+      const FPS = 30;
+      const grid = `${dir}/grid`;
+      mkdirSync(grid, { recursive: true });
+      const total = Math.ceil(((stoppedAt - startedAt) / 1000) * FPS);
+      let j = 0;
+      for (let k = 0; k < total; k++) {
+        const at = startedAt / 1000 + k / FPS;
+        while (j + 1 < frames.length && (frames[j + 1]?.t ?? Infinity) <= at) j++;
+        const src = frames[j]?.path;
+        if (src) symlinkSync(resolve(src), `${grid}/${String(k).padStart(6, "0")}.jpg`);
+      }
       const out = `${dir}.mp4`;
-      execFileSync("ffmpeg", ["-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", `${dir}/frames.txt`,
+      execFileSync("ffmpeg", ["-y", "-loglevel", "error", "-framerate", String(FPS), "-i", `${grid}/%06d.jpg`,
         // Even output size (yuv420p), every frame scaled to it (screencast frames can change size mid-run).
-        "-vf", `scale=${even(size.width)}:${even(size.height)}:force_original_aspect_ratio=decrease:eval=frame,pad=${even(size.width)}:${even(size.height)}:(ow-iw)/2:(oh-ih)/2,fps=30,format=yuv420p`,
+        "-vf", `scale=${even(size.width)}:${even(size.height)}:force_original_aspect_ratio=decrease:eval=frame,pad=${even(size.width)}:${even(size.height)}:(ow-iw)/2:(oh-ih)/2,format=yuv420p`,
         "-c:v", "libx264", "-crf", "18", out]);
       return out;
     },

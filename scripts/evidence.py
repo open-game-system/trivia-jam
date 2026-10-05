@@ -77,6 +77,8 @@ ph_small = {k: v for k, v in layout.items() if not k.endswith("-tv") and v["minF
 check("phone-text-readable (min font >= 14px)", not ph_small, "; ".join(f"{k}: {v['smallTextSamples'][:2]}" for k, v in list(ph_small.items())[:3]))
 clipped = {k: v["clipped"] for k, v in layout.items() if v["clipped"]}
 check("nothing-clipped (no text cut off by a screen edge)", not clipped, "; ".join(f"{k}: {v[:2]}" for k, v in list(clipped.items())[:3]))
+tv_trunc = {k: v.get("truncated", []) for k, v in layout.items() if k.endswith("-tv") and v.get("truncated")}
+check("tv-no-truncated-text (no ellipsis/cut-off text on the TV)", not tv_trunc, "; ".join(f"{k}: {v[:2]}" for k, v in list(tv_trunc.items())[:3]))
 lufs = None
 for l in audio.get("ebur128", []):
     m = re.match(r"I:\s*(-?[\d.]+)", l)

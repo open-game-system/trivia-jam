@@ -30,3 +30,7 @@ Added the `21-game-over-settled` shot (+12 s) because the finale is now staged o
 
 ## Rig change before round 03 (2026-10-05)
 Panels are now recorded with Chrome's screencast (frame swap timestamps) and rebuilt at true timing, instead of Playwright recordVideo, whose TV pane drifted up to 12 s behind the marks (round 02 critic) and whose kid pane lagged 2.5-5 s. Measured after the change: TV, host and kid change within 0.1 s of each other at question 5 (116.2 s). Thresholds unchanged.
+
+## Rig change after round 03 (2026-10-05)
+- Panes are resampled onto an exact 30 fps grid by frame arrival time. The round 03 critic found the TV pane ~3.2 s ahead: the concat demuxer rounded each frame duration to 1/25 s (panes encoded 3.4 s short / 8.3 s long), and the screencast timestamps had per-page bases. Verified after: pane lengths 158.5/158.4/158.2 s and all three timers read 25/20/19 together at question 4. Round 03 was re-shot with it (critic/rounds/03/session-synced.mp4, same build).
+- Added tv-no-truncated-text (leaf elements with ellipsis/overflow-hidden whose text overflows). Shown failing on the round 03 build: 21-game-over-settled-tv "Grandpa" (the critic saw "Gra...").
