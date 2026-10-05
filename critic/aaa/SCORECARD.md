@@ -32,3 +32,4 @@ bottom edge, reads little), a toddler who may tap along, and the TV (cast from t
 
 | Round | Art | TV | Type | Motion | Reveal | Audio | Kid | Phone | Host | Content | Replay | Perf | Min | Changed |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 00 | 3 | 3 | 3 | 2 | 2 | 1 | 2 | 3 | 4 | 3 | 2 | 5 | 1 | baseline: DaisyUI dark kit, list reveal with hard cuts, no audio, keyboard text field for the kid, emoji finale, timer resets on submit |
