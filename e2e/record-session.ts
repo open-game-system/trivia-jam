@@ -210,8 +210,10 @@ async function main() {
 
   // The kid's iPad records its own pointer-down time, so latency is press -> TV, not Playwright overhead.
   await kid.addInitScript(`document.addEventListener("pointerdown", () => { window.__pressAt = Date.now(); }, true);`);
-  await tv.addInitScript(`window.__frames = []; let last = performance.now();
-    const tick = (t) => { window.__frames.push(t - last); last = t; requestAnimationFrame(tick); }; requestAnimationFrame(tick);`);
+  const frameCollector = `window.__frames = []; let last = performance.now();
+    const tick = (t) => { window.__frames.push(t - last); last = t; requestAnimationFrame(tick); }; requestAnimationFrame(tick);`;
+  await tv.addInitScript(frameCollector);
+  await kid.addInitScript(frameCollector);
 
   try {
     // Host creates a game.
@@ -324,7 +326,11 @@ async function main() {
     const sorted = frames.slice(60).sort((a, b) => a - b);
     const at = (p: number) => Math.round((sorted[Math.floor(p * (sorted.length - 1))] ?? 0) * 10) / 10;
     const pressAt: unknown = await kid.evaluate(() => Reflect.get(window, "__pressAt"));
-    writeFileSync(`${RAW}/perf.json`, JSON.stringify({ frames: sorted.length, p50: at(0.5), p95: at(0.95), p99: at(0.99), max: at(1), lastKidPressAt: pressAt }, null, 2));
+    // The kid's iPad page too: heavy compositing there shows up as frame time (and as lag in its video pane).
+    const kidRaw: unknown = await kid.evaluate(() => Reflect.get(window, "__frames"));
+    const kidFrames = (Array.isArray(kidRaw) ? kidRaw.filter((x): x is number => typeof x === "number") : []).slice(60).sort((a, b) => a - b);
+    const kidAt = (p: number) => Math.round((kidFrames[Math.floor(p * (kidFrames.length - 1))] ?? 0) * 10) / 10;
+    writeFileSync(`${RAW}/perf.json`, JSON.stringify({ frames: sorted.length, p50: at(0.5), p95: at(0.95), p99: at(0.99), max: at(1), lastKidPressAt: pressAt, kid: { frames: kidFrames.length, p50: kidAt(0.5), p95: kidAt(0.95), max: kidAt(1) } }, null, 2));
 
     const audioPath = `${RAW}/tv-audio.webm`;
     if (hasTap) {
