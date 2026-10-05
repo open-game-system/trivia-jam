@@ -331,6 +331,26 @@ export const HostLiveQuestionEndGameConfirm: Story = {
   },
 };
 
+export const HostGameOverNewGame: Story = {
+  parameters: {
+    actorKit: {
+      session: hostSession,
+      game: {
+        "game-123": {
+          ...defaultGameSnapshot,
+          public: { ...defaultGameSnapshot.public, players: people },
+          value: "finished",
+        },
+      },
+    },
+  },
+  render: () => <HostView host="dev.triviajam.tv" />,
+  play: async ({ canvasElement }) => {
+    const link = await within(canvasElement).findByRole("link", { name: "New game" });
+    expect(link).toHaveAttribute("href", "/");
+  },
+};
+
 export const HostRemovePlayerIsQuiet: Story = {
   parameters: {
     actorKit: {

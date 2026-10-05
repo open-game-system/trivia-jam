@@ -6,7 +6,7 @@ type Person = { id: string; name: string; score: number };
 export const byScore = (players: Person[]) =>
   [...players].sort((a, b) => b.score - a.score);
 
-export const Winner = ({ winner }: { winner: Person }) => (
+export const Winner = ({ winner, large = false }: { winner: Person; large?: boolean }) => (
   <div data-testid="winner-announcement" className="text-center">
     <h2
       className="font-display font-extrabold text-ink"
@@ -14,9 +14,13 @@ export const Winner = ({ winner }: { winner: Person }) => (
     >
       {winner.name} Wins!
     </h2>
-    <p className="pslug mt-1" style={{ fontSize: 16 }}>
-      with {winner.score} points
-    </p>
+    {large ? (
+      <p className="mt-1 text-2xl font-extrabold">with {winner.score} points</p>
+    ) : (
+      <p className="pslug mt-1" style={{ fontSize: 16 }}>
+        with {winner.score} points
+      </p>
+    )}
   </div>
 );
 
@@ -32,7 +36,7 @@ export const FinalScores = ({
   <section>
     <h2
       className="pslug mb-3"
-      style={{ fontSize: 16 }}
+      style={{ fontSize: 20 }}
       data-testid="final-scores-heading"
     >
       {title}
@@ -53,7 +57,7 @@ export const FinalScores = ({
             {player.name}
           </span>
           <span className="tabular text-2xl font-extrabold">{player.score}</span>
-          <span className="pslug">pts</span>
+          <span className="text-lg font-bold">pts</span>
         </motion.div>
       ))}
     </div>

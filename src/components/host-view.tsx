@@ -897,21 +897,42 @@ const QuestionControls = ({
   );
 };
 
+/** A fresh game is a fresh room: the same step as "Create New Game" on the home page, one tap. */
+const startNewGame = () => {
+  window.location.assign(`/games/${crypto.randomUUID()}`);
+};
+
 const GameFinishedDisplay = ({ players }: { players: Person[] }) => {
   const winner = byScore(players)[0];
   return (
-    <div className="phost-scroll">
-      <Page>
-        <Masthead />
-        <h1 className="misreg mb-5 text-center text-5xl font-extrabold">Game Over!</h1>
-        {winner && (
-          <div className="sheet sheet-pink mb-6 px-4 py-5">
-            <Winner winner={winner} />
-          </div>
-        )}
-        <FinalScores players={players} />
-      </Page>
-    </div>
+    <>
+      <div className="phost-scroll">
+        <Page>
+          <Masthead />
+          <h1 className="misreg mb-5 text-center text-5xl font-extrabold">Game Over!</h1>
+          {winner && (
+            <div className="sheet sheet-pink mb-6 px-4 py-5">
+              <Winner winner={winner} />
+            </div>
+          )}
+          <FinalScores players={players} />
+        </Page>
+      </div>
+      <ActionBar>
+        <a
+          href="/"
+          onClick={(event) => {
+            event.preventDefault();
+            startNewGame();
+          }}
+          data-testid="new-game-link"
+          className="pbtn pbtn-pink pbtn-lg pbtn-block"
+          style={{ textDecoration: "none" }}
+        >
+          New game
+        </a>
+      </ActionBar>
+    </>
   );
 };
 

@@ -55,3 +55,15 @@ describe("resultHeadline", () => {
     expect(resultHeadline("close", 3, "numeric")).toBe("SO CLOSE!");
   });
 });
+
+import { finishStamp } from "./outcome";
+
+describe("finishStamp", () => {
+  it("celebrates every place, never a loss", () => {
+    expect(finishStamp(1)).toBe("CHAMPION!");
+    expect(finishStamp(2)).toBe("SILVER!");
+    expect(finishStamp(3)).toBe("BRONZE!");
+    expect(finishStamp(4)).toBe("GREAT GAME!");
+    expect(finishStamp(12)).toBe("GREAT GAME!");
+  });
+});
