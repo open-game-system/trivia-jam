@@ -726,3 +726,90 @@ export const TvQuestionLastSeconds: Story = {
     },
   ),
 };
+
+type FamilyResult = FamilySnapshot["public"]["questionResults"][number];
+
+const resultFor = (
+  questionId: string,
+  questionNumber: number,
+  guesses: Array<[string, string, number | string, number]>,
+): FamilyResult => ({
+  questionId,
+  questionNumber,
+  answers: guesses.map(([playerId, playerName, value], i) => ({ playerId, playerName, value, timestamp: now + 2000 + i * 1500 })),
+  scores: guesses.map(([playerId, playerName, , points], i) => ({ playerId, playerName, points, position: i + 1, timeTaken: 2 + i * 1.5 })),
+});
+
+const Q2_RESULT = resultFor("q2", 2, [
+  ["p-sam", "Sam", 30, 2],
+  ["p-mom", "Mom", 28, 3],
+  ["p-grandpa", "Grandpa", 14, 0],
+  ["p-lou", "Lou", 27, 4],
+]);
+const AFTER_Q1 = { "p-sam": 4, "p-mom": 3, "p-grandpa": 2, "p-lou": 0 };
+const withScores = (scores: Record<string, number>) => FAMILY.map((p) => ({ ...p, score: scores[p.id] ?? 0 }));
+const plus = (a: Record<string, number>, r: FamilyResult) =>
+  Object.fromEntries(Object.entries(a).map(([id, s]) => [id, s + (r.scores.find((x) => x.playerId === id)?.points ?? 0)]));
+
+/** Mounts mid-question, then the results arrive 600 ms later: the reveal plays live. */
+const liveReveal = (questionId: string, questionNumber: number, result: FamilyResult, before: Record<string, number>): Story["play"] =>
+  mountFamily(
+    familySnapshot(
+      {
+        players: withScores(before),
+        questionNumber,
+        questionResults: [],
+        currentQuestion: { questionId, startTime: now, answers: result.answers },
+      },
+      { active: "questionActive" },
+    ),
+    (client) => {
+      setTimeout(() => {
+        client.produce((draft) => {
+          draft.public.currentQuestion = null;
+          draft.public.questionResults.push(result);
+          for (const p of draft.public.players) p.score = plus(before, result)[p.id] ?? p.score;
+          draft.value = { active: "questionPrep" };
+        });
+      }, 600);
+    },
+  );
+
+export const TvRevealNumericLive: Story = { play: liveReveal("q2", 2, Q2_RESULT, AFTER_Q1) };
+
+export const TvRevealNumericSettled: Story = {
+  play: mountFamily(
+    familySnapshot(
+      { players: withScores(plus(AFTER_Q1, Q2_RESULT)), questionNumber: 2, questionResults: [Q2_RESULT] },
+      { active: "questionPrep" },
+    ),
+  ),
+};
+
+export const TvRevealYearLive: Story = {
+  play: liveReveal(
+    "q4",
+    4,
+    resultFor("q4", 4, [
+      ["p-sam", "Sam", 1950, 1],
+      ["p-mom", "Mom", 1969, 5],
+      ["p-grandpa", "Grandpa", 1972, 3],
+      ["p-lou", "Lou", 2001, 0],
+    ]),
+    AFTER_Q1,
+  ),
+};
+
+export const TvRevealMultipleChoiceLive: Story = {
+  play: liveReveal(
+    "q3",
+    3,
+    resultFor("q3", 3, [
+      ["p-sam", "Sam", "Saturn", 0],
+      ["p-mom", "Mom", "Jupiter", 4],
+      ["p-grandpa", "Grandpa", "Jupiter", 3],
+      ["p-lou", "Lou", "Mars", 0],
+    ]),
+    AFTER_Q1,
+  ),
+};

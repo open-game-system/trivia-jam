@@ -1,7 +1,7 @@
 import { motion, useReducedMotion } from "framer-motion";
 import { useMemo } from "react";
 import type { Question, QuestionResult } from "~/game.types";
-import { InkToken, Slug } from "./print";
+import { InkToken, RisoType, Slug } from "./print";
 import { OptionTiles, QuestionSlug } from "./question";
 import { RollingNumber, StandingsStrip } from "./standings";
 import {
@@ -12,6 +12,7 @@ import {
   formatTick,
   type Highlight,
   matchOptionIndex,
+  optionLetter,
   revealSchedule,
   type StandingRow,
   toNumber,
@@ -41,49 +42,76 @@ type Pin = {
   highlight: Highlight | undefined;
 };
 
-const PointsBadge = ({ points, live }: { points: number; live: boolean }) => (
+const PointsBadge = ({ points, live, compact = false }: { points: number; live: boolean; compact?: boolean }) => (
   <motion.span
     className="tv-display tabular inline-flex items-baseline gap-1"
-    style={{ fontSize: 40, background: "var(--pink)", color: "var(--ink)", padding: "2px 12px", border: "4px solid var(--ink)", lineHeight: 1 }}
+    style={{ fontSize: compact ? 34 : 40, background: "var(--pink)", color: "var(--ink)", padding: compact ? "2px 8px" : "2px 12px", border: "4px solid var(--ink)", lineHeight: 1 }}
     initial={live ? { scale: 0, rotate: -20 } : false}
     animate={{ scale: [0, 1.25, 1], rotate: -6 }}
     transition={{ duration: 0.4 }}
   >
     +<RollingNumber from={0} to={points} run={live} duration={0.6} />
-    <span className="slug" style={{ fontSize: 28 }}>
-      {" "}pts
-    </span>
+    {compact ? null : (
+      <span className="slug" style={{ fontSize: 28 }}>
+        {" "}pts
+      </span>
+    )}
   </motion.span>
 );
 
-const HighlightStamp = ({ kind, live }: { kind: Highlight; live: boolean }) => (
-  <motion.span
-    className="tv-stamp absolute"
+/** "EXACT!" (teal) or "CLOSEST!" (yellow) stamped beside the answer, with who did it. */
+const HighlightCallout = ({
+  kind,
+  names,
+  side,
+  anchor,
+  live,
+}: {
+  kind: Highlight;
+  names: string[];
+  side: "left" | "right";
+  anchor: number;
+  live: boolean;
+}) => (
+  <motion.div
+    className="absolute flex flex-col"
     style={{
-      fontSize: 38,
-      left: "50%",
-      top: -64,
-      color: kind === "exact" ? "var(--paper)" : "var(--ink)",
-      background: kind === "exact" ? "var(--teal)" : "var(--yellow)",
-      borderColor: "var(--ink)",
+      top: AXIS_Y + 120,
+      ...(side === "right" ? { left: anchor } : { right: 1920 - anchor }),
+      alignItems: side === "right" ? "flex-start" : "flex-end",
+      zIndex: 40,
     }}
-    initial={live ? { scale: 2.6, opacity: 0, rotate: -24, x: "-50%" } : false}
-    animate={{ scale: [2.6, 0.86, 1], opacity: 1, rotate: -8, x: "-50%" }}
+    initial={live ? { scale: 2.6, opacity: 0, rotate: -24 } : false}
+    animate={{ scale: [2.6, 0.86, 1], opacity: 1, rotate: -6 }}
     transition={{ duration: 0.42, times: [0, 0.6, 1] }}
+    data-testid="tv-highlight"
   >
-    {kind === "exact" ? "Exact!" : "Closest!"}
-  </motion.span>
+    <span
+      className="tv-stamp"
+      style={{
+        fontSize: 52,
+        color: kind === "exact" ? "var(--paper)" : "var(--ink)",
+        background: kind === "exact" ? "var(--teal)" : "var(--yellow)",
+        borderColor: "var(--ink)",
+      }}
+    >
+      {kind === "exact" ? "Exact!" : "Closest!"}
+    </span>
+    <span className="tv-display mt-3" style={{ fontSize: 48, lineHeight: 1, letterSpacing: "-0.01em", maxWidth: 520 }}>
+      {names.join(" & ")}
+    </span>
+  </motion.div>
 );
 
 const GuessPin = ({ pin, phase, live, delay }: { pin: Pin; phase: number; live: boolean; delay: number }) => {
   const bottom = AXIS_Y - 26 - pin.lane * LANE_HEIGHT;
   const stem = 26 + pin.lane * LANE_HEIGHT;
   const lit = pin.highlight !== undefined && phase >= PHASE.spotlight;
-  const dim = phase >= PHASE.spotlight && pin.highlight === undefined;
+  const dim = phase >= PHASE.spotlight && pin.highlight === undefined ? 0.5 : 1;
   return (
     <div
       className="absolute"
-      style={{ left: AXIS_LEFT + pin.x - PIN_WIDTH / 2, top: 0, width: PIN_WIDTH, height: AXIS_Y + 8 }}
+      style={{ left: AXIS_LEFT + pin.x - PIN_WIDTH / 2, top: 0, width: PIN_WIDTH, height: AXIS_Y + 8, zIndex: lit ? 30 : 10 + (MAX_LANES - pin.lane) }}
       data-testid={`player-result-${pin.playerId}`}
     >
       <motion.div
@@ -97,11 +125,8 @@ const GuessPin = ({ pin, phase, live, delay }: { pin: Pin; phase: number; live: 
         className="absolute flex flex-col items-center"
         style={{ left: 0, width: PIN_WIDTH, bottom: AXIS_Y + 8 - bottom }}
         initial={live ? { y: -420, opacity: 0 } : false}
-        animate={{ y: 0, opacity: dim ? 0.55 : 1 }}
-        transition={{
-          y: { delay: live ? delay : 0, type: "spring", stiffness: 420, damping: 17, mass: 0.9 },
-          opacity: { delay: live && phase < PHASE.spotlight ? delay : 0, duration: 0.25 },
-        }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ delay: live ? delay : 0, y: { type: "spring", stiffness: 420, damping: 17, mass: 0.9 }, opacity: { duration: 0.15 } }}
       >
         {lit ? (
           <motion.svg
@@ -117,21 +142,22 @@ const GuessPin = ({ pin, phase, live, delay }: { pin: Pin; phase: number; live: 
             <circle cx={150} cy={150} r={146} fill="url(#tv-dots-yellow)" />
           </motion.svg>
         ) : null}
-        {lit && pin.highlight ? <HighlightStamp kind={pin.highlight} live={live} /> : null}
-        <span className="relative tv-display tabular" style={{ fontSize: 56, lineHeight: 1 }}>
+        <span className="relative tv-display tabular" style={{ fontSize: 56, lineHeight: 1, opacity: dim, transition: "opacity .3s" }}>
           {formatTick(pin.value)}
         </span>
         <span className="relative flex items-center mt-1">
-          <InkToken name={pin.name} inkIndex={pin.inkIndex} size={64} />
+          <span style={{ opacity: dim, transition: "opacity .3s" }}>
+            <InkToken name={pin.name} inkIndex={pin.inkIndex} size={64} />
+          </span>
           {phase >= PHASE.points && pin.points > 0 ? (
-            <span className="absolute" style={{ left: 72, top: 8 }}>
+            <span className="absolute" style={{ left: 74, top: 6 }}>
               <PointsBadge points={pin.points} live={live} />
             </span>
           ) : null}
         </span>
         <span
           className="relative tv-display truncate text-center"
-          style={{ fontSize: 36, lineHeight: 1.1, maxWidth: PIN_WIDTH - 20, letterSpacing: "-0.01em", background: "var(--paper)", padding: "0 6px" }}
+          style={{ fontSize: 36, lineHeight: 1.1, maxWidth: PIN_WIDTH - 20, letterSpacing: "-0.01em", opacity: dim, transition: "opacity .3s" }}
         >
           {pin.name}
         </span>
@@ -140,14 +166,16 @@ const GuessPin = ({ pin, phase, live, delay }: { pin: Pin; phase: number; live: 
   );
 };
 
+const answerCenter = (x: number) => Math.min(AXIS_LEFT + AXIS_WIDTH - 300, Math.max(AXIS_LEFT + 260, AXIS_LEFT + x));
+
 const AnswerNumeral = ({ value, x, live }: { value: string; x: number; live: boolean }) => {
-  const center = Math.min(AXIS_LEFT + AXIS_WIDTH - 300, Math.max(AXIS_LEFT + 260, AXIS_LEFT + x));
+  const center = answerCenter(x);
   return (
     <>
       <motion.div
         aria-hidden="true"
         className="absolute overprint"
-        style={{ left: AXIS_LEFT + x - 5, width: 10, top: 150, height: AXIS_Y - 150 + 70, background: "var(--pink)", transformOrigin: "top" }}
+        style={{ left: AXIS_LEFT + x - 5, width: 10, top: 236, height: AXIS_Y - 236 + 70, background: "var(--pink)", transformOrigin: "top" }}
         initial={live ? { scaleY: 0 } : false}
         animate={{ scaleY: 1 }}
         transition={{ duration: 0.22, ease: "easeIn" }}
@@ -177,6 +205,27 @@ const AnswerNumeral = ({ value, x, live }: { value: string; x: number; live: boo
         </span>
       </motion.div>
     </>
+  );
+};
+
+const ChoiceAnswerLine = ({ letter, text, live }: { letter: string; text: string; live: boolean }) => {
+  const size = text.length <= 10 ? 190 : text.length <= 18 ? 130 : 88;
+  return (
+    <motion.div
+      className="absolute flex items-end gap-10"
+      style={{ left: 96, right: 96, top: 730 }}
+      initial={live ? { scale: 1.8, opacity: 0, y: -80 } : false}
+      animate={{ scale: [1.8, 0.94, 1], opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, times: [0, 0.65, 1] }}
+      data-testid="correct-answer"
+    >
+      <Slug className="text-ink pb-6">The answer</Slug>
+      <span className="tv-display truncate" style={{ fontSize: size, lineHeight: 0.9 }}>
+        <RisoType top="var(--blue)" under="var(--pink)" offset={10} rough>
+          {letter}&nbsp;{text}
+        </RisoType>
+      </span>
+    </motion.div>
   );
 };
 
@@ -211,8 +260,8 @@ const SuspenseMarker = () => (
     className="tv-display absolute flex items-center justify-center"
     style={{ left: AXIS_LEFT - 44, top: AXIS_Y - 44, width: 88, height: 88, borderRadius: 999, background: "var(--pink)", fontSize: 60, border: "5px solid var(--ink)" }}
     initial={{ x: AXIS_WIDTH / 2, scale: 0 }}
-    animate={{ x: [AXIS_WIDTH / 2, AXIS_WIDTH * 0.2, AXIS_WIDTH * 0.8, AXIS_WIDTH * 0.5], scale: 1 }}
-    transition={{ duration: 1.2, ease: "easeInOut" }}
+    animate={{ x: [AXIS_WIDTH / 2, AXIS_WIDTH * 0.25, AXIS_WIDTH * 0.75, AXIS_WIDTH * 0.5], scale: 1 }}
+    transition={{ x: { duration: 1.1, ease: "easeInOut" }, scale: { type: "spring", stiffness: 500, damping: 15 } }}
   >
     ?
   </motion.span>
@@ -235,7 +284,7 @@ const TopBand = ({
 }) => {
   const showStrip = phase >= PHASE.points;
   const caption =
-    phase < PHASE.suspense ? "The guesses" : phase < PHASE.answer ? "And the answer is" : phase < PHASE.points ? "The answer" : "Standings";
+    phase < PHASE.suspense ? "The guesses" : phase < PHASE.answer ? "And the answer is..." : phase < PHASE.points ? "The answer" : "Standings";
   return (
     <>
       <div className="absolute flex items-center gap-6" style={{ left: 96, top: 60 }}>
@@ -328,8 +377,8 @@ export const TvReveal = ({
               <InkToken name={t.name} inkIndex={t.inkIndex} size={72} />
               <span className="tv-sr">{t.name}</span>
               {phase >= PHASE.points && (pointsOf.get(t.playerId) ?? 0) > 0 ? (
-                <span className="absolute" style={{ top: 64, left: -6 }}>
-                  <PointsBadge points={pointsOf.get(t.playerId) ?? 0} live={live} />
+                <span className="absolute" style={{ top: 62, left: 0 }}>
+                  <PointsBadge points={pointsOf.get(t.playerId) ?? 0} live={live} compact />
                 </span>
               ) : null}
             </motion.span>
@@ -341,18 +390,16 @@ export const TvReveal = ({
       <motion.div key="reveal" className="absolute inset-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
         <TopBand question={question} number={number} total={total} phase={phase} rows={rows} live={live} />
         <NoGuessNote names={noGuess} />
-        <div className="absolute" style={{ left: 96, right: 96, top: 330 }}>
+        <div className="absolute" style={{ left: 96, right: 96, top: 300 }}>
           <OptionTiles
             options={options}
-            height={170}
+            height={150}
             correctIndex={phase >= PHASE.answer && correctIndex >= 0 ? correctIndex : undefined}
             tokens={tokens}
           />
         </div>
-        {correctIndex >= 0 ? (
-          <span className="tv-sr" data-testid="correct-answer">
-            {String(question.correctAnswer)}
-          </span>
+        {phase >= PHASE.answer && correctIndex >= 0 ? (
+          <ChoiceAnswerLine letter={optionLetter(correctIndex)} text={options[correctIndex]} live={live} />
         ) : null}
       </motion.div>
     );
@@ -390,6 +437,20 @@ export const TvReveal = ({
   }));
   const ticks = axis.ticks.map((t) => ({ label: formatTick(t), x: xOnAxis(t, axis, AXIS_WIDTH) }));
   const correctX = xOnAxis(correct, axis, AXIS_WIDTH);
+  const numeralCenter = answerCenter(correctX);
+  const numeralHalf = (String(question.correctAnswer).length * 150) / 2;
+  const litPins = pins.filter((p) => p.highlight !== undefined);
+  const firstLit = litPins[0];
+  const roomRight = 1920 - (numeralCenter + numeralHalf + 50);
+  const callout =
+    firstLit && firstLit.highlight
+      ? {
+          kind: firstLit.highlight,
+          names: litPins.map((p) => p.name),
+          side: roomRight >= 440 ? ("right" as const) : ("left" as const),
+          anchor: roomRight >= 440 ? numeralCenter + numeralHalf + 50 : numeralCenter - numeralHalf - 50,
+        }
+      : undefined;
 
   return (
     <motion.div key="reveal" className="absolute inset-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
@@ -401,6 +462,9 @@ export const TvReveal = ({
         <GuessPin key={pin.playerId} pin={pin} phase={phase} live={live} delay={firstDrop + pin.order * stagger} />
       ))}
       {phase >= PHASE.answer ? <AnswerNumeral value={String(question.correctAnswer)} x={correctX} live={live} /> : null}
+      {phase >= PHASE.spotlight && callout ? (
+        <HighlightCallout kind={callout.kind} names={callout.names} side={callout.side} anchor={callout.anchor} live={live} />
+      ) : null}
     </motion.div>
   );
 };

@@ -72,7 +72,7 @@ export const OptionTiles = ({
           {isRight ? (
             <motion.span
               className="tv-stamp absolute"
-              style={{ right: 24, bottom: 18, color: "var(--teal)", fontSize: 40, background: "var(--paper)" }}
+              style={{ left: height - 70, bottom: -26, color: "var(--paper)", fontSize: 40, background: "var(--teal)", borderColor: "var(--ink)", zIndex: 2 }}
               initial={{ scale: 2.2, opacity: 0, rotate: -18 }}
               animate={{ scale: [2.2, 0.88, 1], opacity: 1, rotate: -8 }}
               transition={{ duration: 0.45, times: [0, 0.6, 1] }}
