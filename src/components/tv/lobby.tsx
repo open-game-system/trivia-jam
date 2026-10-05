@@ -127,9 +127,7 @@ export const TvLobby = ({
       <div className="absolute" style={{ left: 96, right: 96, bottom: 56 }}>
         <div className="tv-rule mb-6" />
         <div className="flex items-baseline justify-between mb-5">
-          <Slug className="text-ink">
-            Players {players.length}/{seatCount}
-          </Slug>
+          <Slug className="text-ink">{players.length === 0 ? "Waiting for players" : `${players.length} ${players.length === 1 ? "player" : "players"}`}</Slug>
           {extra > 0 ? <Slug className="text-blue">+{extra} more at the table</Slug> : null}
         </div>
         <div className="flex justify-between">
