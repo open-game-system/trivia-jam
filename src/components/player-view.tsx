@@ -2,7 +2,9 @@ import { useStore } from "@nanostores/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { HelpCircle } from "lucide-react";
 import { atom } from "nanostores";
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useOgsProfile } from "@open-game-system/profile-kit/react";
+import { nameGate } from "~/ogs/name-gate";
 import { GameContext } from "~/game.context";
 import type { GamePublicContext } from "~/game.types";
 import { useQuestionTimer } from "~/hooks/use-question-timer";
@@ -377,6 +379,32 @@ const NameEntryForm = () => {
   );
 };
 
+/** Plain browser: the name form. Inside the OGS app: join at once under the OGS profile. */
+const JoinGate = () => {
+  const gate = nameGate(useOgsProfile());
+  if (gate.kind === "form") return <NameEntryForm />;
+  if (gate.kind === "waiting") return <PhoneShell className="min-h-[100dvh]">{null}</PhoneShell>;
+  return <OgsAutoJoin event={gate.event} />;
+};
+
+const OgsAutoJoin = ({ event }: { event: Parameters<ReturnType<typeof GameContext.useSend>>[0] }) => {
+  const send = GameContext.useSend();
+  const sent = useRef(false);
+  // Joining is a one-time message to the room (an external system), sent once per mount.
+  useEffect(() => {
+    if (sent.current) return;
+    sent.current = true;
+    send(event);
+  }, [send, event]);
+  return (
+    <PhoneShell className="flex min-h-[100dvh] items-center justify-center p-5">
+      <p className="pslug" role="status">
+        Joining...
+      </p>
+    </PhoneShell>
+  );
+};
+
 export const PlayerView = () => {
   const players = GameContext.useSelector((state) => state.public.players);
   const questions = GameContext.useSelector((state) => state.public.questions);
@@ -389,7 +417,7 @@ export const PlayerView = () => {
 
   const player = players.find((p) => p.id === userId);
 
-  if (!player) return <NameEntryForm />;
+  if (!player) return <JoinGate />;
 
   return (
     <>
