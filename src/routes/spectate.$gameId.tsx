@@ -4,6 +4,7 @@ import { createAccessToken, createActorFetch } from "actor-kit/server";
 import type { Caller } from "actor-kit";
 import { z } from "zod";
 import { SpectatorView } from "~/components/spectator-view";
+import { useTvAudio } from "~/audio/use-tv-audio";
 import type { gameMachine } from "~/game.machine";
 import { GameProvider } from "~/game.context";
 import { getServerEnv, tryGetActorRuntimeEnv } from "../server-env";
@@ -111,7 +112,14 @@ function SpectateRouteComponent() {
       checksum={payload.checksum}
       initialSnapshot={payload.snapshot}
     >
+      <TvAudio />
       <SpectatorView host={host} />
     </GameProvider>
   );
+}
+
+/** The TV's sound, driven by game state (src/audio). Renders nothing. */
+function TvAudio() {
+  useTvAudio();
+  return null;
 }
