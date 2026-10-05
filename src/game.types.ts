@@ -6,7 +6,7 @@ import type {
 } from "actor-kit";
 import { z } from "zod";
 import { Env } from "./env";
-import { GameClientEventSchema, GameInputPropsSchema, GameServiceEventSchema } from "./game.schemas";
+import { GameClientEventSchema, GameInputPropsSchema, GameServiceEventSchema, OgsJoinGameEventSchema } from "./game.schemas";
 
 export type GameInputProps = z.infer<typeof GameInputPropsSchema>;
 export type GameInput = WithActorKitInput<GameInputProps>;
@@ -14,9 +14,11 @@ export type GameInput = WithActorKitInput<GameInputProps>;
 // Event Types
 export type GameClientEvent = z.infer<typeof GameClientEventSchema>;
 export type GameServiceEvent = z.infer<typeof GameServiceEventSchema>;
+export type OgsJoinGameEvent = z.infer<typeof OgsJoinGameEventSchema>;
 export type GameEvent = (
   | WithActorKitEvent<GameClientEvent, "client">
   | WithActorKitEvent<GameServiceEvent, "service">
+  | WithActorKitEvent<OgsJoinGameEvent, "client">
   | ActorKitSystemEvent
 ) &
   BaseActorKitEvent<Env>;
@@ -74,6 +76,8 @@ export type GamePublicContext = {
     id: string;
     name: string;
     score: number;
+    /** The OGS profile picture, when the player joined from the OGS app. */
+    avatar?: string;
   }>;
   currentQuestion: {
     questionId: string;

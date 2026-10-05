@@ -11,4 +11,6 @@ export interface ActorEnv extends ActorKitEnv {
   ACTOR_KIT_HOST: string;
   NODE_ENV: string;
   GEMINI_API_KEY: string;
+  /** The OGS API key set that signs game tokens (a Worker var, so seam tests can point at a local one). */
+  OGS_JWKS_URL?: string;
 }

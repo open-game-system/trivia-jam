@@ -65,9 +65,9 @@ export const gameMachine = setup({
       })
     ),
     addPlayerToGame: assign(
-      ({ context }, { name, id }: { name: string; id: string }) => ({
+      ({ context }, { name, id, avatar }: { name: string; id: string; avatar?: string }) => ({
         public: produce(context.public, (draft) => {
-          draft.players.push({ id, name, score: 0 });
+          draft.players.push(avatar ? { id, name, score: 0, avatar } : { id, name, score: 0 });
         }),
       })
     ),
@@ -293,6 +293,20 @@ export const gameMachine = setup({
             }),
           },
         },
+        OGS_JOIN_GAME: {
+          actions: {
+            type: "addPlayerToGame",
+            params: ({
+              event,
+            }: {
+              event: Extract<GameEvent, { type: "OGS_JOIN_GAME" }>;
+            }) => ({
+              id: event.caller.id,
+              name: event.profile.name,
+              avatar: event.profile.avatar,
+            }),
+          },
+        },
         REMOVE_PLAYER: {
           guard: "isHost",
           actions: {
@@ -400,6 +414,20 @@ export const gameMachine = setup({
             }) => ({
               id: event.caller.id,
               name: event.playerName,
+            }),
+          },
+        },
+        OGS_JOIN_GAME: {
+          actions: {
+            type: "addPlayerToGame",
+            params: ({
+              event,
+            }: {
+              event: Extract<GameEvent, { type: "OGS_JOIN_GAME" }>;
+            }) => ({
+              id: event.caller.id,
+              name: event.profile.name,
+              avatar: event.profile.avatar,
             }),
           },
         },

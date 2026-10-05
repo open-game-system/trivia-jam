@@ -119,3 +119,17 @@ export function setupActiveGame(
   hostSend(actor, { type: "START_GAME" });
   return actor;
 }
+
+/** Send a server-made event (e.g. a verified OGS_JOIN_GAME) as if it came with a client's socket. */
+export function sendAsClient(
+  actor: TestActor,
+  callerId: string,
+  event: import("../game.types").OgsJoinGameEvent
+) {
+  actor.send({
+    ...event,
+    caller: { type: "client" as const, id: callerId },
+    env: TEST_ENV,
+    storage: TEST_STORAGE,
+  });
+}

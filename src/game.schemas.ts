@@ -39,6 +39,8 @@ export const GameClientEventSchema = z.discriminatedUnion("type", [
   z.object({
     type: z.literal("JOIN_GAME"),
     playerName: z.string(),
+    /** An OGS game token (profile-kit): the server verifies it and joins under the OGS name instead. */
+    ogsToken: z.string().optional(),
   }),
   z.object({
     type: z.literal("SUBMIT_ANSWER"),
@@ -98,3 +100,12 @@ export const GameServiceEventSchema = z.discriminatedUnion("type", [
     }),
   }),
 ]);
+
+/**
+ * A join the server verified against an OGS game token. Server-only: it is not in the client
+ * schema, so a phone can't send it over the socket; game.server.ts makes it from a JOIN_GAME.
+ */
+export const OgsJoinGameEventSchema = z.object({
+  type: z.literal("OGS_JOIN_GAME"),
+  profile: z.object({ id: z.string(), name: z.string(), avatar: z.string() }),
+});

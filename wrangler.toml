@@ -8,6 +8,9 @@ kv_namespaces = [
 
 [vars]
 ACTOR_KIT_HOST = "triviajam.tv"
+# Signs OGS game tokens (profile-kit verifyOgsToken). Seam tests point it at their own key set:
+# --var OGS_JWKS_URL:http://localhost:8831/.well-known/jwks.json
+OGS_JWKS_URL = "https://opengame-api.jonathanrmumm.workers.dev/.well-known/jwks.json"
 
 [[durable_objects.bindings]]
 name = "SESSION"
