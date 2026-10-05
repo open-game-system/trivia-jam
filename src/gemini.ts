@@ -101,8 +101,17 @@ const MOCK_QUESTIONS: Record<string, Question> = {
   },
 };
 
+export const NO_QUESTIONS_FOUND =
+  "No questions found. Paste each question on its own line with its answer on the next.";
+
+/** The mock "model": the fixed questions for any document with words in it, none otherwise. */
+function parseWithMock(documentContent: string): Record<string, Question> {
+  return /[\p{L}\p{N}]/u.test(documentContent) ? MOCK_QUESTIONS : {};
+}
+
 /**
  * Parse a document of trivia questions into structured Question objects.
+ * Throws when the document yields no questions, so the host sees why nothing was imported.
  *
  * When USE_MOCK_LLM env var is set, returns deterministic test questions
  * without calling any LLM. This enables E2E tests to run without Gemini.
@@ -112,11 +121,19 @@ export async function parseQuestions(
   env: Env,
   model?: LanguageModel
 ): Promise<Record<string, Question>> {
-  if (env.USE_MOCK_LLM) {
-    return MOCK_QUESTIONS;
+  const questions = env.USE_MOCK_LLM
+    ? parseWithMock(documentContent)
+    : await parseWithModel(documentContent, model ?? createQuestionParserModel(env));
+  if (Object.keys(questions).length === 0) {
+    throw new Error(NO_QUESTIONS_FOUND);
   }
+  return questions;
+}
 
-  const llm = model ?? createQuestionParserModel(env);
+async function parseWithModel(
+  documentContent: string,
+  llm: LanguageModel
+): Promise<Record<string, Question>> {
   const preprocessedContent = preprocessDocument(documentContent);
 
   const result = await generateText({

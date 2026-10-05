@@ -120,6 +120,39 @@ describe("game machine — PARSE_QUESTIONS flow", () => {
     ).toBeUndefined();
   });
 
+  it("a failed re-parse keeps the imported questions startable and reports the error", async () => {
+    const { parseQuestions } = await import("./gemini");
+    vi.mocked(parseQuestions).mockRejectedValueOnce(new Error("No questions found"));
+    const actor = createTestActor();
+    hostSend(actor, { type: "QUESTIONS_PARSED", questions: TWO_QUESTIONS });
+
+    hostSend(actor, { type: "PARSE_QUESTIONS", documentContent: "--- ??? ---" });
+
+    await vi.waitFor(() => {
+      expect(actor.getSnapshot().value).toEqual({ lobby: "ready" });
+    });
+    expect(actor.getSnapshot().context.public.parsingErrorMessage).toBe("No questions found");
+    expect(actor.getSnapshot().context.public.questions).toEqual(TWO_QUESTIONS);
+
+    hostSend(actor, { type: "START_GAME" });
+    expect(actor.getSnapshot().value).toEqual({ active: "questionPrep" });
+  });
+
+  it("re-parsing from ready clears the last parse error", async () => {
+    const { parseQuestions } = await import("./gemini");
+    vi.mocked(parseQuestions).mockRejectedValueOnce(new Error("No questions found"));
+    const actor = createTestActor();
+    hostSend(actor, { type: "QUESTIONS_PARSED", questions: TWO_QUESTIONS });
+    hostSend(actor, { type: "PARSE_QUESTIONS", documentContent: "--- ??? ---" });
+    await vi.waitFor(() => {
+      expect(actor.getSnapshot().context.public.parsingErrorMessage).toBe("No questions found");
+    });
+
+    hostSend(actor, { type: "PARSE_QUESTIONS", documentContent: "Good questions?" });
+
+    expect(actor.getSnapshot().context.public.parsingErrorMessage).toBeUndefined();
+  });
+
   it("PARSE_QUESTIONS from ready state re-parses", async () => {
     const actor = createTestActor();
 

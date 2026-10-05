@@ -6,16 +6,18 @@ import {
   createRootRoute,
 } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
+import { getRequest } from "@tanstack/react-start/server";
 import { createAccessToken, createActorFetch } from "actor-kit/server";
 import type { SessionMachine } from "../session.machine";
 import { SessionProvider } from "../session.context";
+import { getRequestSession } from "../request-session";
 import { getServerEnv, tryGetActorRuntimeEnv } from "../server-env";
 import type { Caller } from "actor-kit";
 import appCss from "../styles.css?url";
 
 export const loadSession = createServerFn({ method: "GET" }).handler(async () => {
   const env = getServerEnv();
-  const session = globalThis.__session__;
+  const session = getRequestSession(getRequest());
   if (!session) {
     throw new Error("Session not initialized");
   }
@@ -47,16 +49,12 @@ export const loadSession = createServerFn({ method: "GET" }).handler(async () =>
         accessToken
       );
 
-  // Collect cookies to set
-  const cookies = globalThis.__sessionCookies__;
-
   return {
     sessionId: session.sessionId,
     userId: session.userId,
     accessToken,
     payload,
     host: env.ACTOR_KIT_HOST,
-    cookies,
   };
 });
 

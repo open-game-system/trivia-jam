@@ -18,6 +18,10 @@ import type {
 import { parseQuestions } from "./gemini";
 import { calculateScores } from "./game/scoring";
 
+const parsingErrorParams = ({ event }: { event: ErrorActorEvent<unknown, string> }) => ({
+  error: event.error instanceof Error ? event.error : new Error(String(event.error)),
+});
+
 export const gameMachine = setup({
   types: {} as {
     context: GameServerContext;
@@ -35,6 +39,11 @@ export const gameMachine = setup({
       "caller" in event &&
       event.caller.type === "client" &&
       event.caller.id === context.public.hostId,
+    /** A join from someone already seated (a second tab, a double tap) is not a new player. */
+    isNotSeated: ({ context, event }: { context: GameServerContext; event: GameEvent }) =>
+      !context.public.players.some((p) => p.id === event.caller.id),
+    hasQuestions: ({ context }: { context: GameServerContext }) =>
+      Object.keys(context.public.questions).length > 0,
   },
   actors: {
     answerTimer: fromPromise(
@@ -97,6 +106,13 @@ export const gameMachine = setup({
         draft.players = draft.players.filter((p) => p.id !== playerId);
       }),
     })),
+    setSettings: assign(
+      ({ context }, settings: { maxPlayers: number; answerTimeWindow: number }) => ({
+        public: produce(context.public, (draft) => {
+          draft.settings = settings;
+        }),
+      })
+    ),
     submitAnswer: assign(({ context, event }) => ({
       public: produce(context.public, (draft) => {
         if (draft.currentQuestion && event.type === "SUBMIT_ANSWER") {
@@ -247,21 +263,21 @@ export const gameMachine = setup({
                 },
               ],
             },
-            onError: {
-              target: "waitingForQuestions",
-              actions: {
-                type: "setParsingError",
-                params: ({ event }: { event: ErrorActorEvent<unknown, string> }) => ({
-                  error: event.error instanceof Error
-                    ? event.error
-                    : new Error(String(event.error)),
-                }),
+            // A failed re-import keeps the questions already imported, and the game startable.
+            onError: [
+              {
+                guard: "hasQuestions",
+                target: "ready",
+                actions: { type: "setParsingError", params: parsingErrorParams },
               },
-            },
+              {
+                target: "waitingForQuestions",
+                actions: { type: "setParsingError", params: parsingErrorParams },
+              },
+            ],
           },
         },
         ready: {
-          entry: "clearParsingError",
           on: {
             START_GAME: {
               guard: ({ context, event }: { 
@@ -275,12 +291,14 @@ export const gameMachine = setup({
             PARSE_QUESTIONS: {
               guard: "isHost",
               target: "parsingDocument",
+              actions: "clearParsingError",
             },
           },
         },
       },
       on: {
         JOIN_GAME: {
+          guard: "isNotSeated",
           actions: {
             type: "addPlayerToGame",
             params: ({
@@ -294,6 +312,7 @@ export const gameMachine = setup({
           },
         },
         OGS_JOIN_GAME: {
+          guard: "isNotSeated",
           actions: {
             type: "addPlayerToGame",
             params: ({
@@ -318,6 +337,14 @@ export const gameMachine = setup({
             }) => ({
               playerId: event.playerId,
             }),
+          },
+        },
+        UPDATE_SETTINGS: {
+          guard: "isHost",
+          actions: {
+            type: "setSettings",
+            params: ({ event }: { event: Extract<GameEvent, { type: "UPDATE_SETTINGS" }> }) =>
+              event.settings,
           },
         },
       },
@@ -405,6 +432,7 @@ export const gameMachine = setup({
       },
       on: {
         JOIN_GAME: {
+          guard: "isNotSeated",
           actions: {
             type: "addPlayerToGame",
             params: ({
@@ -418,6 +446,7 @@ export const gameMachine = setup({
           },
         },
         OGS_JOIN_GAME: {
+          guard: "isNotSeated",
           actions: {
             type: "addPlayerToGame",
             params: ({

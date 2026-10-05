@@ -1518,3 +1518,17 @@ Actor Kit builds upon and draws inspiration from several excellent technologies:
 ## 🚧 Development Status
 
 Actor Kit is currently in active development and is considered alpha software. It is not yet stable or recommended for production use. Use at your own risk and expect frequent changes.
+
+## Trivia Jam: game machine notes (src/game.machine.ts)
+
+- **Lobby events.** `JOIN_GAME` / `OGS_JOIN_GAME` seat a caller once (`isNotSeated`): a second tab or
+  a double tap never adds a duplicate. `UPDATE_SETTINGS` (host only, lobby only) sets
+  `settings.answerTimeWindow` and `settings.maxPlayers`; the answer timer reads it when a question
+  starts. `REMOVE_PLAYER` is host only; a removed player can join again.
+- **Parsing.** `PARSE_QUESTIONS` clears the last error and enters `parsingDocument`. `parseQuestions`
+  throws "No questions found..." on an empty parse. On error the machine returns to `ready` when
+  questions were already imported (a failed re-import keeps the game startable), else to
+  `waitingForQuestions`; either way `parsingErrorMessage` is set for the host.
+- **Identity.** A caller is the session's `userId`. The session middleware
+  (`src/session-middleware.ts`) sets the session/refresh cookies and records the session on the
+  request context (`src/request-session.ts`), so a reload keeps the host's role and a player's seat.
