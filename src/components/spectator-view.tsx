@@ -118,7 +118,7 @@ export const SpectatorView = ({ host }: { host: string }) => {
             />
           )}
 
-          {isFinished && <GameFinishedDisplay players={players} />}
+          {isFinished && <GameFinishedDisplay players={players} questionResults={questionResults} questions={questions} />}
       </div>
     </TvStage>
   );
@@ -140,9 +140,15 @@ const LobbyDisplay = ({ host }: { host: string }) => {
   );
 };
 
-const GameFinishedDisplay = ({ players }: { players: GamePublicContext["players"] }) => (
-  <TvFinale key="finale" players={players} />
-);
+const GameFinishedDisplay = ({
+  players,
+  questionResults,
+  questions,
+}: {
+  players: GamePublicContext["players"];
+  questionResults: GamePublicContext["questionResults"];
+  questions: GamePublicContext["questions"];
+}) => <TvFinale key="finale" players={players} questionResults={questionResults} questions={questions} />;
 
 const QuestionResultsDisplay = ({
   questionResults,

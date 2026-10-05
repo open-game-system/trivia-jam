@@ -913,3 +913,38 @@ export const TvRevealTiedAndOffScaleLive: Story = {
     { "p-sam": 0, "p-mom": 0, "p-grandpa": 0, "p-lou": 0 },
   ),
 };
+
+/** A finished family game with its results: podium, winner takeover, then recap awards. */
+export const TvGameOverWithAwards: Story = {
+  play: mountFamily(
+    familySnapshot(
+      {
+        players: withScores({ "p-sam": 9, "p-mom": 14, "p-grandpa": 7, "p-lou": 11 }),
+        winner: "p-mom",
+        questionNumber: 5,
+        questionResults: [
+          resultFor("q1", 1, [
+            ["p-sam", "Sam", 8, 4],
+            ["p-mom", "Mom", 8, 4],
+            ["p-grandpa", "Grandpa", 6, 2],
+            ["p-lou", "Lou", 30, 0],
+          ]),
+          Q2_RESULT,
+          resultFor("q3", 3, [
+            ["p-sam", "Sam", "Saturn", 0],
+            ["p-mom", "Mom", "Jupiter", 4],
+            ["p-grandpa", "Grandpa", "Jupiter", 3],
+            ["p-lou", "Lou", "Mars", 0],
+          ]),
+          resultFor("q4", 4, [
+            ["p-sam", "Sam", 1950, 1],
+            ["p-mom", "Mom", 1969, 5],
+            ["p-grandpa", "Grandpa", 1972, 3],
+            ["p-lou", "Lou", 2001, 0],
+          ]),
+        ],
+      },
+      "finished",
+    ),
+  ),
+};
