@@ -4,44 +4,25 @@ import { useEffect, useMemo, useRef } from "react";
 import type { Question, QuestionResult } from "~/game.types";
 import { InkToken, RisoType, Slug } from "./print";
 import { OptionTiles, QuestionSlug } from "./question";
+import { type LineGuess, layoutNumberLine, REVEAL_FRAME, sweepStops } from "./number-line-layout";
+import { GuessGroupView, Leaders, NumberLineAxis } from "./number-line-reveal";
 import { RollingNumber, StandingsStrip } from "./standings";
 import {
-  assignLanes,
-  buildAxis,
   buildStandings,
   findHighlights,
-  formatTick,
   type Highlight,
   matchOptionIndex,
   optionLetter,
   revealSchedule,
   type StandingRow,
   toNumber,
-  xOnAxis,
 } from "./tv-model";
 import { PHASE, useRevealPhase } from "./use-reveal-phase";
 
 type TvPlayer = { id: string; name: string; score: number };
 
-const AXIS_LEFT = 170;
-const AXIS_WIDTH = 1580;
-const AXIS_Y = 735;
-type PinGeometry = { width: number; laneHeight: number; maxLanes: number; token: number; guessSize: number };
-const ROOMY: PinGeometry = { width: 240, laneHeight: 168, maxLanes: 3, token: 64, guessSize: 56 };
-const COMPACT: PinGeometry = { width: 176, laneHeight: 148, maxLanes: 4, token: 52, guessSize: 46 };
+const AXIS_Y = REVEAL_FRAME.axisY;
 const ROLL = [0.2, 0.9, 0.2, 1.15] as const;
-
-type Pin = {
-  playerId: string;
-  name: string;
-  value: number;
-  x: number;
-  lane: number;
-  order: number;
-  inkIndex: number;
-  points: number;
-  highlight: Highlight | undefined;
-};
 
 const PointsBadge = ({ points, live, compact = false }: { points: number; live: boolean; compact?: boolean }) => (
   <motion.span
@@ -104,71 +85,7 @@ const HighlightCallout = ({
   </motion.div>
 );
 
-const GuessPin = ({ pin, phase, live, delay, geo }: { pin: Pin; phase: number; live: boolean; delay: number; geo: PinGeometry }) => {
-  const PIN_WIDTH = geo.width;
-  const bottom = AXIS_Y - 26 - pin.lane * geo.laneHeight;
-  const stem = 26 + pin.lane * geo.laneHeight;
-  const lit = pin.highlight !== undefined && phase >= PHASE.spotlight;
-  const dim = phase >= PHASE.spotlight && pin.highlight === undefined ? 0.5 : 1;
-  return (
-    <div
-      className="absolute"
-      style={{ left: AXIS_LEFT + pin.x - PIN_WIDTH / 2, top: 0, width: PIN_WIDTH, height: AXIS_Y + 8, zIndex: lit ? 30 : 10 + (geo.maxLanes - pin.lane) }}
-      data-testid={`player-result-${pin.playerId}`}
-    >
-      <motion.div
-        className="absolute"
-        style={{ left: PIN_WIDTH / 2 - 3, width: 6, top: bottom, height: stem, background: "var(--ink)", transformOrigin: "bottom" }}
-        initial={live ? { scaleY: 0 } : false}
-        animate={{ scaleY: 1 }}
-        transition={{ delay: live ? delay + 0.25 : 0, duration: 0.25 }}
-      />
-      <motion.div
-        className="absolute flex flex-col items-center"
-        style={{ left: 0, width: PIN_WIDTH, bottom: AXIS_Y + 8 - bottom }}
-        initial={live ? { y: -420, opacity: 0 } : false}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ delay: live ? delay : 0, y: { type: "spring", stiffness: 420, damping: 17, mass: 0.9 }, opacity: { duration: 0.15 } }}
-      >
-        {lit ? (
-          <motion.svg
-            aria-hidden="true"
-            className="absolute"
-            width={300}
-            height={300}
-            style={{ left: PIN_WIDTH / 2 - 150, top: -40, mixBlendMode: "multiply" }}
-            initial={live ? { scale: 0 } : false}
-            animate={{ scale: 1 }}
-            transition={{ type: "spring", stiffness: 300, damping: 14 }}
-          >
-            <circle cx={150} cy={150} r={146} fill="url(#tv-dots-yellow)" />
-          </motion.svg>
-        ) : null}
-        <span className="relative tv-display tabular" style={{ fontSize: geo.guessSize, lineHeight: 1, opacity: dim, transition: "opacity .3s" }}>
-          {formatTick(pin.value)}
-        </span>
-        <span className="relative flex items-center mt-1">
-          <span style={{ opacity: dim, transition: "opacity .3s" }}>
-            <InkToken name={pin.name} inkIndex={pin.inkIndex} size={geo.token} />
-          </span>
-          {phase >= PHASE.points && pin.points > 0 ? (
-            <span className="absolute" style={{ left: geo.token + 10, top: geo.token / 2 - 26 }}>
-              <PointsBadge points={pin.points} live={live} compact={geo === COMPACT} />
-            </span>
-          ) : null}
-        </span>
-        <span
-          className="relative tv-display truncate text-center"
-          style={{ fontSize: 36, lineHeight: 1.1, maxWidth: PIN_WIDTH - 20, letterSpacing: "-0.01em", opacity: dim, transition: "opacity .3s" }}
-        >
-          {pin.name}
-        </span>
-      </motion.div>
-    </div>
-  );
-};
-
-const answerCenter = (x: number) => Math.min(AXIS_LEFT + AXIS_WIDTH - 300, Math.max(AXIS_LEFT + 260, AXIS_LEFT + x));
+const answerCenter = (x: number) => Math.min(REVEAL_FRAME.right - 260, Math.max(REVEAL_FRAME.left + 240, x));
 
 const AnswerNumeral = ({ value, x, live }: { value: string; x: number; live: boolean }) => {
   const center = answerCenter(x);
@@ -177,14 +94,22 @@ const AnswerNumeral = ({ value, x, live }: { value: string; x: number; live: boo
       <motion.div
         aria-hidden="true"
         className="absolute overprint"
-        style={{ left: AXIS_LEFT + x - 5, width: 10, top: 236, height: AXIS_Y - 236 + 70, background: "var(--pink)", transformOrigin: "top" }}
+        style={{ left: x - 5, width: 10, top: AXIS_Y - 40, height: 40, background: "var(--pink)", transformOrigin: "bottom", zIndex: 3 }}
         initial={live ? { scaleY: 0 } : false}
         animate={{ scaleY: 1 }}
         transition={{ duration: 0.22, ease: "easeIn" }}
       />
       <motion.div
+        aria-hidden="true"
+        className="absolute"
+        style={{ left: x - 26, top: AXIS_Y - 26, width: 52, height: 52, background: "var(--pink)", border: "6px solid var(--ink)", rotate: 45, zIndex: 5 }}
+        initial={live ? { scale: 0 } : false}
+        animate={{ scale: 1 }}
+        transition={{ delay: 0.2, type: "spring", stiffness: 500, damping: 14 }}
+      />
+      <motion.div
         className="absolute tv-display tabular"
-        style={{ left: center, top: AXIS_Y + 74, fontSize: 250, lineHeight: 0.86, x: "-50%" }}
+        style={{ left: center, top: AXIS_Y + 78, fontSize: 200, lineHeight: 0.86, x: "-50%" }}
         initial={live ? { scale: 2.4, opacity: 0, y: -120 } : false}
         animate={{ scale: [2.4, 0.9, 1.03, 1], opacity: 1, y: 0 }}
         transition={{ duration: 0.5, times: [0, 0.55, 0.8, 1], delay: 0.12 }}
@@ -231,43 +156,22 @@ const ChoiceAnswerLine = ({ letter, text, live }: { letter: string; text: string
   );
 };
 
-const NumberLine = ({ ticks, live }: { ticks: Array<{ label: string; x: number }>; live: boolean }) => (
-  <div aria-hidden="true">
-    <motion.div
-      className="absolute"
-      style={{ left: AXIS_LEFT - 40, width: AXIS_WIDTH + 80, top: AXIS_Y - 4, height: 8, background: "var(--ink)", transformOrigin: "left" }}
-      initial={live ? { scaleX: 0 } : false}
-      animate={{ scaleX: 1 }}
-      transition={{ duration: 0.75, ease: [0.6, 0, 0.2, 1] }}
-    />
-    {ticks.map((t, i) => (
-      <motion.div
-        key={t.label}
-        className="absolute flex flex-col items-center"
-        style={{ left: AXIS_LEFT + t.x - 80, width: 160, top: AXIS_Y - 18 }}
-        initial={live ? { opacity: 0, y: -14 } : false}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: live ? 0.2 + i * 0.06 : 0, duration: 0.3 }}
-      >
-        <span style={{ width: 6, height: 36, background: "var(--ink)" }} />
-        <span className="slug text-[34px] mt-2 text-blue">{t.label}</span>
-      </motion.div>
-    ))}
-  </div>
-);
-
-const SuspenseMarker = () => (
-  <motion.span
-    aria-hidden="true"
-    className="tv-display absolute flex items-center justify-center"
-    style={{ left: AXIS_LEFT - 44, top: AXIS_Y - 44, width: 88, height: 88, borderRadius: 999, background: "var(--pink)", fontSize: 60, border: "5px solid var(--ink)" }}
-    initial={{ x: AXIS_WIDTH / 2, scale: 0 }}
-    animate={{ x: [AXIS_WIDTH / 2, AXIS_WIDTH * 0.25, AXIS_WIDTH * 0.75, AXIS_WIDTH * 0.5], scale: 1 }}
-    transition={{ x: { duration: 1.1, ease: "easeInOut" }, scale: { type: "spring", stiffness: 500, damping: 15 } }}
-  >
-    ?
-  </motion.span>
-);
+/** The "?" puck sweeps between the guesses while the room holds its breath. */
+const SuspenseMarker = ({ stops, seconds }: { stops: number[]; seconds: number }) => {
+  const path = stops.length > 0 ? stops : [960];
+  return (
+    <motion.span
+      aria-hidden="true"
+      className="tv-display absolute flex items-center justify-center"
+      style={{ left: -55, top: AXIS_Y - 55, width: 110, height: 110, borderRadius: 999, background: "var(--pink)", fontSize: 76, border: "6px solid var(--ink)", zIndex: 8 }}
+      initial={{ x: path[0], scale: 0 }}
+      animate={{ x: path, scale: 1 }}
+      transition={{ x: { duration: seconds, ease: "easeInOut" }, scale: { type: "spring", stiffness: 500, damping: 15 } }}
+    >
+      ?
+    </motion.span>
+  );
+};
 
 const TopBand = ({
   question,
@@ -416,58 +320,30 @@ export const TvReveal = ({
   }
 
   const correct = toNumber(question.correctAnswer) ?? 0;
-  const numeric = result.answers.flatMap((a, i) => {
-    const v = toNumber(a.value);
-    return v === null ? [] : [{ answer: a, value: v, i }];
-  });
-  const axis = buildAxis(
-    numeric.map((n) => n.value),
-    correct,
-  );
   const highlights = findHighlights(result.answers, question.correctAnswer);
-  const placed = numeric
-    .map((n) => ({ ...n, x: xOnAxis(n.value, axis, AXIS_WIDTH) }))
-    .sort((a, b) => a.x - b.x);
-  const priority = placed.flatMap((p, i) => (highlights.has(p.answer.playerId) ? [i] : []));
-  const roomyLanes = assignLanes(
-    placed.map((p) => p.x),
-    ROOMY.width - 10,
-    priority,
-  );
-  const geo = Math.max(0, ...roomyLanes) + 1 > ROOMY.maxLanes ? COMPACT : ROOMY;
-  const lanes =
-    geo === ROOMY
-      ? roomyLanes
-      : assignLanes(
-          placed.map((p) => p.x),
-          COMPACT.width - 6,
-          priority,
-        );
+  const guesses: LineGuess[] = result.answers.flatMap((a, i) => {
+    const v = toNumber(a.value);
+    return v === null
+      ? []
+      : [{ playerId: a.playerId, name: a.playerName, value: v, inkIndex: inkOf(a.playerId, i), points: pointsOf.get(a.playerId) ?? 0, highlight: highlights.get(a.playerId) }];
+  });
+  const layout = layoutNumberLine(guesses, correct, REVEAL_FRAME);
   // Farthest guess drops first, so the closest lands last, right before the answer.
-  const dropOrder = [...placed].sort((a, b) => Math.abs(b.value - correct) - Math.abs(a.value - correct));
-  const pins: Pin[] = placed.map((p, i) => ({
-    playerId: p.answer.playerId,
-    name: p.answer.playerName,
-    value: p.value,
-    x: p.x,
-    lane: lanes[i] % geo.maxLanes,
-    order: dropOrder.indexOf(p),
-    inkIndex: inkOf(p.answer.playerId, p.i),
-    points: pointsOf.get(p.answer.playerId) ?? 0,
-    highlight: highlights.get(p.answer.playerId),
-  }));
-  const ticks = axis.ticks.map((t) => ({ label: formatTick(t), x: xOnAxis(t, axis, AXIS_WIDTH) }));
-  const correctX = xOnAxis(correct, axis, AXIS_WIDTH);
-  const numeralCenter = answerCenter(correctX);
-  const numeralHalf = (String(question.correctAnswer).length * 150) / 2;
-  const litPins = pins.filter((p) => p.highlight !== undefined);
-  const firstLit = litPins[0];
+  const dropOrder = [...layout.groups].sort((a, b) => Math.abs(b.value - correct) - Math.abs(a.value - correct));
+  const delays = new Map(dropOrder.map((g, i) => [g.key, firstDrop + i * stagger]));
+  const lastDropEnd = schedule.firstDrop + Math.max(0, guessCount - 1) * schedule.stagger + schedule.dropDuration;
+  const suspenseSeconds = Math.max(0.4, (schedule.answer - lastDropEnd) / 1000 - 0.1);
+  const suspenseStops = sweepStops(layout.groups.map((g) => g.axisX));
+  const numeralCenter = answerCenter(layout.correctX);
+  const numeralHalf = (String(question.correctAnswer).length * 110) / 2;
+  const litGroups = layout.groups.filter((g) => g.highlight !== undefined);
+  const firstLit = litGroups[0];
   const roomRight = 1920 - (numeralCenter + numeralHalf + 50);
   const callout =
     firstLit && firstLit.highlight
       ? {
           kind: firstLit.highlight,
-          names: litPins.map((p) => p.name),
+          names: litGroups.flatMap((g) => g.members.map((m) => m.name)),
           side: roomRight >= 440 ? ("right" as const) : ("left" as const),
           anchor: roomRight >= 440 ? numeralCenter + numeralHalf + 50 : numeralCenter - numeralHalf - 50,
         }
@@ -477,12 +353,22 @@ export const TvReveal = ({
     <motion.div key="reveal" className="absolute inset-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <TopBand question={question} number={number} total={total} phase={phase} rows={rows} live={live} />
       <NoGuessNote names={noGuess} />
-      <NumberLine ticks={ticks} live={live} />
-      {phase === PHASE.suspense ? <SuspenseMarker /> : null}
-      {pins.map((pin) => (
-        <GuessPin key={pin.playerId} pin={pin} phase={phase} live={live} delay={firstDrop + pin.order * stagger} geo={geo} />
+      <NumberLineAxis layout={layout} axisY={AXIS_Y} live={live} />
+      {phase === PHASE.suspense ? <SuspenseMarker stops={suspenseStops} seconds={suspenseSeconds} /> : null}
+      {phase >= PHASE.answer ? <AnswerNumeral value={String(question.correctAnswer)} x={layout.correctX} live={live} /> : null}
+      <Leaders groups={layout.groups} axisY={AXIS_Y} delays={delays} live={live} />
+      {layout.groups.map((g) => (
+        <GuessGroupView
+          key={g.key}
+          group={g}
+          size={layout.size}
+          showPoints={phase >= PHASE.points}
+          lit={g.highlight !== undefined && phase >= PHASE.spotlight}
+          dim={phase >= PHASE.spotlight && g.highlight === undefined}
+          live={live}
+          delay={delays.get(g.key) ?? 0}
+        />
       ))}
-      {phase >= PHASE.answer ? <AnswerNumeral value={String(question.correctAnswer)} x={correctX} live={live} /> : null}
       {phase >= PHASE.spotlight && callout ? (
         <HighlightCallout kind={callout.kind} names={callout.names} side={callout.side} anchor={callout.anchor} live={live} />
       ) : null}
