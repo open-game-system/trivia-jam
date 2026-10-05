@@ -318,7 +318,10 @@ async function main() {
     mark("game over");
     await wait(2500);
     await shoot("20-game-over", { tv, host, kid });
-    await wait(4000);
+    // The TV stages its finale (podium, winner takeover, awards) over ~11 s.
+    await wait(9500);
+    await shoot("21-game-over-settled", { tv, host, kid });
+    await wait(3000);
     mark("end");
 
     const rawFrames: unknown = await tv.evaluate(() => Reflect.get(window, "__frames"));

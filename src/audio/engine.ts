@@ -50,7 +50,7 @@ export class TvAudio {
       limiter.attack.value = 0.001;
       limiter.release.value = 0.08;
       const trim = ctx.createGain();
-      trim.gain.value = 0.82;
+      trim.gain.value = 0.7;
       const master = ctx.createGain();
       master.gain.value = 0.9;
       // Sound effects sit ~2 LU over the music, not 6.
@@ -343,8 +343,8 @@ export class TvAudio {
 
   /** The answer lands: a deep thump, a bright chord and a short shimmer. */
   private hit(delay: number) {
-    this.stamp(delay, 0.95);
-    this.voice(65.41, "sine", 0.6, 0.7, delay);
+    this.stamp(delay, 0.7);
+    this.voice(65.41, "sine", 0.42, 0.7, delay, 0.012);
     for (const s of [0, 2, 4, 7]) this.mallet(SCALE[s] ?? 523.25, 0.24, 1.2, delay + 0.01);
     this.burst(delay + 0.01, 0.9, 6500, 0.7, 0.05);
   }
