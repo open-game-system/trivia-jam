@@ -71,19 +71,33 @@ const MyOutcome = ({
   return (
     <motion.section
       data-testid="my-result"
-      className="sheet p-4 sm:p-5"
+      className="sheet pres p-4 sm:p-5"
       initial={{ y: 24, opacity: 0, rotate: -1.5 }}
       animate={{ y: 0, opacity: 1, rotate: 0 }}
       transition={{ type: "spring", stiffness: 380, damping: 22 }}
     >
-      <div
-        className={`${tone} border-4 border-ink px-3 py-3 text-center font-display font-extrabold`}
-        style={{ fontSize: "clamp(36px, 8dvh, 72px)", lineHeight: 1, letterSpacing: "-0.02em" }}
+      <motion.div
+        className={`${tone} pres-stamp font-display font-extrabold`}
+        initial={{ scale: 1.8, rotate: -14, opacity: 0 }}
+        animate={{ scale: [1.8, 0.94, 1], rotate: -4, opacity: 1 }}
+        transition={{ duration: 0.38, times: [0, 0.7, 1], ease: "easeOut", delay: 0.15 }}
       >
         {headline}
+      </motion.div>
+
+      <div className="pres-place">
+        <Stat tone="bg-yellow text-ink" label={`Place ${overallRank}`} tilt={3} testId="my-place">
+          {ordinal(overallRank)}
+        </Stat>
       </div>
 
-      <div className="mt-4 grid grid-cols-2 gap-3 text-center">
+      <div className="pres-coin">
+        <Stat tone="bg-pink text-ink" label={`${earned} points`} tilt={-4} testId="my-points">
+          +{points}
+        </Stat>
+      </div>
+
+      <div className="pres-answers grid grid-cols-2 gap-3 text-center">
         <div>
           <div className="pslug">You</div>
           <div
@@ -106,23 +120,14 @@ const MyOutcome = ({
         </div>
       </div>
 
-      <div className="mt-5 flex items-center justify-center gap-4 border-t-4 border-ink pt-4">
-        <Stat tone="bg-pink text-ink" label={`${earned} points`} tilt={-4}>
-          +{points}
-        </Stat>
-        <Stat tone="bg-yellow text-ink" label={`Place ${overallRank}`} tilt={3}>
-          {ordinal(overallRank)}
-        </Stat>
-      </div>
-
       <div
-        className="mt-4 flex items-baseline justify-center gap-3 border-t-4 border-ink pt-3"
+        className="pres-total flex items-baseline justify-center gap-3 border-t-4 border-ink pt-3"
         aria-label={`${me.score} points in total`}
       >
         <span className="pslug">Total</span>
         <span
           className="tabular font-display font-extrabold leading-none misreg"
-          style={{ fontSize: "clamp(64px, 16dvh, 140px)" }}
+          style={{ fontSize: "clamp(48px, 10dvh, 96px)" }}
           data-testid="my-total"
         >
           {total}
@@ -147,7 +152,7 @@ const Everyone = ({
   players: Person[];
   meId: string;
 }) => (
-  <section aria-label="Everyone's answers">
+  <section aria-label="Everyone's answers" className="landscape:sr-only">
     <h2 className="pslug mb-2" style={{ fontSize: 16 }}>
       Everyone
     </h2>
@@ -224,7 +229,7 @@ export const PlayerResult = ({
       >
         {question.text}
       </h1>
-      <div className="grid grid-cols-1 gap-5 landscape:grid-cols-2 landscape:items-start">
+      <div className="grid grid-cols-1 gap-5 landscape:grid-cols-1">
         <MyOutcome
           question={question}
           result={result}

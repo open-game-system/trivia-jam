@@ -699,3 +699,101 @@ textarea.pfield { padding: 14px 16px; font-size: 18px; line-height: 1.35; font-f
 .pread-arc-2 { animation: parc 0.9s steps(1) infinite 0.3s; }
 @keyframes parc { 0%, 100% { opacity: 1; } 50% { opacity: 0.2; } }
 @media (prefers-reduced-motion: reduce) { .pread-arc-1, .pread-arc-2 { animation: none; } }
+
+/* ---------- Kid result: one stamp, a place, a coin ---------- */
+.pres {
+  display: grid;
+  gap: 14px;
+  justify-items: center;
+}
+.pres-stamp {
+  padding: 0.22em 0.5em 0.28em;
+  border: 8px solid var(--ink);
+  border-radius: 12px;
+  box-shadow: 6px 6px 0 var(--pink);
+  font-size: clamp(36px, 8dvh, 72px);
+  line-height: 1;
+  letter-spacing: 0.01em;
+  text-align: center;
+  text-wrap: balance;
+  max-width: 100%;
+}
+.pres-place, .pres-coin { display: flex; justify-content: center; }
+.pres-answers, .pres-total { width: 100%; }
+.pres-coin .pstat { border-radius: 999px; aspect-ratio: 1; min-width: 0; padding: 0.25em; }
+.pres-total { border-top: 4px solid var(--ink); }
+
+/* Landscape (the kid's iPad): almost no reading. Stamp left, place + coin right. */
+@media (orientation: landscape) and (min-height: 480px) {
+  .pres {
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+    grid-template-areas:
+      "stamp place"
+      "stamp coin"
+      "answers answers"
+      "total total";
+    align-items: center;
+    column-gap: 28px;
+  }
+  .pres-stamp {
+    grid-area: stamp;
+    font-size: clamp(56px, 13dvh, 130px);
+    border-width: 10px;
+    box-shadow: 10px 10px 0 var(--pink);
+  }
+  .pres-place { grid-area: place; }
+  .pres-place .pstat {
+    font-size: clamp(80px, 22dvh, 200px);
+    border-width: 8px;
+    box-shadow: 8px 8px 0 var(--blue);
+  }
+  .pres-coin { grid-area: coin; }
+  .pres-coin .pstat { font-size: clamp(44px, 11dvh, 100px); width: clamp(110px, 20dvh, 200px); }
+  .pres-answers { grid-area: answers; }
+  .pres-total { grid-area: total; }
+}
+
+/* ---------- Kid waiting screens: the player's own big token and name ---------- */
+.pwait {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.pwait-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+  width: 100%;
+  max-width: 1000px;
+  text-align: center;
+}
+.pwait-token {
+  width: clamp(120px, 34vw, 200px);
+  height: clamp(120px, 34vw, 200px);
+  font-size: clamp(64px, 18vw, 110px);
+  border-width: 8px;
+  box-shadow: 8px 8px 0 var(--pink);
+}
+.pwait-title {
+  margin-top: 6px;
+  font-family: "Bricolage Grotesque Variable", system-ui, sans-serif;
+  font-weight: 800;
+  font-size: clamp(40px, 11vw, 64px);
+  line-height: 1;
+  overflow-wrap: anywhere;
+}
+.pwait-sub { margin-top: 12px; font-size: 22px; font-weight: 700; }
+@media (orientation: landscape) and (min-height: 480px) {
+  .pwait-body { flex-direction: row; gap: 5vw; text-align: left; }
+  .pwait-token {
+    width: clamp(220px, 44dvh, 420px);
+    height: clamp(220px, 44dvh, 420px);
+    font-size: clamp(120px, 26dvh, 240px);
+    border-width: 12px;
+    box-shadow: 14px 14px 0 var(--pink);
+  }
+  .pwait-title { font-size: clamp(64px, 14dvh, 140px); text-shadow: none; }
+  .pwait-sub { font-size: clamp(24px, 4dvh, 36px); }
+}

@@ -19,7 +19,7 @@ import { LockedIn } from "./phone/LockedIn";
 import { NumberPad } from "./phone/NumberPad";
 import { PhoneShell } from "./phone/PhoneShell";
 import { QuestionHeader } from "./phone/QuestionHeader";
-import { WaitingDots } from "./phone/ink";
+import { PlayerToken, WaitingDots } from "./phone/ink";
 import { toAnswerNumber } from "./phone/keypad";
 import { draftFor, type Draft } from "./phone/draft";
 
@@ -32,41 +32,43 @@ type Player = {
 type CurrentQuestion = NonNullable<GamePublicContext["currentQuestion"]>;
 
 const HelpButton = ({ onOpen }: { onOpen: () => void }) => (
-  <button type="button" onClick={onOpen} className="pbtn pbtn-quiet mx-auto">
+  <button type="button" onClick={onOpen} className="pbtn pbtn-quiet">
     <HelpCircle size={22} aria-hidden="true" />
     How to Play
   </button>
 );
 
-/** A centred printed card, used by every "wait" screen. */
+/** The kid's waiting screen: their own big token and name fill the screen. */
 const WaitCard = ({
   title,
+  seat,
+  name,
   children,
   footer,
 }: {
   title: string;
+  seat: number;
+  name: string;
   children?: ReactNode;
   footer?: ReactNode;
 }) => (
-  <PhoneShell className="flex items-center justify-center p-5">
+  <PhoneShell className="pwait">
     <motion.div
-      initial={{ opacity: 0, y: 18 }}
-      animate={{ opacity: 1, y: 0 }}
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
       transition={{ ease: [0.2, 0.9, 0.2, 1.15], duration: 0.35 }}
-      className="sheet w-full max-w-md px-6 py-8 text-center"
+      className="pwait-body"
     >
-      <span className="pslug">Trivia Jam</span>
-      <h1
-        className="mt-2 font-display font-extrabold misreg"
-        style={{ fontSize: "clamp(34px, 8dvh, 56px)" }}
-      >
-        {title}
-      </h1>
-      {children}
-      <div className="mt-6 flex justify-center">
-        <WaitingDots />
+      <PlayerToken name={name} seat={seat} className="pwait-token" />
+      <div className="pwait-text">
+        <span className="pslug">Trivia Jam</span>
+        <h1 className="misreg pwait-title">{title}</h1>
+        {children}
+        <div className="mt-5 flex justify-center landscape:justify-start">
+          <WaitingDots />
+        </div>
+        {footer && <div className="mt-5 flex justify-center landscape:justify-start">{footer}</div>}
       </div>
-      {footer && <div className="mt-6">{footer}</div>}
     </motion.div>
   </PhoneShell>
 );
@@ -88,11 +90,11 @@ const WithHelp = ({
   );
 };
 
-const LobbyDisplay = ({ player }: { player: Player }) => (
+const LobbyDisplay = ({ player, seat }: { player: Player; seat: number }) => (
   <WithHelp
     render={(help) => (
-      <WaitCard title={`Welcome, ${player.name}!`} footer={help}>
-        <p className="mt-3 text-xl font-semibold">
+      <WaitCard title={`Welcome, ${player.name}!`} seat={seat} name={player.name} footer={help}>
+        <p className="pwait-sub">
           Waiting for host to start the game...
         </p>
       </WaitCard>
@@ -100,7 +102,7 @@ const LobbyDisplay = ({ player }: { player: Player }) => (
   />
 );
 
-const WaitingDisplay = ({ player }: { player: Player }) => {
+const WaitingDisplay = ({ player, seat }: { player: Player; seat: number }) => {
   const resultsCount = GameContext.useSelector(
     (state) => state.public.questionResults.length,
   );
@@ -112,9 +114,11 @@ const WaitingDisplay = ({ player }: { player: Player }) => {
           title={
             isFirst ? "Waiting for first question..." : "Waiting for next question..."
           }
+          seat={seat}
+          name={player.name}
           footer={help}
         >
-          <p className="mt-3 text-xl font-semibold">Get ready, {player.name}!</p>
+          <p className="pwait-sub">Get ready, {player.name}!</p>
         </WaitCard>
       )}
     />
@@ -261,7 +265,7 @@ const ActiveStateContent = ({
   };
 
   if (!currentQuestion && questionResults.length === 0) {
-    return <WaitingDisplay player={player} />;
+    return <WaitingDisplay player={player} seat={Math.max(0, players.findIndex((p) => p.id === player.id))} />;
   }
 
   return (
@@ -434,7 +438,9 @@ export const PlayerView = () => {
 
   return (
     <>
-      {isLobby && <LobbyDisplay player={player} />}
+      {isLobby && (
+        <LobbyDisplay player={player} seat={Math.max(0, players.findIndex((p) => p.id === player.id))} />
+      )}
       {isActive && (
         <ActiveStateContent
           player={player}

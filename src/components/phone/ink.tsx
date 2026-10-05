@@ -4,12 +4,14 @@ const TOKEN_INKS = ["blue", "pink", "teal", "yellow"] as const;
 export const PlayerToken = ({
   name,
   seat,
+  className = "",
 }: {
   name: string;
   seat: number;
+  className?: string;
 }) => (
   <span
-    className={`ptoken ptoken-${TOKEN_INKS[seat % TOKEN_INKS.length]}`}
+    className={`ptoken ptoken-${TOKEN_INKS[seat % TOKEN_INKS.length]} ${className}`}
     aria-hidden="true"
   >
     {name.trim().charAt(0).toUpperCase() || "?"}
