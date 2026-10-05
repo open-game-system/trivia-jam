@@ -1,3 +1,4 @@
+import { useOnOgsTv } from "~/ogs/use-ogs-game";
 import { useState } from "react";
 import { GameContext } from "~/game.context";
 import type { GamePublicContext } from "~/game.types";
@@ -127,8 +128,10 @@ const LobbyDisplay = ({ host }: { host: string }) => {
   const players = GameContext.useSelector((state) => state.public.players);
   const gameId = GameContext.useSelector((state) => state.public.id);
   const gameCode = GameContext.useSelector((state) => state.public.gameCode);
+  const onOgsTv = useOnOgsTv();
   return (
     <TvLobby
+      onOgsTv={onOgsTv}
       players={players}
       joinUrl={`https://${host}/games/${gameId}`}
       host={host}

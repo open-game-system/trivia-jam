@@ -1,5 +1,6 @@
+import { tvAudio } from "~/audio/engine";
 import { motion, useReducedMotion } from "framer-motion";
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import type { Question, QuestionResult } from "~/game.types";
 import { InkToken, RisoType, Slug } from "./print";
 import { OptionTiles, QuestionSlug } from "./question";
@@ -352,6 +353,14 @@ export const TvReveal = ({
   const guessCount = result.answers.length;
   const schedule = useMemo(() => revealSchedule(guessCount, reduced), [guessCount, reduced]);
   const phase = useRevealPhase(live, schedule, guessCount);
+  const exact = result.answers.some((a) => String(a.value) === String(question.correctAnswer));
+  // Score the reveal once, when it plays live (a TV that loads late stays quiet).
+  const scored = useRef(false);
+  useEffect(() => {
+    if (!live || scored.current) return;
+    scored.current = true;
+    tvAudio().revealScore({ ...schedule, guesses: guessCount, exact });
+  }, [live, schedule, guessCount, exact]);
   const stagger = schedule.stagger / 1000;
   const firstDrop = schedule.firstDrop / 1000;
 

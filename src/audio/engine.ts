@@ -101,8 +101,7 @@ export class TvAudio {
         return;
       }
       case "reveal":
-        this.drumroll(0, 2.6);
-        this.hit(2.65);
+        // The TV's reveal scores itself to its own animation clock: see revealScore().
         return;
       case "gameOver":
         this.hit(0);
@@ -110,6 +109,24 @@ export class TvAudio {
         this.arp([5, 7, 9], 0.0, 0.32, 0.9);
         return;
     }
+  }
+
+  /**
+   * The number-line reveal, in step with the TV's animation (src/components/tv/tv-model revealSchedule, ms):
+   * a mallet per guess dropping in, a drumroll through the suspense, the answer hit, a fanfare on the
+   * spotlight (brighter for an exact guess), and a counting run as points stamp on.
+   */
+  revealScore(beats: { firstDrop: number; stagger: number; guesses: number; answer: number; spotlight: number; points: number; exact: boolean }) {
+    const at = (ms: number) => ms / 1000;
+    for (let i = 0; i < beats.guesses; i++) {
+      this.mallet(SCALE[Math.min(SCALE.length - 1, 2 + i)] ?? 880, 0.26, 0.35, at(beats.firstDrop + i * beats.stagger + 380));
+      this.burst(at(beats.firstDrop + i * beats.stagger + 380), 0.05, 900, 0.8, 0.12);
+    }
+    const lastDrop = beats.firstDrop + Math.max(0, beats.guesses - 1) * beats.stagger + 500;
+    this.drumroll(at(lastDrop), Math.max(0.4, at(beats.answer - lastDrop)));
+    this.hit(at(beats.answer));
+    this.arp(beats.exact ? [4, 5, 7, 9] : [2, 4, 5], 0.1, 0.24, at(beats.spotlight));
+    this.arp([5, 6, 7], 0.07, 0.16, at(beats.points));
   }
 
   /** The last seconds of the timer: a soft woodblock, brighter on the final three. */

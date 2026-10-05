@@ -90,11 +90,14 @@ export const TvLobby = ({
   joinUrl,
   host,
   gameCode,
+  onOgsTv = false,
 }: {
   players: LobbyPlayer[];
   joinUrl: string;
   host: string;
   gameCode?: string;
+  /** Framed by the OGS TV launcher: its own TV code replaces our QR and link. */
+  onOgsTv?: boolean;
 }) => {
   const seatCount = Math.max(LOBBY_SEATS, players.length);
   const seats = Array.from({ length: seatCount }, (_, i) => players[i]);
@@ -119,7 +122,7 @@ export const TvLobby = ({
         <Wordmark />
       </div>
 
-      <JoinCard joinUrl={joinUrl} host={host} gameCode={gameCode} />
+      {onOgsTv ? null : <JoinCard joinUrl={joinUrl} host={host} gameCode={gameCode} />}
 
       <div className="absolute" style={{ left: 96, right: 96, bottom: 56 }}>
         <div className="tv-rule mb-6" />
