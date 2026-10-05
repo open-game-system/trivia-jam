@@ -173,6 +173,29 @@ describe("parseQuestions", () => {
       await expect(parseQuestions("test", baseEnv, model)).rejects.toThrow();
     });
   });
+
+  describe("a document with no questions in it", () => {
+    it("throws when the model finds no questions", async () => {
+      const model = mockModel([]);
+
+      await expect(parseQuestions("hello there", baseEnv, model)).rejects.toThrow(
+        "No questions found"
+      );
+    });
+
+    it("the mock finds none in a document without a letter or digit, and throws the same", async () => {
+      const env = { ...baseEnv, USE_MOCK_LLM: "1" };
+
+      await expect(parseQuestions("--- ??? ---", env)).rejects.toThrow("No questions found");
+    });
+
+    it("the mock still parses any document with words in it", async () => {
+      const env = { ...baseEnv, USE_MOCK_LLM: "1" };
+
+      const result = await parseQuestions("x", env);
+      expect(Object.keys(result)).toEqual(["q1", "q2"]);
+    });
+  });
 });
 
 describe("createQuestionParserModel", () => {

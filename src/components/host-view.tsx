@@ -2,6 +2,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Check, Copy, Loader2, Settings, Share2 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { Drawer } from "vaul";
+import { matchesState, type StateValue } from "xstate";
 import { GameContext } from "~/game.context";
 import type { GamePublicContext } from "~/game.machine";
 import type { Answer, Question, QuestionResult } from "~/game.types";
@@ -32,6 +33,8 @@ type SettingsModalProps = {
   currentSettings: GameSettings;
   onSave: (settings: GameSettings) => void;
 };
+
+const PARSING: StateValue = { lobby: "parsingDocument" };
 
 type Score = GamePublicContext["questionResults"][number]["scores"][number];
 type Person = { id: string; name: string; score: number };
@@ -629,14 +632,15 @@ const LobbyControls = ({
   const handleParseDocument = async () => {
     if (!documentContent.trim()) return;
 
+    // Keep the editor open until this parse finishes; close it only when it succeeded.
+    // (Waiting for "has questions" alone resolves at once on a re-import and hid its error.)
+    setIsEditingQuestions(true);
     send({ type: "PARSE_QUESTIONS", documentContent: documentContent.trim() });
 
     try {
-      await client.waitFor(
-        (state) => Object.keys(state.public.questions).length > 0,
-        10000,
-      );
-      setIsEditingQuestions(false);
+      await client.waitFor((state) => matchesState(PARSING, state.value), 10000);
+      await client.waitFor((state) => !matchesState(PARSING, state.value), 60000);
+      if (!client.getState().public.parsingErrorMessage) setIsEditingQuestions(false);
     } catch (error) {
       console.error("Failed to parse questions:", error);
     }

@@ -18,6 +18,10 @@ import type {
 import { parseQuestions } from "./gemini";
 import { calculateScores } from "./game/scoring";
 
+const parsingErrorParams = ({ event }: { event: ErrorActorEvent<unknown, string> }) => ({
+  error: event.error instanceof Error ? event.error : new Error(String(event.error)),
+});
+
 export const gameMachine = setup({
   types: {} as {
     context: GameServerContext;
@@ -35,6 +39,8 @@ export const gameMachine = setup({
       "caller" in event &&
       event.caller.type === "client" &&
       event.caller.id === context.public.hostId,
+    hasQuestions: ({ context }: { context: GameServerContext }) =>
+      Object.keys(context.public.questions).length > 0,
   },
   actors: {
     answerTimer: fromPromise(
@@ -247,21 +253,21 @@ export const gameMachine = setup({
                 },
               ],
             },
-            onError: {
-              target: "waitingForQuestions",
-              actions: {
-                type: "setParsingError",
-                params: ({ event }: { event: ErrorActorEvent<unknown, string> }) => ({
-                  error: event.error instanceof Error
-                    ? event.error
-                    : new Error(String(event.error)),
-                }),
+            // A failed re-import keeps the questions already imported, and the game startable.
+            onError: [
+              {
+                guard: "hasQuestions",
+                target: "ready",
+                actions: { type: "setParsingError", params: parsingErrorParams },
               },
-            },
+              {
+                target: "waitingForQuestions",
+                actions: { type: "setParsingError", params: parsingErrorParams },
+              },
+            ],
           },
         },
         ready: {
-          entry: "clearParsingError",
           on: {
             START_GAME: {
               guard: ({ context, event }: { 
@@ -275,6 +281,7 @@ export const gameMachine = setup({
             PARSE_QUESTIONS: {
               guard: "isHost",
               target: "parsingDocument",
+              actions: "clearParsingError",
             },
           },
         },
