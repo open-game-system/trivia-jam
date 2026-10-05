@@ -401,45 +401,32 @@ export const QuestionResults: Story = {
       name: "What year was the Declaration of Independence signed?"
     });
     expect(questionText).toBeInTheDocument();
-    expect(questionText).toHaveClass(
-      'font-bold',
-      'bg-clip-text',
-      'text-transparent',
-      'bg-gradient-to-r',
-      'from-indigo-400',
-      'to-purple-400',
-    );
+    // Riso redesign: display type in the blue ink (gradient text removed).
+    expect(questionText).toHaveClass('font-display', 'font-extrabold', 'text-blue');
 
     const correctAnswer = await canvas.findByTestId("correct-answer");
     expect(correctAnswer).toBeInTheDocument();
-    expect(correctAnswer).toHaveClass('font-bold', 'text-green-400');
+    expect(correctAnswer).toHaveClass('font-extrabold', 'text-blue');
     expect(correctAnswer).toHaveTextContent("1776");
 
     // Verify first player result (Test Player)
     const player456Row = await canvas.findByTestId('player-result-player-456');
     expect(player456Row).toBeInTheDocument();
-    expect(player456Row).toHaveClass(
-      'bg-green-500/10',
-      'border',
-      'border-green-500/30',
-      'rounded-2xl',
-      'flex',
-      'items-center',
-      'bg-indigo-500/10'
-    );
+    // The current player's row is the yellow printed row.
+    expect(player456Row).toHaveClass('prow', 'prow-me');
     
     const player456Details = within(player456Row);
     
     // Find player name in the specific element
     const nameElement = player456Details.getByText("Test Player", {
-      selector: '.font-medium'
+      selector: '.truncate'
     });
     expect(nameElement).toBeInTheDocument();
 
     // Find answer and time in the specific element
     const answerTimeElement = player456Details.getByText((content, element) => {
       return Boolean(
-        element?.classList.contains('text-gray-400') &&
+        element?.classList.contains('pslug') &&
         element?.textContent?.includes('1776') &&
         element?.textContent?.includes('5.0')
       );
@@ -447,9 +434,7 @@ export const QuestionResults: Story = {
     expect(answerTimeElement).toBeInTheDocument();
 
     // Find points in the specific element
-    const pointsElement = player456Details.getByText("5", {
-      selector: '.font-bold.text-indigo-400'
-    });
+    const pointsElement = player456Details.getByText("+5");
     expect(pointsElement).toBeInTheDocument();
   },
 };
@@ -569,7 +554,7 @@ export const NoPointsResults: Story = {
     // Find answer and time in the specific element
     const answerTimeElement = within(player2Row).getByText((content, element) => {
       return Boolean(
-        element?.classList.contains('text-gray-400') &&
+        element?.classList.contains('pslug') &&
         element?.textContent?.includes('1776') &&
         element?.textContent?.includes('5.0')
       );
@@ -577,9 +562,7 @@ export const NoPointsResults: Story = {
     expect(answerTimeElement).toBeInTheDocument();
 
     // Find points in the specific element
-    const pointsElement = within(player2Row).getByText("5", {
-      selector: '.font-bold.text-indigo-400'
-    });
+    const pointsElement = within(player2Row).getByText("+5");
     expect(pointsElement).toBeInTheDocument();
 
     // Verify second player result (Player 3)
@@ -1032,8 +1015,9 @@ export const MultipleChoiceAnswerSubmitted: Story = {
     const submittedAnswer = within(submittedState).getByText("Panama Canal");
     expect(submittedAnswer).toBeInTheDocument();
 
-    // Verify the time display shows a negative value (timestamp is before startTime)
-    expect(submittedState.textContent).toContain("-2");
+    // Riso redesign: players no longer see how long they took; they see the stamp.
+    expect(submittedState).toHaveTextContent("LOCKED IN");
+    expect(submittedState.textContent).not.toMatch(/\d+\.\d+s/);
   },
 };
 
@@ -1112,18 +1096,13 @@ export const LongMultipleChoiceQuestion: Story = {
 
     // Verify each option has the correct layout
     options.forEach((option) => {
-      const letterElement = option.querySelector(".text-indigo-400");
-      const textElement = option.querySelector(".text-left");
-      
+      const letterElement = option.querySelector(".ptile-letter");
+      const textElement = option.querySelector(".ptile-text");
+
       expect(letterElement).toBeInTheDocument();
       expect(textElement).toBeInTheDocument();
-      expect(option).toHaveClass(
-        "w-full",
-        "bg-gray-800/50",
-        "rounded-xl",
-        "border",
-        "border-gray-700/50"
-      );
+      // Riso redesign: printed ink tiles replace the grey rounded buttons.
+      expect(option).toHaveClass("w-full", "ptile");
     });
   },
 };
@@ -1185,16 +1164,14 @@ export const GameFinished: Story = {
       expect(playerElement).toBeInTheDocument();
     }
 
-    // Verify medals for top 3
-    const goldMedal = await canvas.findByText("🥇");
-    expect(goldMedal).toBeInTheDocument();
-    const silverMedal = await canvas.findByText("🥈");
-    expect(silverMedal).toBeInTheDocument();
-    const bronzeMedal = await canvas.findByText("🥉");
-    expect(bronzeMedal).toBeInTheDocument();
+    // Riso redesign: numbered rank discs replace the medal emoji.
+    for (const place of [1, 2, 3]) {
+      expect((await canvas.findAllByLabelText(`Place ${place}`)).length).toBeGreaterThan(0);
+    }
+    expect(canvas.queryByText("🥇")).not.toBeInTheDocument();
 
     // Verify current player (You) is highlighted
-    const currentPlayerRow = (await canvas.findByText("You")).closest("div[class*='bg-indigo-500/10']");
+    const currentPlayerRow = (await canvas.findByText("You")).closest(".prow-me");
     expect(currentPlayerRow).toBeInTheDocument();
   },
 };

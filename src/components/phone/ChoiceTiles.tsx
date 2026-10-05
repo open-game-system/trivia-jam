@@ -19,7 +19,7 @@ export const ChoiceTiles = ({
           type="button"
           disabled={disabled}
           aria-label={`${letter}) ${option}`}
-          className={`ptile ptile-${TILE_INKS[index % TILE_INKS.length]}`}
+          className={`w-full ptile ptile-${TILE_INKS[index % TILE_INKS.length]}`}
           onClick={() => onChoose(option)}
         >
           <span className="ptile-letter" aria-hidden="true">
