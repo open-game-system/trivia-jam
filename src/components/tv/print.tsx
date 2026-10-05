@@ -119,3 +119,45 @@ export const Slug = ({
     {children}
   </div>
 );
+
+/** The ink roller's leading edge: a black drum with a pink stripe that sweeps across the sheet once. */
+export const Roller = ({ delay = 0, duration = 0.45, zIndex = 70 }: { delay?: number; duration?: number; zIndex?: number }) => (
+  <motion.div
+    aria-hidden="true"
+    className="absolute pointer-events-none"
+    style={{ top: -20, bottom: -20, left: 0, width: 46, zIndex, display: "flex" }}
+    initial={{ x: -80, scaleX: 1 }}
+    animate={{ x: [-80, 1960], scaleX: [1, 1] }}
+    transition={{ delay, duration, ease: [0.6, 0, 0.2, 1] }}
+  >
+    <span style={{ width: 30, background: "var(--ink)" }} />
+    <span style={{ width: 16, background: "var(--pink)" }} />
+  </motion.div>
+);
+
+/** Clip paths for a left-to-right printed wipe: on (the sheet arrives) and off (the sheet is wiped away). */
+export const WIPE = {
+  hidden: "inset(0% 100% 0% 0%)",
+  shown: "inset(0% 0% 0% 0%)",
+  gone: "inset(0% 0% 0% 100%)",
+  ease: [0.6, 0, 0.2, 1] as const,
+};
+
+/**
+ * A new sheet rolled onto the TV: it is revealed left to right behind the roller, on opaque paper,
+ * so the old layer underneath is covered, never cross-faded.
+ */
+export const RolledSheet = ({ children, live, duration = 0.45, zIndex = 1 }: { children: ReactNode; live: boolean; duration?: number; zIndex?: number }) => (
+  <>
+    <motion.div
+      className="absolute inset-0"
+      style={{ background: "var(--paper)", zIndex }}
+      initial={live ? { clipPath: WIPE.hidden } : false}
+      animate={{ clipPath: WIPE.shown }}
+      transition={{ duration, ease: WIPE.ease }}
+    >
+      {children}
+    </motion.div>
+    {live ? <Roller duration={duration} zIndex={zIndex + 1} /> : null}
+  </>
+);

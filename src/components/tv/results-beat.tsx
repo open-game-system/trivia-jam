@@ -1,14 +1,15 @@
-import { motion, useReducedMotion } from "framer-motion";
+import { useReducedMotion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import type { Question, QuestionResult } from "~/game.types";
+import { RolledSheet } from "./print";
 import { TvReveal } from "./reveal";
 import { TvStandingsBoard } from "./standings-board";
 import { buildStandings, revealSchedule } from "./tv-model";
 
 /** How long the settled reveal holds before the standings board takes over. */
 const HOLD_MS = 2400;
-/** The reveal clears fully before the board lands: no two layers on screen at once. */
-const CLEAR_MS = 280;
+/** The board is rolled on over the reveal (a printed wipe, never a cross-fade); then the reveal is dropped. */
+const WIPE_MS = 450;
 
 /** After a question: the staged reveal, then the big standings board until the next question. */
 export const TvResultsBeat = ({
@@ -30,7 +31,7 @@ export const TvResultsBeat = ({
   const [boardOnly, setBoardOnly] = useState(false);
   useEffect(() => {
     const show = setTimeout(() => setShowBoard(true), revealMs + HOLD_MS);
-    const drop = setTimeout(() => setBoardOnly(true), revealMs + HOLD_MS + CLEAR_MS);
+    const drop = setTimeout(() => setBoardOnly(true), revealMs + HOLD_MS + WIPE_MS + 60);
     return () => {
       clearTimeout(show);
       clearTimeout(drop);
@@ -40,7 +41,7 @@ export const TvResultsBeat = ({
   return (
     <>
       {boardOnly ? null : (
-        <motion.div className="absolute inset-0" animate={{ opacity: showBoard ? 0 : 1 }} transition={{ duration: CLEAR_MS / 1000 }}>
+        <div className="absolute inset-0">
           <TvReveal
             question={question}
             result={result}
@@ -49,9 +50,13 @@ export const TvResultsBeat = ({
             total={total}
             live={live}
           />
-        </motion.div>
+        </div>
       )}
-      {boardOnly ? <TvStandingsBoard rows={rows} afterNumber={result.questionNumber} total={total} live={live} /> : null}
+      {showBoard ? (
+        <RolledSheet live={!boardOnly} duration={WIPE_MS / 1000} zIndex={80}>
+          <TvStandingsBoard rows={rows} afterNumber={result.questionNumber} total={total} live={live} />
+        </RolledSheet>
+      ) : null}
     </>
   );
 };

@@ -145,6 +145,9 @@ export const WinnersCard = ({
         if (!w) return null;
         const from = w.from;
         const centreY = layout.chipTop + layout.chip / 2;
+        // Where the travelling "+N" lands: the middle of the total, under the name.
+        const travelX = -layout.chip * 0.22 - 85;
+        const travelY = totalTop - layout.chipTop + 20;
         return (
           <div key={spot.id}>
             <motion.div
@@ -171,21 +174,20 @@ export const WinnersCard = ({
             </motion.span>
             {scoring && w.points > 0 ? (
               <>
-                {/* The "+N" lands on the chip, then travels down into the total. */}
+                {/* The "+N" stamps onto the chip, then travels down INTO the total and is gone: no chip is left behind. */}
                 {live ? (
                   <motion.span
                     aria-hidden="true"
                     className="absolute tv-display tabular"
                     style={{ left: spot.x + layout.chip * 0.22, top: layout.chipTop - 20, fontSize: 84, lineHeight: 1, background: "var(--pink)", border: "6px solid var(--ink)", padding: "2px 16px", zIndex: 5 }}
-                    initial={{ scale: 0, rotate: -20, x: 0, y: 0, opacity: 1 }}
+                    initial={{ scale: 0, rotate: -20, x: 0, y: 0 }}
                     animate={{
-                      scale: [0, 1.25, 1, 1, 0.5],
-                      rotate: [-20, -6, -6, -6, 0],
-                      x: [0, 0, 0, 0, -layout.chip * 0.22 - 90],
-                      y: [0, 0, 0, 0, totalTop - layout.chipTop + 30],
-                      opacity: [1, 1, 1, 1, 0],
+                      scale: [0, 1.25, 1, 1, 0.7, 0],
+                      rotate: [-20, -6, -6, -6, 0, 0],
+                      x: [0, 0, 0, 0, travelX, travelX],
+                      y: [0, 0, 0, 0, travelY, travelY + 10],
                     }}
-                    transition={{ duration: 1.05, times: [0, 0.2, 0.3, 0.62, 1], delay: i * 0.12 }}
+                    transition={{ duration: 1.05, times: [0, 0.2, 0.3, 0.62, 0.92, 1], delay: i * 0.12 }}
                   >
                     +{w.points}
                   </motion.span>
@@ -197,9 +199,6 @@ export const WinnersCard = ({
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: live ? 0.2 : 0, duration: 0.3 }}
                 >
-                  <span className="tv-display tabular" style={{ fontSize: 56, lineHeight: 1, background: "var(--pink)", border: "5px solid var(--ink)", padding: "2px 12px", rotate: "-4deg" }}>
-                    +{w.points}
-                  </span>
                   <motion.span
                     className="tv-display tabular"
                     style={{ fontSize: layout.total, lineHeight: 1, color: "var(--blue)" }}

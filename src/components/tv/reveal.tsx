@@ -2,7 +2,8 @@ import { tvAudio } from "~/audio/engine";
 import { motion, useReducedMotion } from "framer-motion";
 import { type ReactNode, useEffect, useMemo, useRef } from "react";
 import type { Question, QuestionResult } from "~/game.types";
-import { InkToken, RisoType, Slug } from "./print";
+import { FitName } from "./fit-name";
+import { InkToken, RisoType, Roller, Slug, WIPE } from "./print";
 import { OptionTiles, QuestionSlug } from "./question";
 import { type LineGuess, layoutNumberLine, memberChipCentres, REVEAL_FRAME, sweepStops } from "./number-line-layout";
 import { GuessGroupView, Leaders, NumberLineAxis } from "./number-line-reveal";
@@ -47,17 +48,22 @@ const Shake = ({ on, children }: { on: boolean; children: ReactNode }) => (
   </motion.div>
 );
 
-/** Everything on the line steps back when the winners break forward. */
-const LineLayer = ({ back, children }: { back: boolean; children: ReactNode }) => (
-  <motion.div
-    className="absolute inset-0"
-    style={{ transformOrigin: "50% 75%" }}
-    initial={false}
-    animate={back ? { opacity: 0.09, scale: 0.97 } : { opacity: 1, scale: 1 }}
-    transition={{ duration: 0.35, ease: [0.2, 0.9, 0.2, 1] }}
-  >
-    {children}
-  </motion.div>
+/**
+ * When the winners break forward, the roller wipes the line (or the tiles) off the sheet, left to right:
+ * no translucent ghost of it stays under the takeover. A TV that loads late starts wiped.
+ */
+const LineLayer = ({ back, live, children }: { back: boolean; live: boolean; children: ReactNode }) => (
+  <>
+    <motion.div
+      className="absolute inset-0"
+      initial={false}
+      animate={{ clipPath: back ? WIPE.gone : WIPE.shown }}
+      transition={{ duration: back && live ? 0.4 : 0, ease: WIPE.ease }}
+    >
+      {children}
+    </motion.div>
+    {back && live ? <Roller duration={0.4} zIndex={28} /> : null}
+  </>
 );
 
 const answerCenter = (x: number) => Math.min(REVEAL_FRAME.right - 260, Math.max(REVEAL_FRAME.left + 240, x));
@@ -126,11 +132,11 @@ const ChoiceAnswerLine = ({ letter, text, live }: { letter: string; text: string
       transition={{ duration: 0.5, times: [0, 0.65, 1] }}
       data-testid="correct-answer"
     >
-      <span className="tv-display truncate" style={{ fontSize: size, lineHeight: 0.9 }}>
+      <FitName text={`${letter}\u00a0${text}`} max={size} floor={72} box={1728} lineHeight={1} className="tv-display text-center">
         <RisoType top="var(--blue)" under="var(--pink)" offset={10} rough>
           {letter}&nbsp;{text}
         </RisoType>
-      </span>
+      </FitName>
     </motion.div>
   );
 };
@@ -180,7 +186,8 @@ const TopBand = ({
   const qSize = question.text.length <= 56 ? 72 : question.text.length <= 90 ? 60 : 56;
   return (
     <>
-      <motion.div className="absolute flex items-center gap-6" style={{ left: 96, top: 56, zIndex: 40 }} animate={{ opacity: clear ? 0 : 1 }} transition={{ duration: 0.2 }}>
+      {/* Cleared with a hard cut as the winners take over (it stays in the DOM, unprinted). */}
+      <motion.div className="absolute flex items-center gap-6" style={{ left: 96, top: 56, zIndex: 40 }} animate={{ opacity: clear ? 0 : 1 }} transition={{ duration: 0 }}>
         <QuestionSlug number={number} total={total} />
         <motion.span key={caption} initial={live ? { opacity: 0, x: -20 } : false} animate={{ opacity: 1, x: 0 }}>
           <Slug className="text-blue">{caption}</Slug>
@@ -189,8 +196,8 @@ const TopBand = ({
       <motion.h2
         className="absolute tv-display text-ink"
         style={{ left: 96, top: 136, maxWidth: 1728, fontSize: qSize, lineHeight: 1.04, letterSpacing: "-0.02em" }}
-        animate={{ opacity: clear ? 0 : 1, y: clear ? -24 : 0 }}
-        transition={{ duration: 0.18 }}
+        animate={{ opacity: clear ? 0 : 1 }}
+        transition={{ duration: 0 }}
       >
         {question.text}
       </motion.h2>
@@ -303,8 +310,8 @@ export const TvReveal = ({
     return (
       <motion.div key="reveal" className="absolute inset-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
         <TopBand question={question} number={number} total={total} phase={phase} live={live} />
-        <NoGuessNote names={noGuess} />
-        <LineLayer back={forward && correctIndex >= 0}>
+        <LineLayer back={forward && correctIndex >= 0} live={live}>
+          <NoGuessNote names={noGuess} />
           <div className="absolute" style={{ left: 96, right: 96, top: 300 }}>
             <OptionTiles
               options={options}
@@ -353,8 +360,8 @@ export const TvReveal = ({
     <motion.div key="reveal" className="absolute inset-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <Shake on={shaking}>
         <TopBand question={question} number={number} total={total} phase={phase} live={live} />
-        <NoGuessNote names={noGuess} />
-        <LineLayer back={forward && winners.length > 0}>
+        <LineLayer back={forward && winners.length > 0} live={live}>
+          <NoGuessNote names={noGuess} />
           <NumberLineAxis layout={layout} axisY={AXIS_Y} live={live} />
           {phase === PHASE.suspense ? <SuspenseMarker stops={suspenseStops} seconds={suspenseSeconds} /> : null}
           <Leaders groups={layout.groups} axisY={AXIS_Y} delays={delays} live={live} />

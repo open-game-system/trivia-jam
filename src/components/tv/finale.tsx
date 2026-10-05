@@ -4,7 +4,7 @@ import type { Question, QuestionResult } from "~/game.types";
 import { type Award, computeAwards } from "./awards";
 import { FINALE_AT as AT } from "./finale-timeline";
 import { FitName } from "./fit-name";
-import { InkToken, RisoType, Slug } from "./print";
+import { InkToken, RisoType, Roller, Slug, WIPE } from "./print";
 import { RollingNumber } from "./standings";
 import { Sunburst } from "./sunburst";
 import { joinNames } from "./tv-model";
@@ -77,6 +77,9 @@ const AWARDS_LEFT = 1920 - AWARDS_RIGHT - AWARDS_WIDTH;
 /** The headline is centred over the podium as one group and never runs into the awards column. */
 const HEADLINE_BOX = PODIUM_WIDTH - 20;
 const podiumLeftFor = (hasAwards: boolean) => (hasAwards ? (AWARDS_LEFT - PODIUM_WIDTH) / 2 : (1920 - PODIUM_WIDTH) / 2);
+
+/** The share of the takeover spent on screen before the roller wipes it off. */
+const TAKEOVER_WIPE = 0.86;
 
 const PODIUM = [
   { place: 2, slot: 0, height: 450, ink: "var(--blue)", on: "var(--paper)", at: AT.second, label: "2nd" },
@@ -312,9 +315,15 @@ export const TvFinale = ({
           aria-hidden="true"
           className="absolute inset-0 flex items-center justify-center pointer-events-none"
           style={{ zIndex: 55 }}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: [0, 1, 1, 0] }}
-          transition={{ delay: AT.takeover * speed, duration: (AT.title - AT.takeover) * speed, times: [0, 0.06, 0.86, 1] }}
+          initial={{ opacity: 0, clipPath: WIPE.shown }}
+          animate={{ opacity: [0, 1, 1], clipPath: [WIPE.shown, WIPE.shown, WIPE.gone] }}
+          transition={{
+            delay: AT.takeover * speed,
+            duration: (AT.title - AT.takeover) * speed,
+            // A hard cut in; out, the roller wipes the takeover off before the podium comes back.
+            opacity: { delay: AT.takeover * speed, duration: 0.02 },
+            clipPath: { delay: AT.takeover * speed, duration: (AT.title - AT.takeover) * speed, times: [0, TAKEOVER_WIPE, 1], ease: WIPE.ease },
+          }}
         >
           <div className="absolute inset-0" style={{ background: "var(--yellow)", mixBlendMode: "multiply" }} />
           <Sunburst size={2400} x={960} y={540} rays={26} fill="url(#tv-dots-pink)" spin={false} />
@@ -333,6 +342,8 @@ export const TvFinale = ({
           </motion.span>
         </motion.div>
       ) : null}
+
+      {winner ? <Roller delay={(AT.takeover + TAKEOVER_WIPE * (AT.title - AT.takeover)) * speed} duration={(1 - TAKEOVER_WIPE) * (AT.title - AT.takeover) * speed} zIndex={58} /> : null}
 
       <PaperConfetti count={reduced ? 40 : 110} start={AT.takeover * speed} />
     </motion.div>
