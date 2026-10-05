@@ -978,3 +978,39 @@ export const TvRevealMultipleChoiceNobodyLive: Story = {
     AFTER_Q1,
   ),
 };
+
+const LONG_NAMES = [
+  { id: "p-max", name: "Maximiliana", score: 0 },
+  { id: "p-gus", name: "Grandpa Augustus", score: 0 },
+  { id: "p-chris", name: "Christopher", score: 0 },
+  { id: "p-bea", name: "Auntie Bea", score: 0 },
+  { id: "p-jo", name: "Josephine", score: 0 },
+];
+
+/** Long names everywhere a name is printed: they shrink to fit, then wrap, and never end in an ellipsis. */
+export const TvGameOverLongNames: Story = {
+  play: mountFamily(
+    familySnapshot(
+      {
+        players: LONG_NAMES.map((p, i) => ({ ...p, score: [16, 12, 12, 9, 4][i] ?? 0 })),
+        winner: "p-max",
+        questionNumber: 2,
+        questionResults: [
+          resultFor("q1", 1, [
+            ["p-max", "Maximiliana", 8, 4],
+            ["p-chris", "Christopher", 8, 4],
+            ["p-gus", "Grandpa Augustus", 7, 2],
+            ["p-bea", "Auntie Bea", 10, 1],
+          ]),
+          resultFor("q2", 2, [
+            ["p-gus", "Grandpa Augustus", 26, 4],
+            ["p-max", "Maximiliana", 27, 5],
+            ["p-chris", "Christopher", 27, 5],
+            ["p-jo", "Josephine", 40, 0],
+          ]),
+        ],
+      },
+      "finished",
+    ),
+  ),
+};

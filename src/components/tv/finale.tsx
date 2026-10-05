@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { Question, QuestionResult } from "~/game.types";
 import { type Award, computeAwards } from "./awards";
 import { FINALE_AT as AT } from "./finale-timeline";
+import { FitName } from "./fit-name";
 import { InkToken, RisoType, Slug } from "./print";
 import { RollingNumber } from "./standings";
 import { Sunburst } from "./sunburst";
@@ -68,15 +69,19 @@ const PaperConfetti = ({ count, start }: { count: number; start: number }) => {
 const FLOOR = 940;
 const BLOCK = 380;
 const GAP = 30;
-/** The podium is drawn centred, then slides left to make room for the awards. */
-const PODIUM_LEFT = 96;
 const PODIUM_WIDTH = BLOCK * 3 + GAP * 2;
-const CENTRE_SHIFT = (1920 - PODIUM_WIDTH) / 2 - PODIUM_LEFT;
+/** The awards column is reserved from frame 0, so nothing moves when the awards land. */
+const AWARDS_WIDTH = 500;
+const AWARDS_RIGHT = 80;
+const AWARDS_LEFT = 1920 - AWARDS_RIGHT - AWARDS_WIDTH;
+/** The headline is centred over the podium as one group and never runs into the awards column. */
+const HEADLINE_BOX = PODIUM_WIDTH - 20;
+const podiumLeftFor = (hasAwards: boolean) => (hasAwards ? (AWARDS_LEFT - PODIUM_WIDTH) / 2 : (1920 - PODIUM_WIDTH) / 2);
 
 const PODIUM = [
-  { place: 2, slot: 0, height: 420, ink: "var(--blue)", on: "var(--paper)", at: AT.second, label: "2nd" },
-  { place: 1, slot: 1, height: 530, ink: "var(--pink)", on: "var(--ink)", at: AT.first, label: "1st" },
-  { place: 3, slot: 2, height: 340, ink: "var(--teal)", on: "var(--paper)", at: AT.third, label: "3rd" },
+  { place: 2, slot: 0, height: 450, ink: "var(--blue)", on: "var(--paper)", at: AT.second, label: "2nd" },
+  { place: 1, slot: 1, height: 550, ink: "var(--pink)", on: "var(--ink)", at: AT.first, label: "1st" },
+  { place: 3, slot: 2, height: 390, ink: "var(--teal)", on: "var(--paper)", at: AT.third, label: "3rd" },
 ] as const;
 
 /** A score that sits on 0 until its moment, then counts up to the final total. */
@@ -99,19 +104,21 @@ const PodiumStep = ({
   player,
   inkIndex,
   speed,
+  left,
 }: {
   step: (typeof PODIUM)[number];
   player: FinalPlayer;
   inkIndex: number;
   speed: number;
+  left: number;
 }) => {
   const first = step.place === 1;
-  const token = first ? 150 : 116;
+  const token = first ? 150 : 104;
   const rise = step.at * speed;
   return (
     <div
       className="absolute overflow-hidden"
-      style={{ left: PODIUM_LEFT + step.slot * (BLOCK + GAP), top: FLOOR - step.height - 40, width: BLOCK + 16, height: step.height + 40 }}
+      style={{ left: left + step.slot * (BLOCK + GAP), top: FLOOR - step.height - 40, width: BLOCK + 16, height: step.height + 40 }}
     >
       <motion.div
         className="absolute flex flex-col items-center"
@@ -124,7 +131,7 @@ const PodiumStep = ({
           border: "6px solid var(--ink)",
           boxShadow: `10px 10px 0 ${first ? "var(--yellow)" : "var(--ink)"}`,
           transformOrigin: "50% 100%",
-          paddingTop: 24,
+          paddingTop: 22,
         }}
         initial={{ y: step.height + 60 }}
         animate={{ y: [step.height + 60, -18, 0, 0, 0], scaleY: [1, 1, 0.9, 1.04, 1], scaleX: [1, 1, 1.06, 0.98, 1] }}
@@ -138,12 +145,13 @@ const PodiumStep = ({
         <span className="relative mt-3" style={{ borderRadius: 999, boxShadow: "0 0 0 7px var(--paper)" }}>
           <InkToken name={player.name} inkIndex={inkIndex} size={token} />
         </span>
-        <span
-          className="relative tv-display truncate text-center mt-3"
-          style={{ fontSize: first ? 80 : 62, lineHeight: 1.02, maxWidth: BLOCK - 28, letterSpacing: "-0.015em", color: step.on }}
-        >
-          {player.name}
-        </span>
+        <FitName
+          text={player.name}
+          max={first ? 84 : 64}
+          box={BLOCK - 44}
+          className="tv-display text-center mt-3"
+          style={{ letterSpacing: "-0.015em", color: step.on }}
+        />
         <span className="relative tv-display tabular" style={{ fontSize: first ? 96 : 76, lineHeight: 1, color: step.on }} aria-hidden="true">
           <CountUp to={player.score} atSeconds={AT.count * speed} live />
         </span>
@@ -164,21 +172,16 @@ const AwardCard = ({ award, index, at }: { award: Award; index: number; at: numb
   const stamp = STAMP_INKS[index % STAMP_INKS.length];
   return (
     <motion.div
-      className="relative flex flex-col justify-center px-7"
-      style={{ height: 186, background: "var(--paper-2)", border: "6px solid var(--ink)", boxShadow: `10px 10px 0 ${INKS[index % INKS.length]}` }}
+      className="relative flex flex-col justify-center"
+      style={{ minHeight: 200, padding: "22px 28px 20px", background: "var(--paper-2)", border: "6px solid var(--ink)", boxShadow: `10px 10px 0 ${INKS[index % INKS.length]}` }}
       initial={{ x: 640, opacity: 0, rotate: 5 }}
       animate={{ x: 0, opacity: 1, rotate: index % 2 === 0 ? -1.2 : 1 }}
       transition={{ delay: at, duration: 0.5, ease: [0.2, 0.9, 0.2, 1.15] }}
       data-testid={`tv-award-${award.id}`}
     >
-      <span className="flex items-center gap-5">
-        <span className="flex flex-col flex-1 min-w-0">
-          <span className="slug whitespace-nowrap" style={{ fontSize: 30, lineHeight: 1 }}>
-            {award.title}
-          </span>
-          <span className="tv-display truncate mt-3" style={{ fontSize: 68, lineHeight: 1.05, letterSpacing: "-0.015em" }}>
-            {joinNames(award.names)}
-          </span>
+      <span className="flex items-center justify-between gap-4">
+        <span className="slug whitespace-nowrap" style={{ fontSize: 30, lineHeight: 1 }}>
+          {award.title}
         </span>
         <motion.span
           className="tv-stamp tabular flex-none"
@@ -190,6 +193,13 @@ const AwardCard = ({ award, index, at }: { award: Award; index: number; at: numb
           {award.detail}
         </motion.span>
       </span>
+      <FitName
+        text={joinNames(award.names)}
+        max={72}
+        box={AWARDS_WIDTH - 12 - 56}
+        className="tv-display mt-3"
+        style={{ letterSpacing: "-0.015em" }}
+      />
     </motion.div>
   );
 };
@@ -221,13 +231,13 @@ export const TvFinale = ({
     const timers = [setTimeout(() => setBeat("awards"), AT.awards * 1000 * speed), setTimeout(() => setBeat("calm"), AT.calm * 1000 * speed)];
     return () => timers.forEach(clearTimeout);
   }, [speed]);
-  const slid = hasAwards && beat !== "podium";
+  const podiumLeft = podiumLeftFor(hasAwards);
+  const groupCentre = podiumLeft + PODIUM_WIDTH / 2;
   const winnerLine = winner ? `${winner.name} Wins!` : "Game Over!";
-  const titleSize = winnerLine.length <= 12 ? 156 : winnerLine.length <= 18 ? 124 : 92;
-  const takeoverSize = winner ? (winner.name.length <= 5 ? 440 : winner.name.length <= 9 ? 290 : 180) : 200;
+  const takeoverSize = winner ? (winner.name.length <= 5 ? 440 : winner.name.length <= 9 ? 290 : 220) : 200;
   return (
     <motion.div key="finale" className="absolute inset-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-      <Sunburst size={2000} x={960} y={620} rays={30} />
+      <Sunburst size={2000} x={groupCentre} y={620} rays={30} />
       <div className="absolute flex items-center justify-between" style={{ left: 96, right: 96, top: 48, zIndex: 50 }} data-testid="game-over-title">
         <Slug>
           <span style={{ background: "var(--ink)", color: "var(--paper)", padding: "12px 20px", display: "inline-block" }}>Game over</span>
@@ -246,41 +256,37 @@ export const TvFinale = ({
       {winner ? (
         <motion.div
           className="absolute text-center"
-          style={{ left: 0, right: 0, top: 128, zIndex: 50 }}
+          style={{ left: groupCentre - HEADLINE_BOX / 2, width: HEADLINE_BOX, top: 128, zIndex: 50 }}
           initial={{ opacity: 0, y: -40, scale: 1.4 }}
-          animate={{ opacity: 1, y: 0, scale: 1, x: slid ? PODIUM_LEFT + PODIUM_WIDTH / 2 - 960 : 0 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{
             opacity: { delay: AT.title * speed, duration: 0.2 },
             y: { delay: AT.title * speed, duration: 0.45, ease: [0.2, 0.9, 0.2, 1.2] },
             scale: { delay: AT.title * speed, duration: 0.45, ease: [0.2, 0.9, 0.2, 1.2] },
-            x: { duration: 0.6, ease: [0.2, 0.9, 0.2, 1.1] },
           }}
           data-testid="winner-announcement"
         >
-          <span className="tv-display" style={{ fontSize: titleSize }}>
+          <FitName text={winnerLine} max={156} floor={84} box={HEADLINE_BOX} lineHeight={1.05} className="tv-display">
             {/* Two inks only, a 5 px offset: ink over pink. */}
             <RisoType top="var(--ink)" under="var(--pink)" offset={5}>
               {winnerLine}
             </RisoType>
-          </span>
+          </FitName>
           <span className="tv-sr">with {winner.score} points</span>
         </motion.div>
       ) : null}
 
-      <motion.div
-        className="absolute inset-0"
-        initial={{ x: CENTRE_SHIFT }}
-        animate={{ x: slid ? 0 : CENTRE_SHIFT }}
-        transition={{ duration: 0.7, ease: [0.2, 0.9, 0.2, 1.1] }}
-      >
+      <div className="absolute inset-0">
         {PODIUM.map((step) => {
           const player = ranked[step.place - 1];
-          return player ? <PodiumStep key={step.place} step={step} player={player} inkIndex={inkIndex.get(player.id) ?? 0} speed={speed} /> : null;
+          return player ? (
+            <PodiumStep key={step.place} step={step} player={player} inkIndex={inkIndex.get(player.id) ?? 0} speed={speed} left={podiumLeft} />
+          ) : null;
         })}
-      </motion.div>
+      </div>
 
       {hasAwards ? (
-        <div className="absolute flex flex-col" style={{ left: 1340, right: 72, top: 330, gap: 30, zIndex: 30 }}>
+        <div className="absolute flex flex-col" style={{ left: AWARDS_LEFT, width: AWARDS_WIDTH, top: 170, bottom: 1080 - FLOOR + 14, justifyContent: "flex-end", gap: 26, zIndex: 30 }}>
           {beat !== "podium" ? awards.map((a, i) => <AwardCard key={a.id} award={a} index={i} at={(0.2 + i * AT.awardGap) * speed} />) : null}
         </div>
       ) : null}
@@ -294,13 +300,11 @@ export const TvFinale = ({
           <span key={p.id} className="flex items-center gap-3" data-testid={`player-score-${p.id}`}>
             <span className="slug text-[30px]">{i + 4}</span>
             <InkToken name={p.name} inkIndex={inkIndex.get(p.id) ?? 0} size={56} />
-            <span className="tv-display text-[40px] truncate" style={{ maxWidth: 200, letterSpacing: "-0.01em" }}>
-              {p.name}
-            </span>
+            <FitName text={p.name} max={40} floor={36} box={240} className="tv-display" style={{ letterSpacing: "-0.01em" }} />
             <span className="tv-display tabular text-[40px] text-blue">{p.score}</span>
           </span>
         ))}
-        {rest.length > 4 ? <span className="slug text-[30px]">+{rest.length - 4} more</span> : null}
+        {rest.length > 4 ? <span className="slug text-[30px] whitespace-nowrap">+{rest.length - 4} more</span> : null}
       </div>
 
       {winner ? (
@@ -315,15 +319,17 @@ export const TvFinale = ({
           <div className="absolute inset-0" style={{ background: "var(--yellow)", mixBlendMode: "multiply" }} />
           <Sunburst size={2400} x={960} y={540} rays={26} fill="url(#tv-dots-pink)" spin={false} />
           <motion.span
-            className="tv-display relative whitespace-nowrap"
-            style={{ fontSize: takeoverSize, lineHeight: 0.9 }}
+            className="tv-display relative"
+            style={{ lineHeight: 0.9 }}
             initial={{ scale: 2.4, rotate: -10 }}
             animate={{ scale: [2.4, 0.9, 1.04, 1, 1.06], rotate: [-10, -4, -4, -4, -3] }}
             transition={{ delay: AT.takeover * speed, duration: (AT.title - AT.takeover) * speed, times: [0, 0.18, 0.26, 0.32, 1] }}
           >
-            <RisoType top="var(--ink)" under="var(--pink)" offset={6}>
-              {winner.name}
-            </RisoType>
+            <FitName text={winner.name} max={takeoverSize} floor={120} box={1640} lineHeight={1} className="text-center">
+              <RisoType top="var(--ink)" under="var(--pink)" offset={6}>
+                {winner.name}
+              </RisoType>
+            </FitName>
           </motion.span>
         </motion.div>
       ) : null}
