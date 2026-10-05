@@ -162,3 +162,51 @@ describe("useQuestionTimer", () => {
     expect(mockCreateCountdown).toHaveBeenCalledTimes(2);
   });
 });
+
+describe("useQuestionTimer: no stale frame before the countdown's first tick", () => {
+  const mockCreateCountdown = vi.mocked(createCountdown);
+
+  beforeEach(() => {
+    mockCreateCountdown.mockClear();
+  });
+
+  it("the very first render of a live question shows the full window, never 0", () => {
+    // The TV rendered "0 seconds left" (urgent pink) for a frame at question start:
+    // state started at 0 and the countdown only ticks in an effect, after paint.
+    const rendered: number[] = [];
+    renderHook(() => {
+      const left = useQuestionTimer(makeQuestion("q1"), 8, true);
+      rendered.push(left);
+      return left;
+    });
+    expect(rendered[0]).toBe(8);
+    expect(rendered).not.toContain(0);
+  });
+
+  it("switching to the next question never renders the previous question's remaining time", () => {
+    mockCreateCountdown.mockImplementation((_timeWindow: number, onTick: (n: number) => void) => {
+      onTick(3);
+      return vi.fn();
+    });
+    const rendered: number[] = [];
+    const { rerender } = renderHook(
+      ({ q }) => {
+        const left = useQuestionTimer(q, 20, true);
+        rendered.push(left);
+        return left;
+      },
+      { initialProps: { q: makeQuestion("q1") } }
+    );
+    expect(rendered.at(-1)).toBe(3);
+    rendered.length = 0;
+    mockCreateCountdown.mockImplementation((timeWindow: number, onTick: (n: number) => void) => {
+      onTick(timeWindow);
+      return vi.fn();
+    });
+
+    rerender({ q: makeQuestion("q2") });
+
+    expect(rendered[0]).toBe(20);
+    expect(rendered).not.toContain(3);
+  });
+});
