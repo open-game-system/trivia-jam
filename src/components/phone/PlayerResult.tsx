@@ -167,8 +167,12 @@ const Everyone = ({
               <div className="truncate text-xl font-extrabold leading-tight">
                 {answer.playerName}
               </div>
+              {/* The small stat line is for portrait phones; the kid's landscape iPad gets the big number. */}
+              <div className="pslug truncate landscape:hidden">
+                {answer.value} - {score.timeTaken.toFixed(1)}s
+              </div>
             </div>
-            <div className="tabular whitespace-nowrap text-2xl font-extrabold text-blue">
+            <div className="tabular hidden whitespace-nowrap text-2xl font-extrabold text-blue landscape:block">
               {answer.value}
             </div>
             {score.points > 0 ? (
