@@ -1,76 +1,70 @@
 import { useStore } from "@nanostores/react";
-import { atom } from "nanostores";
+import type { atom } from "nanostores";
 import { Drawer } from "vaul";
 
 type HelpModalProps = {
   $showHelp: ReturnType<typeof atom<boolean>>;
 };
 
+const Step = ({ n, children }: { n: number; children: React.ReactNode }) => (
+  <li className="flex items-start gap-3">
+    <span className="prank" aria-hidden="true">
+      {n}
+    </span>
+    <span className="pt-2 text-lg font-semibold leading-snug">{children}</span>
+  </li>
+);
+
+/** "How to Play" as a printed sheet that slides up from the bottom. */
 export function HelpModal({ $showHelp }: HelpModalProps) {
   const showHelp = useStore($showHelp);
 
   return (
     <Drawer.Root open={showHelp} onOpenChange={(open) => $showHelp.set(open)}>
       <Drawer.Portal>
-        <Drawer.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50" />
-        <Drawer.Content className="bg-gradient-to-br from-indigo-900/90 to-purple-900/90 flex flex-col fixed bottom-0 left-0 right-0 max-h-[96vh] rounded-t-[10px] border-t border-white/20 z-50">
-          <div className="p-3 sm:p-4 pb-4 sm:pb-6 flex-1 overflow-y-auto">
-            {/* Drawer handle */}
-            <div className="mx-auto w-12 h-1.5 flex-shrink-0 rounded-full bg-white/20 mb-4 sm:mb-8" />
+        <Drawer.Overlay
+          className="fixed inset-0 z-50"
+          style={{ background: "rgba(30,27,26,0.55)" }}
+        />
+        <Drawer.Content
+          className="phone-shell riso fixed bottom-0 left-0 right-0 z-50 flex max-h-[92dvh] flex-col border-t-8 border-ink"
+          style={{ minHeight: 0 }}
+        >
+          <div className="flex-1 overflow-y-auto px-5 pb-6 pt-4">
+            <div className="mx-auto mb-4 h-2 w-16 bg-ink" aria-hidden="true" />
+            <div className="mx-auto max-w-xl">
+              <Drawer.Title asChild>
+                <h2 className="misreg mb-4 text-4xl font-extrabold">How to Play</h2>
+              </Drawer.Title>
+              <Drawer.Description className="sr-only">
+                How answering and scoring work
+              </Drawer.Description>
 
-            <div className="max-w-xl mx-auto">
-              <h2 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6 text-white bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">
-                How to Play
-              </h2>
+              <h3 className="pslug mb-2" style={{ fontSize: 16 }}>
+                Number questions
+              </h3>
+              <ol className="mb-5 space-y-3">
+                <Step n={1}>Tap the number keys to type your guess.</Step>
+                <Step n={2}>Tap GO to lock it in.</Step>
+                <Step n={3}>The exact number wins the most points.</Step>
+              </ol>
 
-              <div className="space-y-3 sm:space-y-6 text-white/90">
-                <div className="bg-white/10 rounded-xl p-4 sm:p-6">
-                  <h3 className="text-xl sm:text-2xl font-semibold mb-3 sm:mb-4 text-indigo-300">Multiple Choice Questions</h3>
-                  <ul className="space-y-3 sm:space-y-4 text-base sm:text-lg">
-                    <li className="flex items-start gap-2 sm:gap-3">
-                      <span className="text-xl sm:text-2xl">📝</span>
-                      <span>Select one of the options</span>
-                    </li>
-                    <li className="flex items-start gap-2 sm:gap-3">
-                      <span className="text-xl sm:text-2xl">🎯</span>
-                      <div>
-                        <strong className="text-indigo-300">Scoring:</strong>
-                        <ul className="mt-1 ml-2 space-y-0.5 sm:space-y-1 text-sm sm:text-base">
-                          <li>• First correct answer: 4 points</li>
-                          <li>• Second correct answer: 3 points</li>
-                          <li>• Third correct answer: 2 points</li>
-                          <li>• Other correct answers: 1 point</li>
-                        </ul>
-                      </div>
-                    </li>
-                  </ul>
-                </div>
+              <h3 className="pslug mb-2" style={{ fontSize: 16 }}>
+                Choice questions
+              </h3>
+              <ol className="mb-5 space-y-3">
+                <Step n={1}>Tap the colour you think is right.</Step>
+                <Step n={2}>Right answers score 4, 3, 2, then 1 point, fastest first.</Step>
+              </ol>
 
-                <div className="bg-white/10 rounded-xl p-4 sm:p-6">
-                  <h3 className="text-xl sm:text-2xl font-semibold mb-3 sm:mb-4 text-indigo-300">Free Entry Questions</h3>
-                  <ul className="space-y-3 sm:space-y-4 text-base sm:text-lg">
-                    <li className="flex items-start gap-2 sm:gap-3">
-                      <span className="text-xl sm:text-2xl">✍️</span>
-                      <span>Type in your answer</span>
-                    </li>
-                    <li className="flex items-start gap-2 sm:gap-3">
-                      <span className="text-xl sm:text-2xl">📊</span>
-                      <div>
-                        <strong className="text-indigo-300">Scoring:</strong>
-                        <ul className="mt-1 ml-2 space-y-0.5 sm:space-y-1 text-sm sm:text-base">
-                          <li>• Exact answers get top points, ordered by speed</li>
-                          <li>• Close answers score based on accuracy</li>
-                          <li>• Top 3 closest answers get 4-3-2 points</li>
-                        </ul>
-                      </div>
-                    </li>
-                  </ul>
-                </div>
-              </div>
+              <p className="mb-5 border-4 border-ink bg-yellow px-4 py-3 text-lg font-bold">
+                Close counts: the three closest guesses score 4, 3 and 2.
+              </p>
 
               <button
+                type="button"
                 onClick={() => $showHelp.set(false)}
-                className="mt-4 sm:mt-8 w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold py-3 sm:py-4 px-4 rounded-xl transition duration-300 shadow-lg text-lg sm:text-xl"
+                className="pbtn pbtn-pink pbtn-lg pbtn-block"
               >
                 Got it!
               </button>
@@ -80,4 +74,4 @@ export function HelpModal({ $showHelp }: HelpModalProps) {
       </Drawer.Portal>
     </Drawer.Root>
   );
-} 
+}

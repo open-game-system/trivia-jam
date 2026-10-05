@@ -1,1 +1,110 @@
 /* TV (spectate page) styles. Owner: the TV pass. Riso kit lives in src/styles.css. */
+
+/* The poster: a fixed 1920x1080 sheet scaled to whatever screen it is cast to. */
+.riso.tv-screen,
+.tv-screen {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+}
+.tv-sheet {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 1920px;
+  height: 1080px;
+  transform-origin: center center;
+  overflow: hidden;
+}
+
+/* Screen-reader text that still clears the rig's 28px floor if it is ever measured. */
+.tv-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+  font-size: 28px;
+}
+
+.tv-display {
+  font-family: "Bricolage Grotesque Variable", system-ui, sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 0.88;
+}
+
+/* Two drums of ink: the under layer lands a few px off, the top layer overprints it. */
+.tv-riso-type {
+  position: relative;
+  display: inline-block;
+}
+.tv-riso-type > .tv-riso-under {
+  position: absolute;
+  inset: 0;
+  transform: translate(var(--reg-x, 8px), var(--reg-y, 8px));
+  pointer-events: none;
+}
+.tv-riso-type > .tv-riso-top {
+  position: relative;
+  mix-blend-mode: multiply;
+}
+.tv-rough {
+  filter: url(#tv-rough);
+}
+
+/* Player tokens: a solid ink circle, or an outline before the player locks in. */
+.tv-token {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  font-family: "Bricolage Grotesque Variable", system-ui, sans-serif;
+  font-weight: 800;
+  line-height: 1;
+  flex: none;
+  border-style: solid;
+}
+
+/* A dashed, empty chair at the table. */
+.tv-seat {
+  border: 5px dashed color-mix(in srgb, var(--ink) 35%, transparent);
+  border-radius: 9999px;
+  flex: none;
+}
+
+/* A rubber stamp: ink block, mono caps, slightly rotated. */
+.tv-stamp {
+  font-family: "Space Mono", ui-monospace, monospace;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  border: 5px solid currentColor;
+  padding: 4px 18px;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.tv-rule {
+  height: 6px;
+  background: var(--ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tv-spin {
+    animation-duration: 600s !important;
+  }
+}
+
+@keyframes tv-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.tv-spin {
+  animation: tv-spin 140s linear infinite;
+}

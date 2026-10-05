@@ -1,152 +1,119 @@
 import { useStore } from "@nanostores/react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Crown, HelpCircle, Loader2 } from "lucide-react";
+import { HelpCircle } from "lucide-react";
 import { atom } from "nanostores";
-import { useEffect, useState } from "react";
+import { useState, type ReactNode } from "react";
 import { GameContext } from "~/game.context";
-import { GamePublicContext } from "~/game.types";
-import { isCloseNumericAnswer } from "~/game/scoring-utils";
+import type { GamePublicContext } from "~/game.types";
 import { useQuestionTimer } from "~/hooks/use-question-timer";
 import { SessionContext } from "~/session.context";
 import { HelpModal } from "./help-modal";
 import { QuestionProgress } from "./question-progress";
-import { GameBackground, FinalScoresList, WinnerAnnouncement } from "./game";
+import { ChoiceTiles } from "./phone/ChoiceTiles";
+import { PlayerFinish } from "./phone/PlayerFinish";
+import { PlayerResult } from "./phone/PlayerResult";
+import { LockedIn } from "./phone/LockedIn";
+import { NumberPad } from "./phone/NumberPad";
+import { PhoneShell } from "./phone/PhoneShell";
+import { QuestionHeader } from "./phone/QuestionHeader";
+import { WaitingDots } from "./phone/ink";
+import { toAnswerNumber } from "./phone/keypad";
 
-const focusInput = (inputId: string) => {
-  setTimeout(() => {
-    const input = document.getElementById(inputId);
-    if (input) {
-      input.focus();
-      input.scrollIntoView({ behavior: "smooth", block: "center" });
-    }
-  }, 100);
+type Player = {
+  id: string;
+  name: string;
+  score: number;
 };
 
-const MultipleChoiceAnswerInput = ({
-  options,
-  isSubmitting,
-  onSubmit,
-}: {
-  options: string[];
-  isSubmitting: boolean;
-  onSubmit: (value: string) => void;
-}) => (
-  <div className="space-y-3">
-    <div className="text-lg font-medium text-indigo-300 mb-2">
-      Choose your answer
-    </div>
-    <div className="grid grid-cols-1 gap-3">
-      {options.map((option, index) => (
-        <motion.button
-          key={option}
-          onClick={() => onSubmit(option)}
-          disabled={isSubmitting}
-          className="w-full bg-gray-800/50 hover:bg-gray-700/50 text-white font-medium py-4 px-6 rounded-xl border border-gray-700/50 transition-all"
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-        >
-          <div className="flex items-start gap-4">
-            <span className="text-indigo-400 font-bold">
-              {String.fromCharCode(65 + index)}
-            </span>
-            <span className="text-base sm:text-lg text-left">{option}</span>
-          </div>
-        </motion.button>
-      ))}
-    </div>
-  </div>
+type CurrentQuestion = NonNullable<GamePublicContext["currentQuestion"]>;
+
+const HelpButton = ({ onOpen }: { onOpen: () => void }) => (
+  <button type="button" onClick={onOpen} className="pbtn pbtn-quiet mx-auto">
+    <HelpCircle size={22} aria-hidden="true" />
+    How to Play
+  </button>
 );
 
-const NumericAnswerInput = ({
-  answerInput,
-  setAnswerInput,
-  isSubmitting,
-  hasAnswered,
-  onSubmit,
+/** A centred printed card, used by every "wait" screen. */
+const WaitCard = ({
+  title,
+  children,
+  footer,
 }: {
-  answerInput: string;
-  setAnswerInput: (value: string) => void;
-  isSubmitting: boolean;
-  hasAnswered: boolean;
-  onSubmit: () => void;
+  title: string;
+  children?: ReactNode;
+  footer?: ReactNode;
 }) => (
-  <div>
-    <label
-      htmlFor="answer"
-      className="block text-lg font-medium text-indigo-300 mb-2"
-    >
-      Your Answer
-    </label>
-    <input
-      id="answer"
-      type="tel"
-      inputMode="numeric"
-      pattern="[0-9]*"
-      value={answerInput}
-      onChange={(e) => {
-        const value = e.target.value.replace(/[^\d.-]/g, "");
-        setAnswerInput(value);
-      }}
-      className="w-full bg-gray-800/50 rounded-xl p-4 text-white text-xl"
-      placeholder="Enter your answer..."
-      autoComplete="off"
-      ref={(input) => {
-        if (input && !hasAnswered) {
-          focusInput("answer");
-        }
-      }}
-    />
-    <motion.button
-      onClick={onSubmit}
-      disabled={isSubmitting || !answerInput}
-      className={`w-full mt-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold py-4 px-8 rounded-xl shadow-lg transition-all flex items-center justify-center gap-2
-        ${
-          !isSubmitting && answerInput
-            ? "hover:from-indigo-500 hover:to-purple-500"
-            : "opacity-50 cursor-not-allowed"
-        }`}
-      whileHover={!isSubmitting && answerInput ? { scale: 1.02 } : {}}
-      whileTap={!isSubmitting && answerInput ? { scale: 0.98 } : {}}
-    >
-      {isSubmitting ? (
-        <>
-          <Loader2 className="w-5 h-5 animate-spin" />
-          Submitting...
-        </>
-      ) : (
-        "Submit Answer"
-      )}
-    </motion.button>
-  </div>
-);
-
-const AnswerSubmittedDisplay = ({
-  currentQuestion,
-  userId,
-}: {
-  currentQuestion: NonNullable<GamePublicContext["currentQuestion"]>;
-  userId: string;
-}) => {
-  const playerAnswer = currentQuestion.answers.find(
-    (a) => a.playerId === userId
-  );
-  return (
+  <PhoneShell className="flex items-center justify-center p-5">
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
+      initial={{ opacity: 0, y: 18 }}
       animate={{ opacity: 1, y: 0 }}
-      className="text-center"
-      data-testid="answer-submitted"
+      transition={{ ease: [0.2, 0.9, 0.2, 1.15], duration: 0.35 }}
+      className="sheet w-full max-w-md px-6 py-8 text-center"
     >
-      <div className="text-lg sm:text-2xl font-bold text-indigo-400 mb-2">
-        Answer Submitted!
+      <span className="pslug">Trivia Jam</span>
+      <h1
+        className="mt-2 font-display font-extrabold misreg"
+        style={{ fontSize: "clamp(34px, 8dvh, 56px)" }}
+      >
+        {title}
+      </h1>
+      {children}
+      <div className="mt-6 flex justify-center">
+        <WaitingDots />
       </div>
-      <div className="text-2xl sm:text-4xl font-bold text-white mb-4">
-        {playerAnswer?.value}
-      </div>
-      <div className="text-xl text-white/60">
-        {((playerAnswer?.timestamp || 0) - currentQuestion.startTime) / 1000}s
-      </div>
+      {footer && <div className="mt-6">{footer}</div>}
     </motion.div>
+  </PhoneShell>
+);
+
+const WithHelp = ({
+  render,
+}: {
+  render: (help: ReactNode) => ReactNode;
+}) => {
+  const [$showHelp] = useState(() => atom<boolean>(false));
+  const showHelp = useStore($showHelp);
+  return (
+    <>
+      {render(<HelpButton onOpen={() => $showHelp.set(true)} />)}
+      <AnimatePresence>
+        {showHelp && <HelpModal $showHelp={$showHelp} />}
+      </AnimatePresence>
+    </>
+  );
+};
+
+const LobbyDisplay = ({ player }: { player: Player }) => (
+  <WithHelp
+    render={(help) => (
+      <WaitCard title={`Welcome, ${player.name}!`} footer={help}>
+        <p className="mt-3 text-xl font-semibold">
+          Waiting for host to start the game...
+        </p>
+      </WaitCard>
+    )}
+  />
+);
+
+const WaitingDisplay = ({ player }: { player: Player }) => {
+  const resultsCount = GameContext.useSelector(
+    (state) => state.public.questionResults.length,
+  );
+  const isFirst = resultsCount === 0;
+  return (
+    <WithHelp
+      render={(help) => (
+        <WaitCard
+          title={
+            isFirst ? "Waiting for first question..." : "Waiting for next question..."
+          }
+          footer={help}
+        >
+          <p className="mt-3 text-xl font-semibold">Get ready, {player.name}!</p>
+        </WaitCard>
+      )}
+    />
   );
 };
 
@@ -156,108 +123,101 @@ const ActiveQuestionDisplay = ({
   hasAnswered,
   userId,
   timeLeft,
+  totalTime,
   answerInput,
   setAnswerInput,
   isSubmitting,
-  setIsSubmitting,
   onSubmitNumeric,
+  onChoose,
 }: {
-  currentQuestion: NonNullable<GamePublicContext["currentQuestion"]>;
+  currentQuestion: CurrentQuestion;
   questions: GamePublicContext["questions"];
   hasAnswered: boolean;
   userId: string;
   timeLeft: number;
+  totalTime: number;
   answerInput: string;
   setAnswerInput: (value: string) => void;
   isSubmitting: boolean;
-  setIsSubmitting: (value: boolean) => void;
   onSubmitNumeric: () => void;
+  onChoose: (value: string) => void;
 }) => {
   const question = questions[currentQuestion.questionId];
-  const questionText = question ? question.text : "Loading question...";
   const isMultipleChoice = question?.questionType === "multiple-choice";
-  const send = GameContext.useSend();
-
-  const handleMultipleChoiceSubmit = (value: string) => {
-    setIsSubmitting(true);
-    send({ type: "SUBMIT_ANSWER", value });
-    setIsSubmitting(false);
-  };
+  const myAnswer = currentQuestion.answers.find((a) => a.playerId === userId);
+  const options = question?.options ?? [];
+  const myLetterIndex = myAnswer ? options.indexOf(String(myAnswer.value)) : -1;
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center pt-16 p-8 relative">
-      <GameBackground />
-
-      {/* Main Content */}
-      <div className="relative z-10 w-full max-w-xl">
-        {/* Timer */}
-        <motion.div
-          className="text-5xl sm:text-7xl font-bold text-center text-indigo-400 mb-8"
-          data-testid="question-timer"
-          animate={{
-            scale: timeLeft <= 5 ? [1, 1.1, 1] : 1,
-            color:
-              timeLeft <= 5
-                ? ["#818CF8", "#EF4444", "#818CF8"]
-                : "#818CF8",
-          }}
-          transition={{
-            duration: 1,
-            repeat: timeLeft <= 5 ? Infinity : 0,
-          }}
-        >
-          {timeLeft}s
-        </motion.div>
-
-        {/* Question */}
-        <div className="text-center mb-8">
-          <h1 className="text-2xl sm:text-4xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">
-            {questionText}
-          </h1>
-        </div>
-
-        {/* Answer Input */}
-        {!hasAnswered ? (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="space-y-4"
-          >
-            {isMultipleChoice ? (
-              <MultipleChoiceAnswerInput
-                options={question?.options || []}
-                isSubmitting={isSubmitting}
-                onSubmit={handleMultipleChoiceSubmit}
-              />
-            ) : (
-              <NumericAnswerInput
-                answerInput={answerInput}
-                setAnswerInput={setAnswerInput}
-                isSubmitting={isSubmitting}
-                hasAnswered={hasAnswered}
-                onSubmit={onSubmitNumeric}
-              />
-            )}
-          </motion.div>
-        ) : (
-          <AnswerSubmittedDisplay
-            currentQuestion={currentQuestion}
-            userId={userId}
+    <>
+      <QuestionHeader
+        text={question ? question.text : "Loading question..."}
+        timeLeft={timeLeft}
+        totalTime={totalTime}
+      />
+      {hasAnswered && myAnswer ? (
+        <LockedIn
+          value={myAnswer.value}
+          letter={
+            isMultipleChoice && myLetterIndex >= 0
+              ? String.fromCharCode(65 + myLetterIndex)
+              : undefined
+          }
+        />
+      ) : isMultipleChoice ? (
+        <div className="flex flex-1 min-h-0 flex-col justify-end pt-3">
+          <ChoiceTiles
+            options={options}
+            disabled={isSubmitting}
+            onChoose={onChoose}
           />
-        )}
-      </div>
-    </div>
+        </div>
+      ) : (
+        <NumberPad
+          value={answerInput}
+          onChange={setAnswerInput}
+          onSubmit={onSubmitNumeric}
+          isSubmitting={isSubmitting}
+        />
+      )}
+    </>
+  );
+};
+
+const QuestionResultsDisplay = ({
+  player,
+  questions,
+  questionResults,
+  players,
+}: {
+  player: Player;
+  questions: GamePublicContext["questions"];
+  questionResults: GamePublicContext["questionResults"];
+  players: Player[];
+}) => {
+  const latestResult = questionResults[questionResults.length - 1];
+  const question = latestResult ? questions[latestResult.questionId] : null;
+  if (!latestResult || !question) return null;
+  return (
+    <PlayerResult
+      question={question}
+      result={latestResult}
+      me={player}
+      players={players}
+    />
   );
 };
 
 const ActiveStateContent = ({
   player,
+  players,
   questions,
   questionResults,
   questionNumber,
   totalQuestions,
 }: {
   player: Player;
+  players: Player[];
   questions: GamePublicContext["questions"];
   questionResults: GamePublicContext["questionResults"];
   questionNumber: number;
@@ -269,70 +229,153 @@ const ActiveStateContent = ({
   const send = GameContext.useSend();
   const [answerInput, setAnswerInput] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const isQuestionActive = currentQuestion !== null;
-  const timeLeft = useQuestionTimer(
-    currentQuestion,
-    answerTimeWindow,
-    isQuestionActive
-  );
-  const hasAnswered = currentQuestion?.answers.some(
-    (a) => a.playerId === userId
-  );
+  const timeLeft = useQuestionTimer(currentQuestion, answerTimeWindow, currentQuestion !== null);
+  const hasAnswered = !!currentQuestion?.answers.some((a) => a.playerId === userId);
 
-  useEffect(() => {
-    if (currentQuestion && !hasAnswered) {
-      focusInput("answer");
-    }
-  }, [currentQuestion, hasAnswered]);
-
-  const handleSubmitAnswer = () => {
-    if (!currentQuestion || hasAnswered || !answerInput) return;
-
+  const handleSubmitNumeric = () => {
+    const numericAnswer = toAnswerNumber(answerInput);
+    if (!currentQuestion || hasAnswered || numericAnswer === null) return;
     setIsSubmitting(true);
-    const numericAnswer = parseFloat(answerInput);
-
-    if (!isNaN(numericAnswer)) {
-      send({
-        type: "SUBMIT_ANSWER",
-        value: numericAnswer,
-      });
-    }
-
+    send({ type: "SUBMIT_ANSWER", value: numericAnswer });
     setAnswerInput("");
     setIsSubmitting(false);
   };
 
-  return (
-    <>
-      <QuestionProgress current={questionNumber} total={totalQuestions} />
+  const handleChoose = (value: string) => {
+    if (!currentQuestion || hasAnswered) return;
+    setIsSubmitting(true);
+    send({ type: "SUBMIT_ANSWER", value });
+    setIsSubmitting(false);
+  };
 
-      {!currentQuestion && questionResults.length > 0 && (
+  if (!currentQuestion && questionResults.length === 0) {
+    return <WaitingDisplay player={player} />;
+  }
+
+  return (
+    <PhoneShell fill={currentQuestion !== null}>
+      <QuestionProgress current={questionNumber} total={totalQuestions} />
+      {currentQuestion ? (
+        <ActiveQuestionDisplay
+          currentQuestion={currentQuestion}
+          questions={questions}
+          hasAnswered={hasAnswered}
+          userId={userId}
+          timeLeft={timeLeft}
+          totalTime={answerTimeWindow}
+          answerInput={answerInput}
+          setAnswerInput={setAnswerInput}
+          isSubmitting={isSubmitting}
+          onSubmitNumeric={handleSubmitNumeric}
+          onChoose={handleChoose}
+        />
+      ) : (
         <QuestionResultsDisplay
           player={player}
           questions={questions}
           questionResults={questionResults}
+          players={players}
         />
       )}
+    </PhoneShell>
+  );
+};
 
-      {!currentQuestion && questionResults.length === 0 && (
-        <WaitingDisplay player={player} />
-      )}
+const GameFinishedDisplay = ({ player }: { player: Player }) => {
+  const players = GameContext.useSelector((state) => state.public.players);
+  return <PlayerFinish me={player} players={players} />;
+};
 
-      {currentQuestion && (
-        <ActiveQuestionDisplay
-          currentQuestion={currentQuestion}
-          questions={questions}
-          hasAnswered={!!hasAnswered}
-          userId={userId}
-          timeLeft={timeLeft}
-          answerInput={answerInput}
-          setAnswerInput={setAnswerInput}
-          isSubmitting={isSubmitting}
-          setIsSubmitting={setIsSubmitting}
-          onSubmitNumeric={handleSubmitAnswer}
-        />
+const NameEntryForm = () => {
+  const [name, setName] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const send = GameContext.useSend();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!name.trim()) {
+      setError("Please enter your name");
+      return;
+    }
+    if (name.length > 20) {
+      setError("Name must be 20 characters or less");
+      return;
+    }
+    if (!/^[a-zA-Z0-9\s]+$/.test(name)) {
+      setError("Name can only contain letters, numbers and spaces");
+      return;
+    }
+
+    setIsSubmitting(true);
+    send({ type: "JOIN_GAME", playerName: name.trim() });
+  };
+
+  return (
+    <WithHelp
+      render={(help) => (
+        <PhoneShell className="flex items-center justify-center p-5">
+          <motion.div
+            data-testid="name-input-form"
+            initial={{ opacity: 0, y: 18 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ ease: [0.2, 0.9, 0.2, 1.15], duration: 0.35 }}
+            className="sheet w-full max-w-md px-6 py-8"
+          >
+            <span className="pslug">Trivia Jam</span>
+            <h1
+              className="mb-6 mt-2 font-display font-extrabold misreg"
+              style={{ fontSize: "clamp(40px, 9dvh, 64px)" }}
+            >
+              Join Game
+            </h1>
+            <form onSubmit={handleSubmit} className="space-y-5">
+              <div>
+                <label htmlFor="playerName" className="pslug mb-2 block" style={{ fontSize: 16 }}>
+                  Your Name
+                </label>
+                <input
+                  data-testid="name-input"
+                  id="playerName"
+                  type="text"
+                  value={name}
+                  onChange={(e) => {
+                    setName(e.target.value);
+                    setError(null);
+                  }}
+                  className="pfield"
+                  placeholder="Type your name"
+                  maxLength={20}
+                  autoComplete="off"
+                  disabled={isSubmitting}
+                />
+                {error && (
+                  <motion.p
+                    data-testid="name-input-error"
+                    role="alert"
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mt-3 border-4 border-ink bg-yellow px-3 py-2 text-lg font-bold"
+                  >
+                    {error}
+                  </motion.p>
+                )}
+              </div>
+              <button
+                data-testid="join-button"
+                type="submit"
+                className="pbtn pbtn-pink pbtn-lg pbtn-block"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Joining..." : "Join Game"}
+              </button>
+            </form>
+            <div className="mt-6 flex justify-center">{help}</div>
+          </motion.div>
+        </PhoneShell>
       )}
-    </>
+    />
   );
 };
 
@@ -348,415 +391,22 @@ export const PlayerView = () => {
 
   const player = players.find((p) => p.id === userId);
 
-  if (!player) {
-    return (
-      <div className="min-h-screen bg-gray-900 text-white flex items-center justify-center p-4">
-        <NameEntryForm />
-      </div>
-    );
-  }
+  if (!player) return <NameEntryForm />;
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
-      <AnimatePresence mode="wait">
-        {isLobby && <LobbyDisplay player={player} />}
-
-        {isActive && (
-          <ActiveStateContent
-            player={player}
-            questions={questions}
-            questionResults={questionResults}
-            questionNumber={questionNumber}
-            totalQuestions={Object.keys(questions).length}
-          />
-        )}
-
-        {isFinished && <GameFinishedDisplay player={player} />}
-      </AnimatePresence>
-    </div>
-  );
-};
-
-type Player = {
-  id: string;
-  name: string;
-  score: number;
-};
-
-const LobbyDisplay = ({ player }: { player: Player }) => {
-  const [$showHelp] = useState(() => atom<boolean>(false));
-  const showHelp = useStore($showHelp);
-
-  return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 relative">
-      <GameBackground />
-
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.9 }}
-        className="relative z-10 bg-gray-800/30 backdrop-blur-sm rounded-2xl p-8 border border-gray-700/50 text-center"
-      >
-        <h1 className="text-4xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">
-          Welcome, {player.name}!
-        </h1>
-        <p className="text-xl text-white/70 mb-8">
-          Waiting for host to start the game...
-        </p>
-        <Loader2 className="w-12 h-12 animate-spin mx-auto text-indigo-400 mb-8" />
-
-        {/* Add Help Button */}
-        <motion.button
-          onClick={() => $showHelp.set(true)}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className="text-white/80 hover:text-white transition duration-300 flex items-center justify-center mx-auto"
-        >
-          <HelpCircle className="mr-2" size={20} />
-          How to Play
-        </motion.button>
-      </motion.div>
-
-      <AnimatePresence>
-        {showHelp && <HelpModal $showHelp={$showHelp} />}
-      </AnimatePresence>
-    </div>
-  );
-};
-
-const WaitingDisplay = ({ player }: { player: Player }) => {
-  const [$showHelp] = useState(() => atom<boolean>(false));
-  const showHelp = useStore($showHelp);
-  const questionResultsLength = GameContext.useSelector((state) => state.public.questionResults.length);
-  const isFirstQuestion = questionResultsLength === 0;
-
-  return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 relative">
-      <GameBackground />
-
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.9 }}
-        className="relative z-10 bg-gray-800/30 backdrop-blur-sm rounded-2xl p-8 border border-gray-700/50 text-center"
-      >
-        <h1 className="text-4xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">
-          {isFirstQuestion
-            ? "Waiting for first question..."
-            : "Waiting for next question..."}
-        </h1>
-        <p className="text-xl text-white/70 mb-8">Get ready, {player.name}!</p>
-        <Loader2 className="w-12 h-12 animate-spin mx-auto text-indigo-400 mb-8" />
-
-        {/* Add Help Button */}
-        <motion.button
-          onClick={() => $showHelp.set(true)}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className="text-white/80 hover:text-white transition duration-300 flex items-center justify-center mx-auto"
-        >
-          <HelpCircle className="mr-2" size={20} />
-          How to Play
-        </motion.button>
-      </motion.div>
-
-      <AnimatePresence>
-        {showHelp && <HelpModal $showHelp={$showHelp} />}
-      </AnimatePresence>
-    </div>
-  );
-};
-
-const GameFinishedDisplay = ({ player }: { player: Player }) => {
-  const players = GameContext.useSelector((state) => state.public.players);
-  const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
-  const winner = sortedPlayers[0];
-
-  return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 relative">
-      <GameBackground />
-
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="relative z-10 w-full max-w-4xl bg-gray-800/30 backdrop-blur-sm rounded-2xl p-8 border border-gray-700/50"
-      >
-        <h1 className="text-4xl font-bold text-center mb-8 bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">
-          Game Over!
-        </h1>
-
-        <WinnerAnnouncement winner={winner} />
-        <FinalScoresList players={players} highlightPlayerId={player.id} />
-      </motion.div>
-    </div>
-  );
-};
-
-const NameEntryForm = () => {
-  const [name, setName] = useState("");
-  const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const send = GameContext.useSend();
-  const [$showHelp] = useState(() => atom<boolean>(false));
-  const showHelp = useStore($showHelp);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    // Client-side validation
-    if (!name.trim()) {
-      setError("Please enter your name");
-      return;
-    }
-    if (name.length > 20) {
-      setError("Name must be 20 characters or less");
-      return;
-    }
-    if (!/^[a-zA-Z0-9\s]+$/.test(name)) {
-      setError("Name can only contain letters, numbers and spaces");
-      return;
-    }
-
-    setIsSubmitting(true);
-    send({
-      type: "JOIN_GAME",
-      playerName: name.trim(),
-    });
-  };
-
-  return (
-    <div className="min-h-screen bg-gray-900 flex flex-col items-center justify-center p-4 relative">
-      <GameBackground />
-
-      <motion.div
-        data-testid="name-input-form"
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="relative z-10 w-full max-w-md bg-gray-800/30 backdrop-blur-sm rounded-2xl p-8 border border-gray-700/50"
-      >
-        <h1 className="text-3xl font-bold text-center mb-6 bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">
-          Join Game
-        </h1>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label
-              htmlFor="playerName"
-              className="block text-sm font-medium text-indigo-300 mb-2"
-            >
-              Your Name
-            </label>
-            <input
-              data-testid="name-input"
-              id="playerName"
-              type="text"
-              value={name}
-              onChange={(e) => {
-                setName(e.target.value);
-                setError(null);
-              }}
-              className="w-full px-4 py-2 bg-gray-700/50 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              placeholder="Enter your name"
-              maxLength={20}
-              disabled={isSubmitting}
-            />
-            {error && (
-              <motion.p
-                data-testid="name-input-error"
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mt-2 text-sm text-red-400"
-              >
-                {error}
-              </motion.p>
-            )}
-          </div>
-          <motion.button
-            data-testid="join-button"
-            type="submit"
-            whileHover={{ scale: isSubmitting ? 1 : 1.02 }}
-            whileTap={{ scale: isSubmitting ? 1 : 0.98 }}
-            className={`w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-xl transition duration-300 flex items-center justify-center ${
-              isSubmitting ? "opacity-75 cursor-not-allowed" : ""
-            }`}
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2 className="w-5 h-5 animate-spin mr-2" />
-                Joining...
-              </>
-            ) : (
-              "Join Game"
-            )}
-          </motion.button>
-        </form>
-
-        <motion.button
-          onClick={() => $showHelp.set(true)}
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          className="text-white/80 hover:text-white transition duration-300 flex items-center justify-center mx-auto mt-4"
-        >
-          <HelpCircle className="mr-2" size={20} />
-          How to Play
-        </motion.button>
-
-        <AnimatePresence>
-          {showHelp && <HelpModal $showHelp={$showHelp} />}
-        </AnimatePresence>
-      </motion.div>
-    </div>
-  );
-};
-
-function getOrdinalSuffix(n: number): string {
-  const s = ["th", "st", "nd", "rd"];
-  const v = n % 100;
-  return s[(v - 20) % 10] || s[v] || s[0];
-}
-
-
-const getPlayerResultStyle = (
-  points: number,
-  isClose: boolean,
-  isCurrentPlayer: boolean,
-): string => {
-  const bg =
-    points > 0
-      ? "bg-green-500/10 border border-green-500/30"
-      : isClose
-      ? "bg-yellow-500/10 border border-yellow-500/30"
-      : "bg-gray-900/50";
-  const highlight = isCurrentPlayer ? "bg-indigo-500/10" : "";
-  return `${bg} rounded-2xl p-3 sm:p-6 flex items-center gap-3 sm:gap-6 ${highlight}`;
-};
-
-const PlayerResultRow = ({
-  score,
-  answer,
-  question,
-  isCurrentPlayer,
-}: {
-  score: { playerId: string; points: number; position: number; timeTaken: number };
-  answer: { playerId: string; playerName: string; value: string | number };
-  question: { questionType: string; correctAnswer: string | number };
-  isCurrentPlayer: boolean;
-}) => {
-  const isClose =
-    question.questionType === "numeric" &&
-    isCloseNumericAnswer(answer.value, question.correctAnswer);
-
-  return (
-    <div
-      data-testid={`player-result-${answer.playerId}`}
-      className={getPlayerResultStyle(score.points, isClose, isCurrentPlayer)}
-    >
-      <div className="text-lg sm:text-2xl font-bold text-indigo-400 w-8 sm:w-12 text-center">
-        {score.points > 0 ? `#${score.position}` : "―"}
-      </div>
-      <div className="flex-1 min-w-0">
-        <div className="text-base sm:text-xl font-medium truncate">
-          {answer.playerName}
-        </div>
-        <div className="text-xs sm:text-sm text-gray-400">
-          {answer.value} • {score.timeTaken.toFixed(1)}s
-        </div>
-      </div>
-      {score.points > 0 && (
-        <div className="text-lg sm:text-2xl font-bold text-indigo-400 whitespace-nowrap">
-          {score.points} <span className="text-indigo-400/70">pts</span>
-        </div>
+    <>
+      {isLobby && <LobbyDisplay player={player} />}
+      {isActive && (
+        <ActiveStateContent
+          player={player}
+          players={players}
+          questions={questions}
+          questionResults={questionResults}
+          questionNumber={questionNumber}
+          totalQuestions={Object.keys(questions).length}
+        />
       )}
-    </div>
-  );
-};
-
-const sortScoresByRank = (
-  scores: Array<{ playerId: string; points: number; position: number; timeTaken: number }>,
-) =>
-  [...scores].sort((a, b) => {
-    if (b.points !== a.points) return b.points - a.points;
-    return a.timeTaken - b.timeTaken;
-  });
-
-const PlayerResultsList = ({
-  scores,
-  answers,
-  question,
-  currentPlayerId,
-}: {
-  scores: Array<{ playerId: string; points: number; position: number; timeTaken: number }>;
-  answers: Array<{ playerId: string; playerName: string; value: string | number }>;
-  question: { questionType: string; correctAnswer: string | number };
-  currentPlayerId: string;
-}) => {
-  const sortedScores = sortScoresByRank(scores);
-  return (
-    <div className="space-y-3 sm:space-y-4">
-      {sortedScores.map((score) => {
-        const answer = answers.find((a) => a.playerId === score.playerId);
-        if (!answer) return null;
-        return (
-          <PlayerResultRow
-            key={answer.playerId}
-            score={score}
-            answer={answer}
-            question={question}
-            isCurrentPlayer={score.playerId === currentPlayerId}
-          />
-        );
-      })}
-    </div>
-  );
-};
-
-const QuestionResultsDisplay = ({
-  player,
-  questions,
-  questionResults,
-}: {
-  player: Player;
-  questions: GamePublicContext["questions"];
-  questionResults: GamePublicContext["questionResults"];
-}) => {
-  const latestResult = questionResults[questionResults.length - 1];
-  const question = latestResult ? questions[latestResult.questionId] : null;
-
-  if (!latestResult || !question) return null;
-
-  return (
-    <div className="min-h-screen flex flex-col items-center pt-8 sm:pt-16 p-3 sm:p-4 relative">
-      <GameBackground />
-
-      <div className="relative z-10 w-full max-w-4xl mx-auto">
-        <motion.div
-          className="mb-4 sm:mb-8"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <div className="text-center mb-6 sm:mb-12">
-            <h1 className="text-xl sm:text-3xl md:text-6xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400 mb-4 sm:mb-6">
-              {question.text}
-            </h1>
-            <div
-              className="text-2xl sm:text-3xl md:text-5xl font-bold text-green-400"
-              data-testid="correct-answer"
-            >
-              {question.correctAnswer}
-            </div>
-          </div>
-
-          <div className="bg-gray-800/30 backdrop-blur-sm rounded-2xl p-4 sm:p-8 border border-gray-700/50">
-            <h2 className="text-2xl font-bold text-indigo-300 mb-4 sm:mb-6">Results</h2>
-            <PlayerResultsList
-              scores={latestResult.scores}
-              answers={latestResult.answers}
-              question={question}
-              currentPlayerId={player.id}
-            />
-          </div>
-        </motion.div>
-      </div>
-    </div>
+      {isFinished && <GameFinishedDisplay player={player} />}
+    </>
   );
 };

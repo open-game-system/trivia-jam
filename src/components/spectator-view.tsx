@@ -1,7 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Users } from "lucide-react";
-import { QRCodeSVG } from "qrcode.react";
-import { useEffect, useRef, useState } from "react";
 import { GameContext } from "~/game.context";
 import type { Answer, GamePublicContext, Question } from "~/game.types";
 import { useQuestionTimer } from "~/hooks/use-question-timer";
@@ -16,68 +14,8 @@ import {
   QuestionAnswerHeader,
   SidebarScoreboard,
 } from "./game";
-
-const SOUND_EFFECTS = {
-  BUZZ: "https://www.soundjay.com/misc/sounds/fail-buzzer-01.mp3",
-  CORRECT: "https://cdn.freesound.org/previews/270/270404_5123851-lq.mp3",
-  INCORRECT:
-    "https://www.myinstants.com/media/sounds/wrong-answer-sound-effect.mp3",
-  SKIP: "https://cdn.freesound.org/previews/362/362205_6629901-lq.mp3",
-  QUESTION: "https://www.soundjay.com/misc/sounds/bell-ringing-05.mp3",
-  GAME_OVER: "https://cdn.freesound.org/previews/171/171671_2437358-lq.mp3",
-} as const;
-
-const useSoundEffects = () => {
-  const audioElementsRef = useRef<Record<string, HTMLAudioElement>>({});
-  const [isLoaded, setIsLoaded] = useState(false);
-
-  useEffect(() => {
-    let mounted = true;
-    let loadedCount = 0;
-    const totalSounds = Object.keys(SOUND_EFFECTS).length;
-
-    Object.entries(SOUND_EFFECTS).forEach(([key, url]) => {
-      const audio = new Audio();
-
-      audio.addEventListener("canplaythrough", () => {
-        if (mounted) {
-          loadedCount++;
-          if (loadedCount === totalSounds) {
-            setIsLoaded(true);
-          }
-        }
-      });
-
-      audio.src = url;
-      audio.preload = "auto";
-      audio.volume = 0.5;
-      audioElementsRef.current[key] = audio;
-    });
-
-    return () => {
-      mounted = false;
-      Object.values(audioElementsRef.current).forEach((audio) => {
-        audio.pause();
-        audio.src = "";
-      });
-    };
-  }, []);
-
-  const playSound = (soundKey: keyof typeof SOUND_EFFECTS) => {
-    if (!isLoaded) return;
-
-    const audio = audioElementsRef.current[soundKey];
-    if (audio) {
-      const newAudio = new Audio(audio.src);
-      newAudio.volume = 0.5;
-      newAudio.play().catch((err) => {
-        console.warn(`Failed to play ${soundKey} sound:`, err);
-      });
-    }
-  };
-
-  return playSound;
-};
+import { TvLobby } from "./tv/lobby";
+import { TvStage } from "./tv/stage";
 
 const QuestionProgress = ({
   current,
@@ -107,31 +45,6 @@ const QuestionProgress = ({
       </div>
     </div>
   );
-};
-
-const useQuestionSoundEffects = (
-  currentQuestion: GamePublicContext["currentQuestion"],
-  questions: GamePublicContext["questions"]
-) => {
-  const playSound = useSoundEffects();
-  const prevQuestionRef = useRef<typeof currentQuestion>(null);
-
-  useEffect(() => {
-    const isQuestionEnding = prevQuestionRef.current && !currentQuestion;
-    const isQuestionStarting = !prevQuestionRef.current && currentQuestion;
-
-    if (isQuestionEnding && prevQuestionRef.current) {
-      const question = questions[prevQuestionRef.current.questionId];
-      const hasCorrectAnswer = prevQuestionRef.current.answers.some(
-        (answer) => answer.value === question.correctAnswer
-      );
-      playSound(hasCorrectAnswer ? "CORRECT" : "INCORRECT");
-    } else if (isQuestionStarting) {
-      playSound("QUESTION");
-    }
-
-    prevQuestionRef.current = currentQuestion;
-  }, [currentQuestion, playSound, questions]);
 };
 
 const sortPlayersByAnswerTime = (
@@ -287,13 +200,9 @@ export const SpectatorView = ({ host }: { host: string }) => {
   const isLobby = GameContext.useMatches("lobby");
   const isActive = GameContext.useMatches("active");
 
-  useQuestionSoundEffects(currentQuestion, questions);
-
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
-      {isActive && <SidebarScoreboard players={players} />}
-
-      <div className={`${isActive ? "mr-80" : ""}`}>
+    <TvStage>
+      <div className="absolute inset-0">
         <AnimatePresence mode="wait">
           {isLobby && <LobbyDisplay host={host} />}
 
@@ -310,91 +219,21 @@ export const SpectatorView = ({ host }: { host: string }) => {
           {isFinished && <GameFinishedDisplay players={players} />}
         </AnimatePresence>
       </div>
-    </div>
+    </TvStage>
   );
 };
 
-const LobbyDisplay = ({
-  host,
-}: {
-  host: string;
-}) => {
-  const maxPlayers = 10;
-  const currentPlayers = GameContext.useSelector((state) => state.public.players);
-  const hostId = GameContext.useSelector((state) => state.public.hostId);
+const LobbyDisplay = ({ host }: { host: string }) => {
+  const players = GameContext.useSelector((state) => state.public.players);
   const gameId = GameContext.useSelector((state) => state.public.id);
-
-  const gameUrl = `https://${host}/games/${gameId}`;
-
-  const slots = Array(maxPlayers)
-    .fill(undefined)
-    .map((_, i) => currentPlayers[i]);
-
+  const gameCode = GameContext.useSelector((state) => state.public.gameCode);
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 relative">
-      <GameBackground />
-
-      <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.9 }}
-        className="relative z-10 w-full max-w-4xl bg-gray-800/30 backdrop-blur-sm rounded-2xl p-8 border border-gray-700/50"
-      >
-        <h1 className="text-4xl font-bold text-center mb-8 bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-purple-400">
-          Waiting for Game to Start
-        </h1>
-
-        <div
-          className="mb-8 flex flex-col items-center"
-          data-testid="qr-code-section"
-        >
-          <div className="bg-white p-4 rounded-xl mb-4">
-            <QRCodeSVG value={gameUrl} size={200} data-testid="game-qr-code" />
-          </div>
-          <p
-            className="text-center text-indigo-300/70"
-            data-testid="qr-code-label"
-          >
-            Scan to join the game
-          </p>
-        </div>
-
-        <div className="space-y-3">
-          <h2 className="text-xl font-bold mb-4 text-indigo-300 flex items-center gap-2">
-            <Users className="w-6 h-6" /> Players ({currentPlayers.length}/
-            {maxPlayers})
-          </h2>
-          <AnimatePresence mode="popLayout">
-            {slots.map((player, index) => (
-              <motion.div
-                key={player?.id || `empty-${index}`}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className={`flex justify-between items-center p-4 rounded-xl border ${
-                  player
-                    ? "bg-gray-800/30 border-gray-700/30"
-                    : "bg-gray-800/10 border-gray-700/20"
-                }`}
-              >
-                {player ? (
-                  <div className="flex items-center gap-3">
-                    <span className="font-medium">{player.name}</span>
-                    {player.id === hostId && (
-                      <span className="px-2 py-1 text-xs font-bold bg-indigo-500/20 text-indigo-300 rounded-full border border-indigo-500/30">
-                        Host
-                      </span>
-                    )}
-                  </div>
-                ) : (
-                  <span className="text-white/30 font-medium">Empty Slot</span>
-                )}
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </div>
-      </motion.div>
-    </div>
+    <TvLobby
+      players={players}
+      joinUrl={`https://${host}/games/${gameId}`}
+      host={host}
+      gameCode={gameCode}
+    />
   );
 };
 

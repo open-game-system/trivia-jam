@@ -1,31 +1,38 @@
 import { motion } from "framer-motion";
 
-export const QuestionProgress = ({ 
-  current, 
-  total 
-}: { 
-  current: number; 
+/**
+ * "Question 2 of 5": a printed strip of ticks. In the page flow (never
+ * fixed), so it can't overlap a heading or card.
+ */
+export const QuestionProgress = ({
+  current,
+  total,
+}: {
+  current: number;
   total: number;
 }) => {
-  const progress = (current / total) * 100;
-  
+  const ticks = Math.min(total, 12);
+  const filled = total <= 12 ? current : Math.round((current / total) * ticks);
+
   return (
-    <div className="fixed top-0 left-0 right-0 p-4 z-50">
-      <div className="max-w-2xl mx-auto">
-        <div className="flex items-center gap-3">
-          <div className="flex-1 h-3 bg-gray-800/50 rounded-full overflow-hidden">
-            <motion.div
-              className="h-full bg-gradient-to-r from-indigo-500 to-purple-500"
-              initial={{ width: 0 }}
-              animate={{ width: `${progress}%` }}
-              transition={{ duration: 0.5 }}
-            />
-          </div>
-          <div className="text-sm font-medium text-white/70 tabular-nums">
-            {current} / {total}
-          </div>
-        </div>
+    <div
+      className="flex items-center gap-3 px-4 pt-3 pb-1"
+      data-testid="question-progress"
+    >
+      <span className="pslug whitespace-nowrap">
+        Question {current} of {total}
+      </span>
+      <div className="flex flex-1 gap-1.5" aria-hidden="true">
+        {Array.from({ length: ticks }, (_, i) => (
+          <motion.span
+            key={i}
+            className="h-3 flex-1 border-2 border-ink"
+            style={{ background: i < filled ? "var(--ink)" : "transparent" }}
+            initial={false}
+            animate={{ opacity: 1 }}
+          />
+        ))}
       </div>
     </div>
   );
-}; 
+};
