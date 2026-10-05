@@ -20,6 +20,7 @@ import { PhoneShell } from "./phone/PhoneShell";
 import { QuestionHeader } from "./phone/QuestionHeader";
 import { WaitingDots } from "./phone/ink";
 import { toAnswerNumber } from "./phone/keypad";
+import { draftFor, type Draft } from "./phone/draft";
 
 type Player = {
   id: string;
@@ -227,7 +228,10 @@ const ActiveStateContent = ({
   const answerTimeWindow = GameContext.useSelector((state) => state.public.settings.answerTimeWindow);
   const userId = SessionContext.useSelector((state) => state.public.userId);
   const send = GameContext.useSend();
-  const [answerInput, setAnswerInput] = useState("");
+  const [draft, setDraft] = useState<Draft>({ questionId: null, value: "" });
+  const questionId = currentQuestion?.questionId ?? null;
+  const answerInput = draftFor(draft, questionId);
+  const setAnswerInput = (value: string) => setDraft({ questionId, value });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const timeLeft = useQuestionTimer(currentQuestion, answerTimeWindow, currentQuestion !== null);
   const hasAnswered = !!currentQuestion?.answers.some((a) => a.playerId === userId);

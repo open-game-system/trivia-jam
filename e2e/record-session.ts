@@ -158,11 +158,15 @@ async function answer(page: Page, value: string) {
     await option.first().click({ timeout: 3000 });
     return;
   }
-  const input = page.getByLabel(/answer/i);
-  await input.waitFor({ timeout: 10_000 });
-  // Typed digit by digit, the way a kid would tap it in.
-  await input.pressSequentially(value, { delay: 260 });
-  await page.getByRole("button", { name: /submit/i }).click({ timeout: 3000 });
+  // Tapped on the on-screen number pad, key by key, the way a kid does it.
+  const pad = page.getByRole("group", { name: /number pad/i });
+  await pad.waitFor({ timeout: 10_000 });
+  for (const digit of value) {
+    await pad.getByRole("button", { name: digit, exact: true }).click({ force: true, timeout: 3000 });
+    await wait(260);
+  }
+  // force: the GO key pulses while it's ready, so it is never "stable" for Playwright.
+  await page.getByRole("button", { name: /submit/i }).click({ force: true, timeout: 3000 });
 }
 
 async function main() {
