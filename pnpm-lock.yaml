@@ -4,6 +4,9 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+overrides:
+  '@open-game-system/cast-kit-core': file:./vendor/open-game-system-cast-kit-core-0.2.0.tgz
+
 importers:
 
   .:
@@ -23,6 +26,15 @@ importers:
       '@nanostores/react':
         specifier: ^0.8.4
         version: 0.8.4(nanostores@0.11.4)(react@19.2.4)
+      '@open-game-system/cast-kit-core':
+        specifier: file:vendor/open-game-system-cast-kit-core-0.2.0.tgz
+        version: file:vendor/open-game-system-cast-kit-core-0.2.0.tgz(typescript@5.9.3)
+      '@open-game-system/cast-kit-react':
+        specifier: file:vendor/open-game-system-cast-kit-react-0.2.0.tgz
+        version: file:vendor/open-game-system-cast-kit-react-0.2.0.tgz(react@19.2.4)(typescript@5.9.3)
+      '@open-game-system/profile-kit':
+        specifier: file:vendor/open-game-system-profile-kit-0.1.0.tgz
+        version: file:vendor/open-game-system-profile-kit-0.1.0.tgz(react@19.2.4)
       '@opentelemetry/api':
         specifier: ^1.9.0
         version: 1.9.0
@@ -1574,6 +1586,41 @@ packages:
   '@oozcitak/util@10.0.0':
     resolution: {integrity: sha512-hAX0pT/73190NLqBPPWSdBVGtbY6VOhWYK3qqHqtXQ1gK7kS2yz4+ivsN07hpJ6I3aeMtKP6J6npsEKOAzuTLA==}
     engines: {node: '>=20.0'}
+
+  '@open-game-system/app-bridge-react@0.20250411.3':
+    resolution: {integrity: sha512-CmW0yEhlWo7dPiPZVg7y8kW5rYCuUy/ZH00h3TmeOO2E+DIYroNmZcJeCsHgz/gq1kr08BgAIMmPTU3zH3Tl5A==}
+    peerDependencies:
+      react: ^18.2.0
+      typescript: '>=4.5.0'
+
+  '@open-game-system/app-bridge-types@0.20250411.3':
+    resolution: {integrity: sha512-tF2/a+Ycnx8FF+hDy7PBA7fFYoOW1o5aXVn0kOF2VxyS+N79emFMuKyzF9El1JFCmNP2H/bl6Kl3GvX3fucDiQ==}
+    peerDependencies:
+      typescript: '>=4.5.0'
+
+  '@open-game-system/app-bridge-web@0.20250411.3':
+    resolution: {integrity: sha512-ElwdUi8LEQPfkiLNYY0BwlU/oMKc/XaFkMaPDzgXF7pYcOR8vUg84dxuxOzNeKaVyet3dGvi9SdGUnvAotab1g==}
+    peerDependencies:
+      typescript: '>=4.5.0'
+
+  '@open-game-system/cast-kit-core@file:vendor/open-game-system-cast-kit-core-0.2.0.tgz':
+    resolution: {integrity: sha512-53yb+sbnPcQgHTHf13LuY5FGJcPfpFtkxX61XFs7hE1lukUEhqMUUTIr4Mp+gsevsG72xkyL70wuSkfS0/KYzw==, tarball: file:vendor/open-game-system-cast-kit-core-0.2.0.tgz}
+    version: 0.2.0
+
+  '@open-game-system/cast-kit-react@file:vendor/open-game-system-cast-kit-react-0.2.0.tgz':
+    resolution: {integrity: sha512-XCNk/qPZiBgQZiEQQj+Y6C2yqzQ6hNkHJivE8wj4iK8eFJHF6MrEQzPBfIrTqmC5VHeFqLtr5x11GsAm24BIUQ==, tarball: file:vendor/open-game-system-cast-kit-react-0.2.0.tgz}
+    version: 0.2.0
+    peerDependencies:
+      react: '>=18.0.0'
+
+  '@open-game-system/profile-kit@file:vendor/open-game-system-profile-kit-0.1.0.tgz':
+    resolution: {integrity: sha512-9fgY29IfjefIBXUUxICMBomrABG2eCY5mRF21DxziOzhtgjEGDUvQ3t/3qtPIwJ4pLlHbMkPRgFMqK62bAMYVw==, tarball: file:vendor/open-game-system-profile-kit-0.1.0.tgz}
+    version: 0.1.0
+    peerDependencies:
+      react: '>=18.0.0'
+    peerDependenciesMeta:
+      react:
+        optional: true
 
   '@opentelemetry/api@1.9.0':
     resolution: {integrity: sha512-3giAOQvZiH5F9bMlMiv8+GSPMeqg0dbaeo58/0SlA9sxSqZhnUtxzX9/2FzyhS9sWQf5S0GJE0AKBrFqjpeYcg==}
@@ -7367,6 +7414,46 @@ snapshots:
       '@oozcitak/util': 10.0.0
 
   '@oozcitak/util@10.0.0': {}
+
+  '@open-game-system/app-bridge-react@0.20250411.3(react@19.2.4)(typescript@5.9.3)':
+    dependencies:
+      '@open-game-system/app-bridge-types': 0.20250411.3(typescript@5.9.3)
+      '@open-game-system/app-bridge-web': 0.20250411.3(typescript@5.9.3)
+      react: 19.2.4
+      typescript: 5.9.3
+
+  '@open-game-system/app-bridge-types@0.20250411.3(typescript@5.9.3)':
+    dependencies:
+      fast-json-patch: 3.1.1
+      typescript: 5.9.3
+
+  '@open-game-system/app-bridge-web@0.20250411.3(typescript@5.9.3)':
+    dependencies:
+      '@open-game-system/app-bridge-types': 0.20250411.3(typescript@5.9.3)
+      fast-json-patch: 3.1.1
+      typescript: 5.9.3
+
+  '@open-game-system/cast-kit-core@file:vendor/open-game-system-cast-kit-core-0.2.0.tgz(typescript@5.9.3)':
+    dependencies:
+      '@open-game-system/app-bridge-web': 0.20250411.3(typescript@5.9.3)
+      zod: 3.25.76
+    transitivePeerDependencies:
+      - typescript
+
+  '@open-game-system/cast-kit-react@file:vendor/open-game-system-cast-kit-react-0.2.0.tgz(react@19.2.4)(typescript@5.9.3)':
+    dependencies:
+      '@open-game-system/app-bridge-react': 0.20250411.3(react@19.2.4)(typescript@5.9.3)
+      '@open-game-system/cast-kit-core': file:vendor/open-game-system-cast-kit-core-0.2.0.tgz(typescript@5.9.3)
+      react: 19.2.4
+    transitivePeerDependencies:
+      - typescript
+
+  '@open-game-system/profile-kit@file:vendor/open-game-system-profile-kit-0.1.0.tgz(react@19.2.4)':
+    dependencies:
+      fast-json-patch: 3.1.1
+      zod: 3.25.76
+    optionalDependencies:
+      react: 19.2.4
 
   '@opentelemetry/api@1.9.0': {}
 
