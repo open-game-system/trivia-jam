@@ -18,11 +18,15 @@ export type LineGuess = {
 
 export type LineFrame = { left: number; right: number; top: number; axisY: number };
 
-export type LineSize = { value: number; chip: number; name: number; maxRows: number; maxName: number; stamp: number };
+/** `stampRow`: points stamped on their own row under the name (roomy) or as a sticker on the chip (compact). */
+export type LineSize = { value: number; chip: number; name: number; maxRows: number; maxName: number; stamp: number; stampRow: boolean };
 
-/** Big for a family (points stamped beside the name); compact for a crowd (points stamped on the chip); still couch-readable (values >= 56 px, names >= 40 px) for a crowd. */
-export const ROOMY_SIZE: LineSize = { value: 84, chip: 84, name: 46, maxRows: 3, maxName: 12, stamp: 170 };
-export const COMPACT_SIZE: LineSize = { value: 58, chip: 56, name: 40, maxRows: 2, maxName: 9, stamp: 0 };
+/**
+ * Big for a family, compact for a crowd; still couch-readable (values >= 56 px, names >= 40 px) for a crowd.
+ * `stamp` is the font size of the "+N" points stamp printed under each name.
+ */
+export const ROOMY_SIZE: LineSize = { value: 84, chip: 88, name: 46, maxRows: 3, maxName: 12, stamp: 38, stampRow: true };
+export const COMPACT_SIZE: LineSize = { value: 58, chip: 60, name: 40, maxRows: 2, maxName: 9, stamp: 30, stampRow: false };
 
 /** The reveal's poster area: the question above `top`, tick labels and the answer below `axisY`. */
 export const REVEAL_FRAME: LineFrame = { left: 96, right: 1824, top: 290, axisY: 790 };
@@ -31,18 +35,21 @@ export type GuessGroup = {
   key: string;
   value: number;
   label: string;
+  /** Highest points first, so a speed tiebreak reads left to right. */
   members: LineGuess[];
-  /** Where the group points: its value on the line, or the centre of its edge tab. */
+  /** Where the group points: its value on the line, or the centre of its edge flag. */
   axisX: number;
-  /** Centre of the group's label stack. */
+  /** Centre of the group (its chips sit side by side, its number under them). */
   x: number;
   lane: number;
-  /** Y of the bottom of the label stack. */
+  /** Y of the bottom of the group: the bottom of its number, or of its chips when it rides an edge flag. */
   bottom: number;
   width: number;
   height: number;
   offScale: "left" | "right" | null;
   highlight: Highlight | undefined;
+  /** On a tie (same guess, different points), the player who won it on speed. */
+  fastest: string | null;
 };
 
 export type LineLayout = {
@@ -55,26 +62,60 @@ export type LineLayout = {
   size: LineSize;
 };
 
-/** Room kept past the end of the line for an off-scale tab. */
-const TAB_ROOM = 200;
+/** Room kept past the end of the line for an off-scale flag. */
+const TAB_ROOM = 250;
 const LINE_MARGIN = 64;
 const GAP = 28;
 const LANE_GAP = 18;
-const STEM_MIN = 38;
+/** The channel above the axis the "?" puck travels in: no labels there, just short leaders. */
+export const STEM_MIN = 100;
+/** Half-width of the answer pin's exclusion zone: no label crosses it unless it guessed the answer. */
+export const PIN_ZONE = 46;
+/** An edge flag's size: it carries the off-scale value ("100 →"), the chips ride on top of it. */
+export const FLAG = { width: 200, height: 64 } as const;
+const COL_GAP = 18;
 /** Sideways nudges beyond this read as "somewhere else": try another lane first. */
-const MAX_SHIFT = 150;
+const MAX_SHIFT = 240;
+/** The spotlit group may slide this far off its value, no further. */
+const LIT_SHIFT = 24;
 export const shortName = (name: string, max: number): string => (name.length > max ? `${name.slice(0, max - 1)}…` : name);
 
-const groupWidth = (label: string, members: LineGuess[], size: LineSize): number => {
-  const valueWidth = label.length * size.value * 0.62;
-  const rowWidth = Math.max(...members.map((m) => size.chip + 14 + shortName(m.name, size.maxName).length * size.name * 0.58 + (m.points > 0 ? size.stamp : 0)));
-  return Math.ceil(Math.max(valueWidth, rowWidth) + 24);
+/** "+4" or, for the player who won a tie on speed, "+4 · fastest". */
+export const stampText = (points: number, fastest: boolean): string => (fastest ? `+${points} · fastest` : `+${points}`);
+
+const stampWidth = (text: string, size: LineSize): number => text.length * size.stamp * 0.64 + 28;
+
+/** One column per member: chip, name under it, points stamp under that. */
+export const columnWidth = (m: LineGuess, fastest: boolean, size: LineSize): number =>
+  Math.ceil(
+    Math.max(
+      size.chip,
+      shortName(m.name, size.maxName).length * size.name * 0.6,
+      m.points > 0 ? stampWidth(stampText(m.points, fastest), size) : 0,
+    ),
+  );
+
+/** The tie's speed winner: same guess, more points (the server breaks ties on time). */
+export const speedWinner = (members: ReadonlyArray<LineGuess>): string | null => {
+  const scoring = members.filter((m) => m.points > 0);
+  if (scoring.length < 2) return null;
+  const top = Math.max(...scoring.map((m) => m.points));
+  const atTop = scoring.filter((m) => m.points === top);
+  return atTop.length === 1 && scoring.some((m) => m.points < top) ? atTop[0].playerId : null;
 };
 
-const groupHeight = (members: LineGuess[], size: LineSize): number => {
-  const rows = Math.min(members.length, size.maxRows);
-  const more = members.length > size.maxRows ? size.name + 6 : 0;
-  return Math.ceil(size.value * 0.95 + 12 + rows * (size.chip + 10) + more);
+const groupWidth = (label: string, members: LineGuess[], fastest: string | null, size: LineSize, withLabel: boolean): number => {
+  const shown = members.slice(0, size.maxRows);
+  const cols = shown.reduce((sum, m) => sum + columnWidth(m, m.playerId === fastest, size), 0) + COL_GAP * (shown.length - 1);
+  const more = members.length > size.maxRows ? size.chip * 0.9 + COL_GAP : 0;
+  const valueWidth = withLabel ? label.length * size.value * 0.62 : 0;
+  return Math.ceil(Math.max(valueWidth, cols + more) + 16);
+};
+
+const groupHeight = (members: LineGuess[], size: LineSize, withLabel: boolean): number => {
+  const stamps = size.stampRow && members.some((m) => m.points > 0) ? 8 + size.stamp * 1.3 : 0;
+  const label = withLabel ? 8 + size.value * 0.95 : 0;
+  return Math.ceil(size.chip + 6 + size.name * 1.08 + stamps + label);
 };
 
 /**
@@ -137,14 +178,38 @@ export const packRow = (
 
 type Draft = Omit<GuessGroup, "x" | "lane" | "bottom">;
 
-type Attempt = { groups: GuessGroup[]; fits: boolean; shift: number; overflow: number };
+type Attempt = { groups: GuessGroup[]; fits: boolean; shift: number; litShift: number; overflow: number };
 
-const attempt = (drafts: Draft[], laneCount: number, frame: LineFrame): Attempt => {
+type LaneMode = "greedy" | "alternate";
+
+const overlapsLit = (d: Draft, lit: Draft[]): boolean =>
+  lit.some((l) => Math.min(d.axisX + d.width / 2, l.axisX + l.width / 2) - Math.max(d.axisX - d.width / 2, l.axisX - l.width / 2) + GAP > 0);
+
+/**
+ * Alternate lanes: spotlit groups by the line; the rest take turns up the lanes, left to right,
+ * and never share the line's lane with a spotlit group they would bump into.
+ */
+const alternateLanes = (drafts: Draft[], laneCount: number): number[] => {
+  const lit = drafts.filter((d) => d.highlight !== undefined);
+  let turn = 0;
+  return drafts.map((d) => {
+    if (d.highlight !== undefined || laneCount === 1) return 0;
+    let lane = turn % laneCount;
+    turn++;
+    if (lane === 0 && overlapsLit(d, lit)) {
+      lane = 1;
+      turn++;
+    }
+    return lane;
+  });
+};
+
+const attempt = (drafts: Draft[], laneCount: number, frame: LineFrame, correctX: number, mode: LaneMode): Attempt => {
   // Greedy lanes: each group (left to right) takes the lane where it has to move least.
   // Spotlit groups always take the lane by the line; others avoid their spot there.
   const lit = drafts.filter((d) => d.highlight !== undefined);
   const lastRight = Array.from({ length: laneCount }, () => Number.NEGATIVE_INFINITY);
-  const laneOf = drafts.map((d) => {
+  const laneOf = mode === "alternate" ? alternateLanes(drafts, laneCount) : drafts.map((d) => {
     const left = d.axisX - d.width / 2;
     const right = d.axisX + d.width / 2;
     let best = 0;
@@ -170,15 +235,23 @@ const attempt = (drafts: Draft[], laneCount: number, frame: LineFrame): Attempt 
   let overlap = false;
   for (let lane = 0; lane < laneCount; lane++) {
     const idx = drafts.flatMap((_, i) => (laneOf[i] === lane ? [i] : []));
-    const centres = packRow(
-      idx.map((i) => ({ want: drafts[i].axisX, width: drafts[i].width, weight: drafts[i].highlight === undefined ? 1 : 25 })),
-      frame.left,
-      frame.right,
-      GAP,
-    );
-    idx.forEach((i, k) => {
-      xs[i] = centres[k];
+    // The answer pin's exclusion zone rides in the lane by the line as an immovable item,
+    // unless a group in that lane guessed (next to) the answer and sits on the pin itself.
+    const pinned = lane === 0 && !idx.some((i) => Math.abs(drafts[i].axisX - correctX) < PIN_ZONE);
+    const items = idx.map((i) => ({
+      want: drafts[i].axisX,
+      width: drafts[i].width,
+      weight: drafts[i].highlight !== undefined || drafts[i].offScale !== null ? 25 : 1,
+      group: i,
+    }));
+    if (pinned) items.push({ want: correctX, width: PIN_ZONE * 2 - GAP, weight: 1e6, group: -1 });
+    items.sort((a, b) => a.want - b.want || a.group - b.group);
+    const centres = packRow(items, frame.left, frame.right, GAP);
+    items.forEach((it, k) => {
+      if (it.group >= 0) xs[it.group] = centres[k];
     });
+    // A lane too full to fit inside the frame gets squeezed past its edges: that is a miss too.
+    for (const i of idx) if (xs[i] - drafts[i].width / 2 < frame.left - 0.5 || xs[i] + drafts[i].width / 2 > frame.right + 0.5) overlap = true;
     for (let k = 1; k < idx.length; k++) {
       const a = idx[k - 1];
       const b = idx[k];
@@ -193,10 +266,17 @@ const attempt = (drafts: Draft[], laneCount: number, frame: LineFrame): Attempt 
     bottom -= tallest + LANE_GAP;
   }
   const top = bottom + LANE_GAP;
-  const groups = drafts.map((d, i) => ({ ...d, x: xs[i], lane: laneOf[i], bottom: bottoms[laneOf[i]] }));
+  // A group off the scale in the lane by the line rides on its edge flag.
+  const groups = drafts.map((d, i) => ({
+    ...d,
+    x: xs[i],
+    lane: laneOf[i],
+    bottom: d.offScale !== null && laneOf[i] === 0 ? frame.axisY - FLAG.height / 2 - 6 : bottoms[laneOf[i]],
+  }));
   const shift = Math.max(0, ...groups.map((g) => Math.abs(g.x - g.axisX)));
+  const litShift = Math.max(0, ...groups.filter((g) => g.highlight !== undefined).map((g) => Math.abs(g.x - g.axisX)));
   const overflow = Math.max(0, frame.top - top);
-  return { groups, fits: !overlap && overflow === 0, shift, overflow: overlap ? Number.POSITIVE_INFINITY : overflow };
+  return { groups, fits: !overlap && overflow === 0, shift, litShift, overflow: overlap ? Number.POSITIVE_INFINITY : overflow };
 };
 
 const buildDrafts = (
@@ -215,22 +295,25 @@ const buildDrafts = (
       const offScale = value < axis.min ? ("left" as const) : value > axis.max ? ("right" as const) : null;
       const axisX =
         offScale === "left"
-          ? (frame.left + axisLeft) / 2
+          ? axisLeft - 36 - FLAG.width / 2 - 8
           : offScale === "right"
-            ? (axisRight + frame.right) / 2
+            ? axisRight + 36 + FLAG.width / 2 + 8
             : axisLeft + xOnAxis(value, axis, axisRight - axisLeft);
       const label = formatTick(value);
       const lit = members.find((m) => m.highlight !== undefined)?.highlight;
+      const ordered = [...members].sort((a, b) => b.points - a.points);
+      const fastest = speedWinner(ordered);
       return {
         key: `v${value}`,
         value,
         label,
-        members,
+        members: ordered,
         axisX,
-        width: groupWidth(label, members, size),
-        height: groupHeight(members, size),
+        width: groupWidth(label, ordered, fastest, size, offScale === null),
+        height: groupHeight(ordered, size, offScale === null),
         offScale,
         highlight: lit,
+        fastest,
       };
     });
 };
@@ -257,11 +340,15 @@ export const layoutNumberLine = (guesses: ReadonlyArray<LineGuess>, correct: num
     { size: COMPACT_SIZE, lanes: 3 },
     { size: COMPACT_SIZE, lanes: 4 },
   ];
-  const results = tries.map((t) => {
+  const results = tries.flatMap((t) => {
     const drafts = buildDrafts(guesses, axis, axisLeft, axisRight, frame, t.size);
-    return { size: t.size, ...attempt(drafts, t.lanes, frame) };
+    const modes: LaneMode[] = ["greedy", "alternate"];
+    return modes.map((mode) => ({ size: t.size, ...attempt(drafts, t.lanes, frame, correctX, mode) }));
   });
+  // The spotlit group stays on its value above all; then nobody strays far; then anything that fits.
   const chosen =
+    results.find((r) => r.fits && r.shift <= MAX_SHIFT && r.litShift <= LIT_SHIFT) ??
+    results.find((r) => r.fits && r.litShift <= LIT_SHIFT) ??
     results.find((r) => r.fits && r.shift <= MAX_SHIFT) ??
     [...results].filter((r) => r.fits).sort((a, b) => a.shift - b.shift)[0] ??
     [...results].sort((a, b) => a.overflow - b.overflow)[0];

@@ -147,7 +147,6 @@ const ChoiceAnswerLine = ({ letter, text, live }: { letter: string; text: string
       transition={{ duration: 0.5, times: [0, 0.65, 1] }}
       data-testid="correct-answer"
     >
-      <Slug className="text-ink pb-6">The answer</Slug>
       <span className="tv-display truncate" style={{ fontSize: size, lineHeight: 0.9 }}>
         <RisoType top="var(--blue)" under="var(--pink)" offset={10} rough>
           {letter}&nbsp;{text}
@@ -157,19 +156,28 @@ const ChoiceAnswerLine = ({ letter, text, live }: { letter: string; text: string
   );
 };
 
-/** The "?" puck sweeps between the guesses while the room holds its breath. */
+/** The "?" puck sweeps between the guesses while the room holds its breath: above the axis, so the ticks stay readable. */
 const SuspenseMarker = ({ stops, seconds }: { stops: number[]; seconds: number }) => {
   const path = stops.length > 0 ? stops : [960];
+  const size = 84;
   return (
     <motion.span
       aria-hidden="true"
-      className="tv-display absolute flex items-center justify-center"
-      style={{ left: -55, top: AXIS_Y - 55, width: 110, height: 110, borderRadius: 999, background: "var(--pink)", fontSize: 76, border: "6px solid var(--ink)", zIndex: 8 }}
+      className="absolute"
+      style={{ left: -size / 2, top: AXIS_Y - 14 - size - 10, width: size, height: size + 24, zIndex: 8 }}
       initial={{ x: path[0], scale: 0 }}
       animate={{ x: path, scale: 1 }}
       transition={{ x: { duration: seconds, ease: "easeInOut" }, scale: { type: "spring", stiffness: 500, damping: 15 } }}
     >
-      ?
+      <svg className="absolute" style={{ left: size / 2 - 14, top: size - 6 }} width={28} height={26} viewBox="0 0 28 26">
+        <polygon points="0,0 28,0 14,24" fill="var(--ink)" />
+      </svg>
+      <span
+        className="tv-display absolute flex items-center justify-center"
+        style={{ left: 0, top: 0, width: size, height: size, borderRadius: 999, background: "var(--pink)", fontSize: 58, border: "6px solid var(--ink)" }}
+      >
+        ?
+      </span>
     </motion.span>
   );
 };

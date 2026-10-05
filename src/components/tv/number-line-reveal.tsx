@@ -1,15 +1,27 @@
 import { motion } from "framer-motion";
 import { InkToken } from "./print";
 import { RollingNumber } from "./standings";
-import { type GuessGroup, type LineLayout, type LineSize, shortName } from "./number-line-layout";
+import { FLAG, type GuessGroup, type LineLayout, type LineSize, shortName } from "./number-line-layout";
 
 /** "+4 pts" stamped beside a chip once the points land. */
-export const PointsStamp = ({ points, live, size = 40, bare = false }: { points: number; live: boolean; size?: number; bare?: boolean }) => (
+export const PointsStamp = ({
+  points,
+  live,
+  size = 40,
+  bare = false,
+  fastest = false,
+}: {
+  points: number;
+  live: boolean;
+  size?: number;
+  bare?: boolean;
+  fastest?: boolean;
+}) => (
   <motion.span
-    className="tv-display tabular inline-flex items-baseline gap-1"
-    style={{ fontSize: size, background: "var(--pink)", color: "var(--ink)", padding: bare ? "1px 6px" : "2px 10px", border: "4px solid var(--ink)", lineHeight: 1 }}
+    className="tv-display tabular inline-flex items-baseline gap-1 whitespace-nowrap"
+    style={{ fontSize: size, background: "var(--pink)", color: "var(--ink)", padding: bare ? "1px 8px" : "2px 10px", border: "4px solid var(--ink)", lineHeight: 1 }}
     initial={live ? { scale: 0, rotate: -20 } : false}
-    animate={{ scale: [0, 1.25, 1], rotate: -6 }}
+    animate={{ scale: [0, 1.25, 1], rotate: -4 }}
     transition={{ duration: 0.4 }}
   >
     +<RollingNumber from={0} to={points} run={live} duration={0.6} />
@@ -18,6 +30,11 @@ export const PointsStamp = ({ points, live, size = 40, bare = false }: { points:
         {" "}pts
       </span>
     )}
+    {fastest ? (
+      <span className="slug" style={{ fontSize: Math.max(28, Math.round(size * 0.74)) }}>
+        {" "}· fastest
+      </span>
+    ) : null}
   </motion.span>
 );
 
@@ -75,32 +92,32 @@ export const NumberLineAxis = ({ layout, axisY, live }: { layout: LineLayout; ax
       ))}
       {tabs.map((g) => {
         const towardsRight = g.offScale === "right";
-        const from = towardsRight ? right : g.axisX + 70;
-        const to = towardsRight ? g.axisX - 70 : left;
+        const flagLeft = g.axisX - FLAG.width / 2;
+        const from = towardsRight ? right : flagLeft + FLAG.width;
+        const to = towardsRight ? flagLeft : left;
         return (
           <div key={g.key}>
             <svg className="absolute" style={{ left: Math.min(from, to), top: axisY - 20, overflow: "visible" }} width={Math.abs(to - from)} height={40}>
-              <line x1={0} y1={20} x2={Math.abs(to - from)} y2={20} stroke="var(--ink)" strokeWidth={6} strokeDasharray="10 12" />
-              {/* The scale break: two slashes where the line leaves the scale. */}
-              <line x1={towardsRight ? 14 : Math.abs(to - from) - 30} y1={36} x2={towardsRight ? 30 : Math.abs(to - from) - 14} y2={4} stroke="var(--ink)" strokeWidth={6} />
-              <line x1={towardsRight ? 30 : Math.abs(to - from) - 46} y1={36} x2={towardsRight ? 46 : Math.abs(to - from) - 30} y2={4} stroke="var(--ink)" strokeWidth={6} />
+              <line x1={0} y1={20} x2={Math.abs(to - from)} y2={20} stroke="var(--ink)" strokeWidth={6} strokeDasharray="8 10" />
             </svg>
+            {/* The edge flag: the off-scale value, with an arrow pointing off the end of the line. */}
             <span
-              className="absolute slug flex items-center justify-center"
+              className="absolute tv-display tabular flex items-center justify-center whitespace-nowrap"
               style={{
-                left: g.axisX - 70,
-                width: 140,
-                top: axisY - 26,
-                height: 52,
-                fontSize: 28,
+                left: flagLeft,
+                width: FLAG.width,
+                top: axisY - FLAG.height / 2,
+                height: FLAG.height,
+                fontSize: 46,
                 background: "var(--ink)",
                 color: "var(--paper)",
-                clipPath: towardsRight ? "polygon(0 0, 82% 0, 100% 50%, 82% 100%, 0 100%)" : "polygon(18% 0, 100% 0, 100% 100%, 18% 100%, 0 50%)",
-                paddingLeft: towardsRight ? 0 : 18,
-                paddingRight: towardsRight ? 18 : 0,
+                clipPath: towardsRight ? "polygon(0 0, 84% 0, 100% 50%, 84% 100%, 0 100%)" : "polygon(16% 0, 100% 0, 100% 100%, 16% 100%, 0 50%)",
+                paddingLeft: towardsRight ? 0 : 26,
+                paddingRight: towardsRight ? 26 : 0,
               }}
+              data-testid={`tv-flag-${g.key}`}
             >
-              {towardsRight ? "Way up" : "Way down"}
+              {towardsRight ? `${g.label} →` : `← ${g.label}`}
             </span>
           </div>
         );
@@ -112,17 +129,22 @@ export const NumberLineAxis = ({ layout, axisY, live }: { layout: LineLayout; ax
 /** Leader lines from each group's label stack down to its value on the line. */
 export const Leaders = ({ groups, axisY, delays, live }: { groups: GuessGroup[]; axisY: number; delays: Map<string, number>; live: boolean }) => (
   <svg aria-hidden="true" className="absolute inset-0 pointer-events-none" width={1920} height={1080} style={{ zIndex: 2 }}>
-    {groups.map((g) => (
-      <motion.g
-        key={g.key}
-        initial={live ? { opacity: 0 } : false}
-        animate={{ opacity: 1 }}
-        transition={{ delay: live ? (delays.get(g.key) ?? 0) + 0.3 : 0, duration: 0.2 }}
-      >
-        <line x1={Math.min(g.x + g.width / 2 - 30, Math.max(g.x - g.width / 2 + 30, g.axisX))} y1={g.bottom + 4} x2={g.axisX} y2={axisY - 12} stroke="var(--ink)" strokeWidth={5} />
-        {g.offScale === null ? <circle cx={g.axisX} cy={axisY} r={13} fill="var(--ink)" /> : null}
-      </motion.g>
-    ))}
+    {groups.map((g) => {
+      const onFlag = g.offScale !== null && g.bottom > axisY - FLAG.height;
+      return (
+        <motion.g
+          key={g.key}
+          initial={live ? { opacity: 0 } : false}
+          animate={{ opacity: 1 }}
+          transition={{ delay: live ? (delays.get(g.key) ?? 0) + 0.3 : 0, duration: 0.2 }}
+        >
+          {onFlag ? null : (
+            <line x1={g.x} y1={g.bottom + 2} x2={g.axisX} y2={g.offScale === null ? axisY - 12 : axisY - FLAG.height / 2} stroke="var(--ink)" strokeWidth={5} />
+          )}
+          {g.offScale === null ? <circle cx={g.axisX} cy={axisY} r={13} fill="var(--ink)" /> : null}
+        </motion.g>
+      );
+    })}
   </svg>
 );
 
@@ -147,54 +169,62 @@ export const GuessGroupView = ({
 }) => {
   const shown = group.members.slice(0, size.maxRows);
   const more = group.members.length - shown.length;
+  const fade = { opacity: dim ? 0.42 : 1, transition: "opacity .3s" };
   return (
     <>
-      {lit ? <Burst cx={group.x} cy={group.bottom - group.height / 2} r={Math.min(230, Math.max(group.width, group.height) / 2 + 50)} live={live} /> : null}
+      {lit ? <Burst cx={group.x} cy={group.bottom - group.height / 2} r={Math.min(200, Math.max(group.width, group.height) / 2 + 40)} live={live} /> : null}
       <motion.div
-        className="absolute flex flex-col items-center"
+        className="absolute flex flex-col items-center justify-end"
         style={{ left: group.x - group.width / 2, width: group.width, top: group.bottom - group.height, height: group.height, zIndex: lit ? 6 : 4 }}
         initial={live ? { y: -480, opacity: 0 } : false}
-        animate={{ y: 0, opacity: dim ? 0.5 : 1 }}
+        animate={{ y: 0, opacity: 1 }}
         transition={{
           y: { delay: live ? delay : 0, type: "spring", stiffness: 420, damping: 17, mass: 0.9 },
-          opacity: { delay: live && !dim ? delay : 0, duration: dim ? 0.3 : 0.15 },
+          opacity: { delay: live ? delay : 0, duration: 0.15 },
         }}
         data-testid={`tv-guess-${group.key}`}
       >
-        <span className="tv-display tabular" style={{ fontSize: size.value, lineHeight: 0.95 }}>
-          {group.label}
-        </span>
-        <span className="flex flex-col items-start mt-3" style={{ gap: 10 }}>
-          {shown.map((m) => (
-            <span key={m.playerId} className="relative flex items-center" style={{ height: size.chip, gap: 14 }} data-testid={`player-result-${m.playerId}`}>
-              <motion.span
-                className="inline-flex"
-                style={{ transformOrigin: "100% 50%" }}
-                animate={lit ? { scale: 1.22 } : shiver ? { rotate: [0, -7, 6, -5, 4, 0], y: [0, -3, 0, -2, 0] } : { scale: 1, rotate: 0, y: 0 }}
-                transition={shiver ? { duration: 0.42, repeat: Infinity } : { type: "spring", stiffness: 420, damping: 11 }}
-              >
-                <InkToken name={m.name} inkIndex={m.inkIndex} size={size.chip} />
-              </motion.span>
-              <span className="tv-display" style={{ fontSize: size.name, lineHeight: 1, letterSpacing: "-0.01em", whiteSpace: "nowrap" }}>
-                {shortName(m.name, size.maxName)}
-              </span>
-              <span className="tv-sr">{m.name}</span>
-              {m.points > 0 && size.stamp > 0 ? (
-                <span style={{ minWidth: size.stamp - 24 }}>{showPoints ? <PointsStamp points={m.points} live={live} size={42} /> : null}</span>
-              ) : null}
-              {m.points > 0 && size.stamp === 0 && showPoints ? (
-                <span className="absolute" style={{ left: -26, top: -22, zIndex: 3 }}>
-                  <PointsStamp points={m.points} live={live} size={30} bare />
+        <span className="flex items-start justify-center" style={{ gap: 18 }}>
+          {shown.map((m) => {
+            const fastest = group.fastest === m.playerId;
+            return (
+              <span key={m.playerId} className="relative flex flex-col items-center" data-testid={`player-result-${m.playerId}`}>
+                <motion.span
+                  className="inline-flex"
+                  style={fade}
+                  animate={lit ? { scale: 1.16 } : shiver ? { rotate: [0, -7, 6, -5, 4, 0], y: [0, -3, 0, -2, 0] } : { scale: 1, rotate: 0, y: 0 }}
+                  transition={shiver ? { duration: 0.42, repeat: Infinity } : { type: "spring", stiffness: 420, damping: 11 }}
+                >
+                  <InkToken name={m.name} inkIndex={m.inkIndex} size={size.chip} />
+                </motion.span>
+                <span className="tv-display mt-1" style={{ ...fade, fontSize: size.name, lineHeight: 1.04, letterSpacing: "-0.01em", whiteSpace: "nowrap" }}>
+                  {shortName(m.name, size.maxName)}
                 </span>
-              ) : null}
-            </span>
-          ))}
+                <span className="tv-sr">{m.name}</span>
+                {m.points > 0 && size.stampRow ? (
+                  <span className="mt-2 relative" style={{ minHeight: size.stamp * 1.3, zIndex: 7 }}>
+                    {showPoints ? <PointsStamp points={m.points} live={live} size={size.stamp} bare fastest={fastest} /> : null}
+                  </span>
+                ) : null}
+                {m.points > 0 && !size.stampRow && showPoints ? (
+                  <span className="absolute" style={{ left: -22, top: -18, zIndex: 7 }}>
+                    <PointsStamp points={m.points} live={live} size={size.stamp} bare fastest={fastest} />
+                  </span>
+                ) : null}
+              </span>
+            );
+          })}
           {more > 0 ? (
-            <span className="slug" style={{ fontSize: 30, lineHeight: 1 }}>
-              +{more} more
+            <span className="slug self-center" style={{ ...fade, fontSize: 30, lineHeight: 1 }}>
+              +{more}
             </span>
           ) : null}
         </span>
+        {group.offScale === null ? (
+          <span className="tv-display tabular mt-2" style={{ ...fade, fontSize: size.value, lineHeight: 0.95 }}>
+            {group.label}
+          </span>
+        ) : null}
       </motion.div>
     </>
   );
