@@ -292,7 +292,7 @@ async function main() {
 
     // Host imports the fixed questions.
     await host.locator("textarea").fill(QUESTIONS);
-    await host.getByRole("button", { name: /^submit$/i }).click();
+    await host.getByRole("button", { name: /^submit( questions)?$/i }).click();
     mark("host imports questions");
     await wait(1200);
     await shoot("02-parsing", { host });

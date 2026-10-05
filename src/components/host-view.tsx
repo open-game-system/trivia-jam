@@ -422,7 +422,7 @@ Correct answer: B`}
           disabled={!documentContent.trim()}
           className="pbtn pbtn-pink pbtn-lg pbtn-block"
         >
-          Submit questions
+          Submit
         </button>
       </div>
     )}
@@ -456,9 +456,24 @@ const QuestionListDisplay = ({
           <span className="prank" aria-hidden="true" style={{ minWidth: 34, height: 34, fontSize: 16 }}>
             {index + 1}
           </span>
-          <div className="min-w-0 flex-1 truncate text-base font-bold leading-snug">
-            <span className="sr-only">Q{index + 1}: </span>
-            {question.text}
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-base font-bold leading-snug">
+              <span className="sr-only">Q{index + 1}: </span>
+              {question.text}
+            </div>
+            {question.questionType === "multiple-choice" && question.options && (
+              <ul className="mt-1 text-sm font-semibold" style={{ fontSize: 14 }}>
+                {question.options.map((option, optIndex) => (
+                  <li
+                    key={optIndex}
+                    className={option === question.correctAnswer ? "font-extrabold text-teal" : ""}
+                  >
+                    {String.fromCharCode(97 + optIndex)}) {option}
+                    {option === question.correctAnswer && " (correct)"}
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
           <span className="tabular max-w-[34%] truncate text-xl font-extrabold">
             <span className="sr-only">Answer: </span>
@@ -499,7 +514,10 @@ const GameLinkSection = ({
   };
 
   return (
-    <section className="mb-6" aria-label="Invite players">
+    <section className="mb-6" aria-labelledby="share-game-link">
+      <h2 id="share-game-link" className="pslug mb-2">
+        Share Game Link
+      </h2>
       <div className="hstatus-card">
         <BigStatus
           figure={playerCount}
@@ -652,11 +670,19 @@ const LobbyControls = ({
     // Keep the editor open until this parse finishes; close it only when it succeeded.
     // (Waiting for "has questions" alone resolves at once on a re-import and hid its error.)
     setIsEditingQuestions(true);
+    const before = client.getState().public;
     send({ type: "PARSE_QUESTIONS", documentContent: documentContent.trim() });
 
     try {
-      await client.waitFor((state) => matchesState(PARSING, state.value), 10000);
-      await client.waitFor((state) => !matchesState(PARSING, state.value), 60000);
+      // Wait for this parse's outcome (new questions or a new error), not for the transient parsing
+      // state: a fast parse can finish before the client ever sees "parsingDocument".
+      await client.waitFor(
+        (state) =>
+          !matchesState(PARSING, state.value) &&
+          (state.public.questions !== before.questions ||
+            state.public.parsingErrorMessage !== before.parsingErrorMessage),
+        60000,
+      );
       if (!client.getState().public.parsingErrorMessage) setIsEditingQuestions(false);
     } catch (error) {
       console.error("Failed to parse questions:", error);
