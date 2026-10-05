@@ -27,3 +27,6 @@ Added tv-audio-no-clipping (sample peak <= -0.5 dBFS) and tv-audio-no-dead-air (
 
 ## Rig change before round 02 (2026-10-05)
 Added the `21-game-over-settled` shot (+12 s) because the finale is now staged over ~11 s. No threshold changed.
+
+## Rig change before round 03 (2026-10-05)
+Panels are now recorded with Chrome's screencast (frame swap timestamps) and rebuilt at true timing, instead of Playwright recordVideo, whose TV pane drifted up to 12 s behind the marks (round 02 critic) and whose kid pane lagged 2.5-5 s. Measured after the change: TV, host and kid change within 0.1 s of each other at question 5 (116.2 s). Thresholds unchanged.

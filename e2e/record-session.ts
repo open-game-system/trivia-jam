@@ -144,6 +144,50 @@ const FAULT_CSS: Record<string, string> = {
   white: "html, body { filter: brightness(20) !important; }",
 };
 
+/**
+ * Records a page with Chrome's own screencast. Each frame carries its real swap time, so the panel can be
+ * rebuilt at true wall-clock timing (Playwright's recordVideo stamps frames on arrival, and a busy 1080p page
+ * drifted up to 12 s behind the marks by the end of a game).
+ */
+const even = (n: number) => Math.ceil(n / 2) * 2;
+
+async function startScreencast(page: Page, dir: string, size: { width: number; height: number }) {
+  mkdirSync(dir, { recursive: true });
+  const cdp = await page.context().newCDPSession(page);
+  const frames: { path: string; t: number }[] = [];
+  cdp.on("Page.screencastFrame", (f) => {
+    const path = `${dir}/${String(frames.length).padStart(6, "0")}.jpg`;
+    writeFileSync(path, Buffer.from(f.data, "base64"));
+    frames.push({ path, t: f.metadata.timestamp ?? Date.now() / 1000 });
+    void cdp.send("Page.screencastFrameAck", { sessionId: f.sessionId }).catch(() => undefined);
+  });
+  await cdp.send("Page.startScreencast", { format: "jpeg", quality: 82, maxWidth: size.width, maxHeight: size.height, everyNthFrame: 1 });
+  const startedAt = Date.now();
+  return {
+    startedAt,
+    /** Stops and writes <dir>.mp4 whose time 0 is startedAt, each frame held until the next one swapped. */
+    async stop(): Promise<string> {
+      const stoppedAt = Date.now();
+      await cdp.send("Page.stopScreencast").catch(() => undefined);
+      if (frames.length === 0) throw new Error(`no screencast frames for ${dir}`);
+      const lines: string[] = [];
+      frames.forEach((f, i) => {
+        const from = i === 0 ? startedAt / 1000 : f.t;
+        const to = frames[i + 1]?.t ?? stoppedAt / 1000;
+        lines.push(`file '${f.path.split("/").pop()}'`, `duration ${Math.max(0.001, to - from).toFixed(4)}`);
+      });
+      lines.push(`file '${frames[frames.length - 1]?.path.split("/").pop()}'`);
+      writeFileSync(`${dir}/frames.txt`, lines.join("\n"));
+      const out = `${dir}.mp4`;
+      execFileSync("ffmpeg", ["-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", `${dir}/frames.txt`,
+        // Even output size (yuv420p), every frame scaled to it (screencast frames can change size mid-run).
+        "-vf", `scale=${even(size.width)}:${even(size.height)}:force_original_aspect_ratio=decrease:eval=frame,pad=${even(size.width)}:${even(size.height)}:(ow-iw)/2:(oh-ih)/2,fps=30,format=yuv420p`,
+        "-c:v", "libx264", "-crf", "18", out]);
+      return out;
+    },
+  };
+}
+
 /** On a stall: what is each page actually showing? */
 async function dump(screens: Record<string, Page>) {
   for (const [name, page] of Object.entries(screens)) {
@@ -185,11 +229,14 @@ async function main() {
   ];
   const pages: Page[] = [];
   const startedAt: number[] = [];
+  const casts: Awaited<ReturnType<typeof startScreencast>>[] = [];
   for (const s of recorded) {
-    const ctx = await browser.newContext({ ...s.opts, recordVideo: { dir: RAW, size: s.opts.viewport } });
-    startedAt.push(Date.now());
+    const ctx = await browser.newContext({ ...s.opts });
     const page = await ctx.newPage();
     await page.setContent('<body style="margin:0;background:#111;height:100vh"></body>');
+    const cast = await startScreencast(page, `${RAW}/cast-${s.key}`, s.opts.viewport);
+    casts.push(cast);
+    startedAt.push(cast.startedAt);
     page.on("pageerror", (e) => console.log(`[pageerror ${s.key}] ${e.message.slice(0, 300)}`));
     pages.push(page);
   }
@@ -347,14 +394,8 @@ async function main() {
       console.error("NO TV AUDIO: the TV page exposes no audio tap (window.__tvAudioTap). The video is silent.");
     }
 
-    const videos = await Promise.all(
-      pages.map(async (p) => {
-        const v = p.video();
-        await p.context().close();
-        if (!v) throw new Error("no video");
-        return v.path();
-      }),
-    );
+    const videos = await Promise.all(casts.map((c) => c.stop()));
+    await Promise.all(pages.map((p) => p.context().close()));
     await browser.close();
     writeFileSync(`${RAW}/marks.json`, JSON.stringify({ videos, startedAt, audio: audioPath, hasAudio: hasTap, fault: FAULT || null, marks }, null, 2));
     writeFileSync(`${RAW}/layout.json`, JSON.stringify(layouts, null, 2));
