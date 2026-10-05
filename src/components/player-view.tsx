@@ -165,13 +165,11 @@ const ActiveQuestionDisplay = ({
           }
         />
       ) : isMultipleChoice ? (
-        <div className="flex flex-1 min-h-0 flex-col justify-end pt-3">
-          <ChoiceTiles
-            options={options}
-            disabled={isSubmitting}
-            onChoose={onChoose}
-          />
-        </div>
+        <ChoiceTiles
+          options={options}
+          disabled={isSubmitting}
+          onChoose={onChoose}
+        />
       ) : (
         <NumberPad
           value={answerInput}

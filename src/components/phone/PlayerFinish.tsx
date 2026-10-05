@@ -24,7 +24,7 @@ export const PlayerFinish = ({
     <PhoneShell className="pb-8">
       <div className="mx-auto w-full max-w-5xl px-4 pt-6">
         <div className="grid grid-cols-1 gap-6 landscape:grid-cols-2 landscape:items-start">
-          <div className="flex flex-col items-center gap-4">
+          <div className="flex flex-col items-center gap-4 landscape:sticky landscape:top-6">
             <h1 className="pslug" style={{ fontSize: 18 }}>
               Game Over!
             </h1>

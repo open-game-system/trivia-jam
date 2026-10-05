@@ -90,9 +90,7 @@ const MyOutcome = ({
         </div>
         <div className="flex items-center gap-2">
           <span className="pslug text-right leading-tight">
-            {ordinal(overallRank)}
-            <br />
-            of {playerCount}
+            {ordinal(overallRank)} of {playerCount}
           </span>
           <RankDisc rank={overallRank} />
         </div>
