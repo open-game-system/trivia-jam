@@ -15,7 +15,11 @@ pnpm exec tsx e2e/record-session.ts && python3 scripts/evidence.py critic/rounds
 - [x] Riso foundation: tokens, fonts, print utilities (src/styles.css, tailwind.config.ts)
 - [x] Rig proof (forced faults) -> critic/rig-proof.md (mute check to re-prove now that there is audio)
 - [x] Audio: src/audio (cues.ts pure+tested, engine.ts, use-tv-audio.ts), ElevenLabs beds in public/audio/music
-- [ ] Round 01 pass: TV agent (spectator-view + src/components/tv) and phones agent (host/player + src/components/game, phone) running
+- [x] Round 01: critic min 3 (from 1), Codex 5.0 (from 2.9). critic/rounds/01
+- [ ] Round 02 pass running: TV agent (number-line solver, focal reveal, standings beat, finale+awards), phones agent (no-spoiler hold, kid result art, host shell, New game), me (audio mix: limiter, no dead air, snare roll — done)
+- [ ] e2e sweep chunk 1 (flows 1-4) running in a worktree; brief ~/.claude/handoffs/trivia-jam/2026-10-04-e2e/brief.md
+- OPEN QUESTION for Jon: same-room rematch needs the final `finished` state to accept a REMATCH event; an existing test pins "finished is a final state". Not done; round 02 gives the host a "New game" button instead.
+- Known: the kid iPad pane in session.mp4 lags 2.5-4.8 s behind marks (Playwright screencast); recorder now logs kid frame times.
 - [x] OGS server: verifyOgsToken in game.server.ts (OGS_JOIN_GAME), OGS_JWKS_URL var
 - [x] OGS client: onOgsPause -> tvAudio, sitting labels (src/ogs), host declares TV url (OgsTvUrl, no cast button)
 - [ ] OGS: hide QR/room code on OGS TV (useOnOgsTv in src/ogs/use-ogs-game.ts -> spectator lobby); phone skips name form with useOgsProfile + sends ogsToken in JOIN_GAME (player-view)
