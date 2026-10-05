@@ -13,6 +13,7 @@ import { HostView } from "../host-view";
 import { PlayerView } from "../player-view";
 import { NumberPad } from "./NumberPad";
 import { PhoneShell } from "./PhoneShell";
+import { PlayerResult } from "./PlayerResult";
 
 const meta = {
   title: "Phone/Screens",
@@ -188,6 +189,40 @@ export const ResultsMiss: Story = {
     expect(mine).toHaveTextContent("NOT THIS TIME");
     expect(within(mine).getByTestId("my-answer")).toHaveTextContent("5");
     expect(within(mine).getByTestId("correct-answer")).toHaveTextContent("8");
+  },
+};
+
+const HoldHarness = ({ ageMs }: { ageMs: number }) => {
+  const [arrivedAt] = useState(() => Date.now() - ageMs);
+  return (
+    <PhoneShell>
+      <PlayerResult
+        question={{ ...numericQuestion }}
+        result={resultFor(8)}
+        me={people[0]}
+        players={people}
+        arrivedAt={arrivedAt}
+      />
+    </PhoneShell>
+  );
+};
+
+/** The result just arrived: the phone says LOOK AT THE TV and does not spoil the outcome. */
+export const ResultsHeldForTheTv: Story = {
+  render: () => <HoldHarness ageMs={0} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const hold = await canvas.findByTestId("look-at-tv");
+    expect(hold).toHaveTextContent("LOOK AT THE TV");
+    expect(canvas.queryByTestId("my-result")).toBeNull();
+  },
+};
+
+/** The TV landed the answer long ago: the outcome shows at once. */
+export const ResultsShownAfterTheTv: Story = {
+  render: () => <HoldHarness ageMs={60000} />,
+  play: async ({ canvasElement }) => {
+    expect(await within(canvasElement).findByTestId("my-result")).toHaveTextContent("EXACT!");
   },
 };
 

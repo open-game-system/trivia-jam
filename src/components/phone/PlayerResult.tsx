@@ -1,6 +1,8 @@
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import type { Question, QuestionResult } from "~/game.types";
 import { PlayerToken, RankDisc } from "./ink";
+import { LookAtTv } from "./LookAtTv";
+import { useSpoilerGate } from "./useSpoilerGate";
 import { describeOutcome, ordinal, type Outcome } from "./outcome";
 import { useCountUp } from "./useCountUp";
 
@@ -157,12 +159,25 @@ export const PlayerResult = ({
   result,
   me,
   players,
+  arrivedAt = null,
 }: {
   question: Question;
   result: QuestionResult;
   me: Person;
   players: Person[];
+  /** When this phone saw the result arrive; null/omitted = show the outcome at once. */
+  arrivedAt?: number | null;
 }) => {
+  const reducedMotion = useReducedMotion() ?? false;
+  const gate = useSpoilerGate({ arrivedAt, guessCount: result.answers.length, reducedMotion });
+  if (gate === "hold") {
+    return (
+      <LookAtTv
+        questionText={question.text}
+        myValue={result.answers.find((a) => a.playerId === me.id)?.value}
+      />
+    );
+  }
   const ranked = [...players].sort((a, b) => b.score - a.score);
   const overallRank = Math.max(1, ranked.findIndex((p) => p.id === me.id) + 1);
 

@@ -14,6 +14,7 @@ import { QuestionProgress } from "./question-progress";
 import { ChoiceTiles } from "./phone/ChoiceTiles";
 import { PlayerFinish } from "./phone/PlayerFinish";
 import { PlayerResult } from "./phone/PlayerResult";
+import { useResultArrival } from "./phone/useResultArrival";
 import { LockedIn } from "./phone/LockedIn";
 import { NumberPad } from "./phone/NumberPad";
 import { PhoneShell } from "./phone/PhoneShell";
@@ -190,11 +191,13 @@ const QuestionResultsDisplay = ({
   questions,
   questionResults,
   players,
+  arrivedAt,
 }: {
   player: Player;
   questions: GamePublicContext["questions"];
   questionResults: GamePublicContext["questionResults"];
   players: Player[];
+  arrivedAt: number | null;
 }) => {
   const latestResult = questionResults[questionResults.length - 1];
   const question = latestResult ? questions[latestResult.questionId] : null;
@@ -205,6 +208,7 @@ const QuestionResultsDisplay = ({
       result={latestResult}
       me={player}
       players={players}
+      arrivedAt={arrivedAt}
     />
   );
 };
@@ -234,6 +238,8 @@ const ActiveStateContent = ({
   const setAnswerInput = (value: string) => setDraft({ questionId, value });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const timeLeft = useQuestionTimer(currentQuestion, answerTimeWindow, currentQuestion !== null);
+  const latestResultId = questionResults[questionResults.length - 1]?.questionId ?? null;
+  const arrivedAt = useResultArrival(questionId, latestResultId);
   const hasAnswered = !!currentQuestion?.answers.some((a) => a.playerId === userId);
 
   const handleSubmitNumeric = () => {
@@ -279,6 +285,7 @@ const ActiveStateContent = ({
           questions={questions}
           questionResults={questionResults}
           players={players}
+          arrivedAt={arrivedAt}
         />
       )}
     </PhoneShell>
