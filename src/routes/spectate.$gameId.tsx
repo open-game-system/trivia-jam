@@ -5,6 +5,7 @@ import type { Caller } from "actor-kit";
 import { z } from "zod";
 import { SpectatorView } from "~/components/spectator-view";
 import { useTvAudio } from "~/audio/use-tv-audio";
+import { useOgsSitting } from "~/ogs/use-ogs-game";
 import type { gameMachine } from "~/game.machine";
 import { GameProvider } from "~/game.context";
 import { getServerEnv, tryGetActorRuntimeEnv } from "../server-env";
@@ -113,6 +114,7 @@ function SpectateRouteComponent() {
       initialSnapshot={payload.snapshot}
     >
       <TvAudio />
+      <OgsSitting gameId={gameId} />
       <SpectatorView host={host} />
     </GameProvider>
   );
@@ -121,5 +123,11 @@ function SpectateRouteComponent() {
 /** The TV's sound, driven by game state (src/audio). Renders nothing. */
 function TvAudio() {
   useTvAudio();
+  return null;
+}
+
+/** The OGS sitting label, reported from the TV (to the launcher when framed). Renders nothing. */
+function OgsSitting({ gameId }: { gameId: string }) {
+  useOgsSitting(gameId);
   return null;
 }

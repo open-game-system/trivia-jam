@@ -8,6 +8,8 @@ import { PlayerView } from "~/components/player-view";
 import type { gameMachine } from "~/game.machine";
 import { SessionContext } from "~/session.context";
 import { GameProvider } from "~/game.context";
+import { OgsTvUrl } from "~/ogs/ogs-tv-url";
+import { useOgsSitting } from "~/ogs/use-ogs-game";
 import { getServerEnv, tryGetActorRuntimeEnv } from "../server-env";
 
 const GameRouteInputSchema = z.object({
@@ -116,6 +118,14 @@ function GameRouteComponent() {
       initialSnapshot={payload.snapshot}
     >
       {hostId === userId ? <HostView host={host} /> : <PlayerView />}
+      {hostId === userId && <OgsTvUrl gameId={gameId} />}
+      <OgsSitting gameId={gameId} />
     </GameProvider>
   );
+}
+
+/** The OGS sitting label, reported from the phone over the app bridge. Renders nothing. */
+function OgsSitting({ gameId }: { gameId: string }) {
+  useOgsSitting(gameId);
+  return null;
 }
