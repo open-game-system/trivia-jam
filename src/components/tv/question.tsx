@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import type { ReactNode } from "react";
+import { FitName } from "./fit-name";
 import { InkToken, Slug } from "./print";
 import { InkTimer } from "./timer";
 import { inkForIndex, optionLetter } from "./tv-model";
@@ -86,7 +87,11 @@ export const OptionTiles = ({
   </div>
 );
 
-/** One token per player: outline while thinking, stamped solid when they lock in. Never their answer. */
+/** The lock-in band's token size: big enough to read from the couch, ten across at most. */
+export const lockInSize = (count: number): { token: number; slot: number } =>
+  count <= 4 ? { token: 140, slot: 300 } : count <= 6 ? { token: 136, slot: 230 } : count <= 8 ? { token: 128, slot: 196 } : { token: 120, slot: 164 };
+
+/** One token per player: an empty dashed seat while thinking, stamped solid onto the band when they lock in. Never their answer. */
 export const LockInTokens = ({
   players,
   answeredIds,
@@ -94,31 +99,34 @@ export const LockInTokens = ({
   players: TvPlayer[];
   answeredIds: ReadonlySet<string>;
 }) => {
-  const size = players.length > 8 ? 84 : 100;
+  const { token, slot } = lockInSize(players.length);
   return (
-    <div className="flex items-start gap-6 flex-wrap">
+    <div className="flex items-start justify-center" style={{ gap: 16 }}>
       {players.map((p, i) => {
         const locked = answeredIds.has(p.id);
         return (
-          <div key={p.id} className="flex flex-col items-center" style={{ width: size + 56 }} data-testid={`tv-lock-${p.id}`}>
+          <div key={p.id} className="flex flex-col items-center" style={{ width: slot }} data-testid={`tv-lock-${p.id}`}>
             <motion.div
               key={locked ? "locked" : "thinking"}
-              initial={locked ? { scale: 1.5, rotate: -12, y: -30 } : false}
-              animate={locked ? { scale: [1.5, 0.82, 1.06, 1], rotate: 0, y: 0 } : { y: [0, -4, 0] }}
+              style={{ borderRadius: 999, boxShadow: locked ? "8px 8px 0 var(--ink)" : "none" }}
+              initial={locked ? { scale: 1.7, rotate: -14, y: -60 } : false}
+              animate={locked ? { scale: [1.7, 0.8, 1.06, 1], rotate: [-14, 0, 0, 0], y: [-60, 0, 0, 0] } : { y: [0, -5, 0] }}
               transition={
                 locked
-                  ? { duration: 0.45, times: [0, 0.5, 0.8, 1] }
+                  ? { duration: 0.42, times: [0, 0.45, 0.75, 1] }
                   : { duration: 2.4, repeat: Infinity, delay: i * 0.3, ease: "easeInOut" }
               }
             >
-              <InkToken name={p.name} inkIndex={i} size={size} filled={locked} />
+              <InkToken name={p.name} inkIndex={i} size={token} filled={locked} />
             </motion.div>
-            <span
-              className="tv-display text-[36px] mt-2 truncate max-w-full"
-              style={{ lineHeight: 1.1, letterSpacing: "-0.01em", opacity: locked ? 1 : 0.55 }}
-            >
-              {p.name}
-            </span>
+            <FitName
+              text={p.name}
+              max={44}
+              floor={28}
+              box={slot}
+              className="tv-display mt-3 text-center"
+              style={{ letterSpacing: "-0.01em", color: locked ? "var(--ink)" : "color-mix(in srgb, var(--ink) 55%, var(--paper))" }}
+            />
           </div>
         );
       })}
@@ -128,7 +136,7 @@ export const LockInTokens = ({
 
 /** A faint printed number line: where the guesses will land when the answer comes in. */
 const GhostLine = () => (
-  <div aria-hidden="true" className="absolute" style={{ left: 96, right: 96, top: 700, height: 60 }}>
+  <div aria-hidden="true" className="absolute" style={{ left: 96, right: 96, top: 640, height: 60 }}>
     <svg className="absolute inset-0" width="1728" height="60" style={{ overflow: "visible" }}>
       <line x1="0" y1="30" x2="1728" y2="30" stroke="var(--blue)" strokeWidth="6" strokeDasharray="2 18" strokeLinecap="round" />
       {Array.from({ length: 9 }, (_, i) => (
@@ -145,6 +153,9 @@ const GhostLine = () => (
     </motion.span>
   </div>
 );
+
+/** Height of the lock-in band along the bottom of the question screen. */
+const BAND_HEIGHT = 330;
 
 export const TvQuestion = ({
   text,
@@ -195,8 +206,8 @@ export const TvQuestion = ({
         style={{
           left: 96,
           right: hasOptions ? 96 : 420,
-          top: hasOptions ? 180 : 170,
-          bottom: hasOptions ? 300 : 400,
+          top: hasOptions ? 170 : 170,
+          bottom: hasOptions ? BAND_HEIGHT + 20 : 460,
           justifyContent: hasOptions ? "flex-start" : "center",
         }}
       >
@@ -214,18 +225,22 @@ export const TvQuestion = ({
             <OptionTiles options={options} height={128} />
           </div>
         ) : (
-          <Slug className="mt-10 text-blue">Guess the number on your phone</Slug>
+          <div className="slug mt-8 text-blue" style={{ fontSize: 48, lineHeight: 1.1 }}>
+            Guess the number on your phone
+          </div>
         )}
       </div>
 
       {hasOptions ? null : <GhostLine />}
 
-      <div className="absolute" style={{ left: 96, right: 96, bottom: 48 }}>
-        <div className="tv-rule mb-5" />
-        <Slug className="mb-5 text-ink">
-          {`Answers Submitted: ${answeredIds.size} / ${players.length}`}
-        </Slug>
-        <LockInTokens players={players} answeredIds={answeredIds} />
+      {/* The lock-in band: a second sheet along the bottom; each player's token is stamped onto it as they lock in. */}
+      <div className="absolute" style={{ left: 0, right: 0, bottom: 0, height: BAND_HEIGHT, background: "var(--paper-2)", borderTop: "6px solid var(--ink)" }}>
+        <div className="absolute flex items-center justify-between" style={{ left: 96, right: 96, top: 22 }}>
+          <Slug className="text-ink">{`Answers Submitted: ${answeredIds.size} / ${players.length}`}</Slug>
+        </div>
+        <div className="absolute" style={{ left: 96, right: 96, top: 78 }}>
+          <LockInTokens players={players} answeredIds={answeredIds} />
+        </div>
       </div>
     </motion.div>
   );

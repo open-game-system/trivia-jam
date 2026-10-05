@@ -46,7 +46,8 @@ export const FitName = ({
   useLayoutEffect(() => {
     const measure = () => {
       const el = ref.current;
-      if (el) setFit(fitText({ naturalWidth: measureAt(el, text, max), max, floor, box }));
+      // Canvas metrics run a hair narrow of the laid-out text: fit to 96% of the box.
+      if (el) setFit(fitText({ naturalWidth: measureAt(el, text, max), max, floor, box: box * 0.96, words: text.trim().split(/\s+/).length }));
     };
     measure();
     let alive = true;

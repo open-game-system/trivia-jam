@@ -18,4 +18,10 @@ describe("fitText: names fit their box, never an ellipsis", () => {
     expect(fitText({ naturalWidth: 0, max: 80, floor: 40, box: 360 })).toEqual({ size: 80, wrap: false });
     expect(fitText({ naturalWidth: 400, max: 80, floor: 40, box: 0 })).toEqual({ size: 80, wrap: false });
   });
+  it("never breaks a single word: a one-word name below the floor shrinks to fit instead", () => {
+    expect(fitText({ naturalWidth: 1000, max: 80, floor: 40, box: 360, words: 1 })).toEqual({ size: 28, wrap: false });
+  });
+  it("still wraps a several-word name at the floor", () => {
+    expect(fitText({ naturalWidth: 1000, max: 80, floor: 40, box: 360, words: 2 })).toEqual({ size: 40, wrap: true });
+  });
 });
