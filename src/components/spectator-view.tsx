@@ -1,4 +1,5 @@
 import { AnimatePresence, motion } from "framer-motion";
+import { useState } from "react";
 import { GameContext } from "~/game.context";
 import type { GamePublicContext } from "~/game.types";
 import { useQuestionTimer } from "~/hooks/use-question-timer";
@@ -6,12 +7,10 @@ import {
   GameBackground,
   FinalScoresList,
   WinnerAnnouncement,
-  MultipleChoiceOptions,
-  ResultsScoreList,
-  QuestionAnswerHeader,
 } from "./game";
 import { TvAnticipation } from "./tv/anticipation";
 import { TvQuestion } from "./tv/question";
+import { TvReveal } from "./tv/reveal";
 import { buildStandings } from "./tv/tv-model";
 import { TvLobby } from "./tv/lobby";
 import { TvStage } from "./tv/stage";
@@ -61,6 +60,8 @@ const ActiveGameContent = ({
   questions: GamePublicContext["questions"];
   questionNumber: number;
 }) => {
+  // Results that were already in when this TV loaded are shown settled, not replayed.
+  const [resultsSeenAtMount] = useState(questionResults.length);
   if (currentQuestion) {
     return (
       <GameplayDisplay
@@ -76,9 +77,11 @@ const ActiveGameContent = ({
   if (questionResults.length > 0) {
     return (
       <QuestionResultsDisplay
-        key="results"
+        key={`results-${questionResults.length}`}
         questionResults={questionResults}
         questions={questions}
+        players={players}
+        live={questionResults.length > resultsSeenAtMount}
       />
     );
   }
@@ -173,44 +176,26 @@ const GameFinishedDisplay = ({
 const QuestionResultsDisplay = ({
   questionResults,
   questions,
+  players,
+  live,
 }: {
   questionResults: GamePublicContext["questionResults"];
   questions: GamePublicContext["questions"];
+  players: GamePublicContext["players"];
+  live: boolean;
 }) => {
   const latestResult = questionResults[questionResults.length - 1];
-  const question = latestResult ? questions[latestResult.questionId] : null;
-
+  const question = latestResult ? questions[latestResult.questionId] : undefined;
   if (!latestResult || !question) return null;
-
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center pt-16 p-8 relative">
-      <GameBackground />
-
-      <div className="relative z-10 w-full max-w-4xl">
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center"
-        >
-          <QuestionAnswerHeader question={question}>
-            {question.questionType === "multiple-choice" && question.options ? (
-              <MultipleChoiceOptions
-                options={question.options}
-                correctAnswer={question.correctAnswer}
-              />
-            ) : null}
-          </QuestionAnswerHeader>
-
-          <div className="bg-gray-800/30 backdrop-blur-sm rounded-2xl p-8 border border-gray-700/50">
-            <h2 className="text-2xl font-bold text-indigo-300 mb-6">Results</h2>
-            <ResultsScoreList
-              answers={latestResult.answers}
-              scores={latestResult.scores}
-              question={question}
-            />
-          </div>
-        </motion.div>
-      </div>
-    </div>
+    <TvReveal
+      key={`reveal-${latestResult.questionId}`}
+      question={question}
+      result={latestResult}
+      players={players}
+      number={latestResult.questionNumber}
+      total={Object.keys(questions).length}
+      live={live}
+    />
   );
 };

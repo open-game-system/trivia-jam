@@ -504,3 +504,23 @@ textarea.pfield { padding: 14px 16px; font-size: 18px; line-height: 1.35; font-f
   .pkey, .pbtn, .ptile, .ptimer-fill { transition: none; }
   .psheet-in { animation: none; }
 }
+
+/* ---------- Home poster ---------- */
+.pposter-title {
+  font-family: "Bricolage Grotesque Variable", system-ui, sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 0.88;
+  font-size: clamp(64px, 17vw, 132px);
+  text-shadow: 5px 5px 0 var(--pink);
+}
+@media (orientation: landscape) and (min-height: 600px) {
+  .pposter-title { font-size: clamp(72px, 15dvh, 150px); }
+}
+.pdots-field {
+  position: absolute;
+  pointer-events: none;
+  --dot: 14px;
+  mask-image: radial-gradient(circle at 100% 0%, #000 0%, transparent 70%);
+  -webkit-mask-image: radial-gradient(circle at 100% 0%, #000 0%, transparent 70%);
+}

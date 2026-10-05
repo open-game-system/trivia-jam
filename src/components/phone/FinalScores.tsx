@@ -23,9 +23,11 @@ export const Winner = ({ winner }: { winner: Person }) => (
 export const FinalScores = ({
   players,
   highlightPlayerId,
+  title = "Final Scores",
 }: {
   players: Person[];
   highlightPlayerId?: string;
+  title?: string;
 }) => (
   <section>
     <h2
@@ -33,7 +35,7 @@ export const FinalScores = ({
       style={{ fontSize: 16 }}
       data-testid="final-scores-heading"
     >
-      Final Scores
+      {title}
     </h2>
     <div className="flex flex-col gap-2.5">
       {byScore(players).map((player, index) => (

@@ -9,12 +9,19 @@ export const AnswerProgress = ({
 }) => {
   const allAnswered =
     answersCount > 0 && playersCount > 0 && answersCount === playersCount;
+  const fraction = playersCount > 0 ? Math.min(1, answersCount / playersCount) : 0;
 
   return (
     <div>
-      <h3 className="text-lg font-bold text-indigo-300 mb-2">
+      <h3 className="pslug" style={{ fontSize: 15 }}>
         Answers Submitted: {answersCount} / {playersCount}
       </h3>
+      <div className="ptimer-track mt-2" aria-hidden="true">
+        <div
+          className="ptimer-fill"
+          style={{ transform: `scaleX(${fraction})`, background: "var(--teal)" }}
+        />
+      </div>
       <AnimatePresence>
         {allAnswered && (
           <motion.div
@@ -22,7 +29,7 @@ export const AnswerProgress = ({
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.3 }}
-            className="mt-2 px-3 py-1.5 rounded-lg bg-green-500/15 border border-green-500/30 text-green-400 text-sm font-medium text-center"
+            className="pchip pchip-teal mt-2"
           >
             All players answered!
           </motion.div>
