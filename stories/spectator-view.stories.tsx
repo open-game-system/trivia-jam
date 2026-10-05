@@ -589,3 +589,140 @@ export const WaitingForQuestion: Story = {
   },
 };
 
+
+// ---------------------------------------------------------------------------
+// TV art-direction stories: a family game (Sam, Mom, Grandpa, Lou) in every phase.
+// ---------------------------------------------------------------------------
+
+const FAMILY = [
+  { id: "p-sam", name: "Sam", score: 0 },
+  { id: "p-mom", name: "Mom", score: 0 },
+  { id: "p-grandpa", name: "Grandpa", score: 0 },
+  { id: "p-lou", name: "Lou", score: 0 },
+];
+
+const FAMILY_QUESTIONS = {
+  q1: { id: "q1", text: "How many legs does a spider have?", correctAnswer: 8, questionType: "numeric" as const },
+  q2: { id: "q2", text: "How many days does it take the Moon to go once around the Earth?", correctAnswer: 27, questionType: "numeric" as const },
+  q3: {
+    id: "q3",
+    text: "Which planet is the biggest in our solar system?",
+    correctAnswer: "Jupiter",
+    questionType: "multiple-choice" as const,
+    options: ["Mars", "Jupiter", "Saturn", "Neptune"],
+  },
+  q4: { id: "q4", text: "In what year did people first walk on the Moon?", correctAnswer: 1969, questionType: "numeric" as const },
+  q5: { id: "q5", text: "How many bones are in an adult human body?", correctAnswer: 206, questionType: "numeric" as const },
+};
+
+type FamilySnapshot = Parameters<typeof createActorKitMockClient<GameMachine>>[0]["initialSnapshot"];
+
+const familySnapshot = (
+  patch: Partial<FamilySnapshot["public"]>,
+  value: FamilySnapshot["value"],
+): FamilySnapshot => ({
+  ...defaultGameSnapshot,
+  public: {
+    ...defaultGameSnapshot.public,
+    players: FAMILY,
+    questions: FAMILY_QUESTIONS,
+    settings: { maxPlayers: 10, answerTimeWindow: 25 },
+    ...patch,
+  },
+  value,
+});
+
+const mountFamily = (snapshot: FamilySnapshot, after?: (client: ReturnType<typeof createActorKitMockClient<GameMachine>>) => void): Story["play"] =>
+  async ({ mount }) => {
+    const client = createActorKitMockClient<GameMachine>({ initialSnapshot: snapshot });
+    await mount(
+      <GameContext.ProviderFromClient client={client}>
+        <SpectatorView host="triviajam.tv" />
+      </GameContext.ProviderFromClient>
+    );
+    after?.(client);
+  };
+
+const now = Date.now();
+
+export const TvLobbyFamily: Story = {
+  play: mountFamily(familySnapshot({ players: FAMILY.slice(0, 3) }, { lobby: "ready" })),
+};
+
+export const TvLobbyFull: Story = {
+  play: mountFamily(
+    familySnapshot(
+      {
+        players: [
+          ...FAMILY,
+          { id: "p5", name: "Auntie Bea", score: 0 },
+          { id: "p6", name: "Uncle Ray", score: 0 },
+          { id: "p7", name: "Nana", score: 0 },
+          { id: "p8", name: "Ollie", score: 0 },
+          { id: "p9", name: "Maximiliana", score: 0 },
+          { id: "p10", name: "Dad", score: 0 },
+        ],
+      },
+      { lobby: "ready" },
+    ),
+  ),
+};
+
+export const TvBeforeFirstQuestion: Story = {
+  play: mountFamily(familySnapshot({}, { active: "questionPrep" })),
+};
+
+export const TvQuestionNumeric: Story = {
+  play: mountFamily(
+    familySnapshot(
+      {
+        questionNumber: 2,
+        currentQuestion: {
+          questionId: "q2",
+          startTime: now,
+          answers: [
+            { playerId: "p-mom", playerName: "Mom", value: 28, timestamp: now + 2000 },
+            { playerId: "p-sam", playerName: "Sam", value: 30, timestamp: now + 4000 },
+          ],
+        },
+      },
+      { active: "questionActive" },
+    ),
+  ),
+};
+
+export const TvQuestionMultipleChoice: Story = {
+  play: mountFamily(
+    familySnapshot(
+      {
+        questionNumber: 3,
+        currentQuestion: {
+          questionId: "q3",
+          startTime: now,
+          answers: [{ playerId: "p-grandpa", playerName: "Grandpa", value: "Jupiter", timestamp: now + 3000 }],
+        },
+      },
+      { active: "questionActive" },
+    ),
+  ),
+};
+
+export const TvQuestionLastSeconds: Story = {
+  play: mountFamily(
+    {
+      ...familySnapshot(
+        {
+          questionNumber: 4,
+          currentQuestion: { questionId: "q4", startTime: now, answers: [] },
+        },
+        { active: "questionActive" },
+      ),
+      public: {
+        ...familySnapshot({}, { active: "questionActive" }).public,
+        questionNumber: 4,
+        currentQuestion: { questionId: "q4", startTime: now, answers: [] },
+        settings: { maxPlayers: 10, answerTimeWindow: 4 },
+      },
+    },
+  ),
+};
