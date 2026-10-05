@@ -15,15 +15,18 @@ export function useQuestionTimer(
   isQuestionActive: boolean
 ): number {
   const [timeLeft, setTimeLeft] = useState(0);
+  // Keyed on the id: every answer patches currentQuestion into a new object,
+  // which must not restart the countdown.
+  const questionId = currentQuestion?.questionId ?? null;
 
   useEffect(() => {
-    if (!currentQuestion || !isQuestionActive) {
+    if (questionId === null || !isQuestionActive) {
       setTimeLeft(0);
       return;
     }
 
     return createCountdown(answerTimeWindow, setTimeLeft, () => {});
-  }, [currentQuestion, answerTimeWindow, isQuestionActive]);
+  }, [questionId, answerTimeWindow, isQuestionActive]);
 
   return timeLeft;
 }

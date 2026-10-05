@@ -138,4 +138,27 @@ describe("useQuestionTimer", () => {
 
     expect(cleanup).toHaveBeenCalled();
   });
+
+  it("keeps counting when the same question re-renders as a new object (an answer arrived)", () => {
+    const { rerender } = renderHook(
+      ({ q }) => useQuestionTimer(q, 30, true),
+      { initialProps: { q: makeQuestion("q1") } }
+    );
+    expect(mockCreateCountdown).toHaveBeenCalledTimes(1);
+
+    rerender({ q: makeQuestion("q1") });
+
+    expect(mockCreateCountdown).toHaveBeenCalledTimes(1);
+  });
+
+  it("restarts the countdown for the next question", () => {
+    const { rerender } = renderHook(
+      ({ q }) => useQuestionTimer(q, 30, true),
+      { initialProps: { q: makeQuestion("q1") } }
+    );
+
+    rerender({ q: makeQuestion("q2") });
+
+    expect(mockCreateCountdown).toHaveBeenCalledTimes(2);
+  });
 });
