@@ -1014,3 +1014,33 @@ export const TvGameOverLongNames: Story = {
     ),
   ),
 };
+
+/** Three players, question 1, live: the board opens level on 0 in join order, rolls, reorders once, then "Up next". */
+export const TvStandingsAfterQ1ThreeLive: Story = {
+  play: mountFamily(
+    familySnapshot(
+      {
+        players: FAMILY.slice(0, 3),
+        questionNumber: 1,
+        questionResults: [],
+        currentQuestion: { questionId: "q1", startTime: now, answers: [] },
+      },
+      { active: "questionActive" },
+    ),
+    (client) => {
+      const result = resultFor("q1", 1, [
+        ["p-sam", "Sam", 6, 2],
+        ["p-mom", "Mom", 8, 4],
+        ["p-grandpa", "Grandpa", 10, 2],
+      ]);
+      setTimeout(() => {
+        client.produce((draft) => {
+          draft.public.currentQuestion = null;
+          draft.public.questionResults.push(result);
+          for (const p of draft.public.players) p.score += result.scores.find((s) => s.playerId === p.id)?.points ?? 0;
+          draft.value = { active: "questionPrep" };
+        });
+      }, 600);
+    },
+  ),
+};
