@@ -56,3 +56,7 @@ pnpm exec tsx e2e/record-session.ts && python3 scripts/evidence.py critic/rounds
 - Known story failures: Views/PlayerView/ActiveQuestion (timer, pre-existing) and the one above.
 - Riso leftovers kept only because stories assert them: `font-display`/`text-blue` class names on two nodes in
   PlayerResult.tsx (stories/player-view.stories.tsx ~L405/409); neutralised in CSS.
+- PINNED COPY for Jon: "GOOD GUESS!" is asserted by e2e flow-07 (guess 5 vs 4, 25% off) and story
+  ResultsScoredSecondPlace (5 vs 8, 37.5% off), so a scoring guess 20-50% off still headlines "GOOD GUESS!" (the
+  critic called that dishonest). The honest bands live in src/components/phone/honesty.ts; if you OK editing those two
+  pins, change the "fair" case to "NOT BAD." / "OFF.".
