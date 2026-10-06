@@ -1,76 +1,58 @@
-# Trivia Jam art style: riso game-show print
+# Trivia Jam art style: Aurora Glass
 
-Trivia Jam looks like a **risograph-printed game-show poster that moves**. Everything on screen could have
-come off a three-drum riso: flat spot inks on warm paper, overprints that mix where they cross, slight
-misregistration, halftone dots for tone, and huge Swiss-poster numerals. No gradients from a UI kit, no
-glass cards, no glow, no drop shadows (a misregistered second ink *is* the shadow), no emoji, no faces on
-objects, no mascot. The numbers and the players are the stars.
+Chosen by Jon on 2026-10-06 (option 4 of the third round of mocks). Trivia Jam is an adult party game; the look
+is the original Trivia Jam (dark indigo, lavender gradient type, rounded translucent cards, Inter) evolved:
+a soft indigo / purple / pink **aurora** glows behind everything, surfaces are **frosted glass**, and the answer
+**glows**. Calm and premium at rest, bright at the moments that matter. No emoji, no faces on objects, no mascot.
 
-It must not look like the other family games (3D space, cut paper, vinyl/plush diorama, night forest,
-clay diorama, gouache). It is flat, graphic and printed.
+## Colour tokens
 
-## Inks (the only colours)
+| Token | Value | Use |
+|---|---|---|
+| `--night` | `#0b0f1a` | the base behind the aurora (TV and phones) |
+| `--night-2` | `#111827` | the original gray-900; sheets on phones |
+| `--aurora-indigo` | `#6366f1` | aurora blob, axis gradient start |
+| `--aurora-purple` | `#a855f7` | aurora blob, axis gradient end |
+| `--aurora-pink` | `#ec4899` | aurora blob (low), rare accent |
+| `--text` | `#ffffff` | primary text |
+| `--text-2` | `#d1d5db` | names, secondary |
+| `--text-3` | `#9ca3af` | labels, ticks |
+| `--lav-1` → `--lav-2` | `#818cf8` → `#c084fc` | the gradient used for question text (the original's signature) |
+| `--glow` | `#c4b5fd` | the answer's glow and white→lavender gradient end |
+| `--win` | `#4ade80` (fill `#22c55e`, ink `#052e16`) | exact / correct / the winner chip |
+| `--close` | `#fbbf24` | "close" and the overall leader |
+| `--glass` | `rgba(255,255,255,.07)` + `backdrop-filter: blur(...)` | chips, cards, rows |
+| `--glass-edge` | `rgba(255,255,255,.18)` | 1-2 px borders on glass |
 
-| Token | Ink | Hex | Use |
-|---|---|---|---|
-| `--paper` | Natural paper | `#F3EEE3` | every background (TV and phones); never pure white |
-| `--paper-2` | Paper, second sheet | `#E9E2D3` | panels, cards (a sheet laid on a sheet) |
-| `--ink` | Riso Black (warm) | `#1E1B1A` | body text, rules, outlines |
-| `--pink` | Fluorescent Pink | `#FF48B0` | energy: timer, "lock in", the correct answer |
-| `--blue` | Medium Blue | `#3255A4` | structure: questions, number line, player chips |
-| `--yellow` | Yellow | `#FFE800` | highlight: closest guess, winner, spotlight |
-| `--teal` | Teal (sparingly) | `#00838A` | "exact!" and success only |
-
-Overprints: where pink crosses blue it reads as purple, yellow over blue as green. Get it with
-`mix-blend-mode: multiply` on ink layers over paper, never by inventing new colours. Text is always solid
-ink on paper or paper on a solid ink block (contrast ≥ 4.5:1; yellow never carries text on paper).
-
-## Print texture
-
-- Paper grain: a fixed SVG noise layer (`feTurbulence`) at 6-10% multiply over the whole screen.
-- Halftone: dot patterns (`radial-gradient` tiles) for tone and for big background shapes; 8-14 px dots
-  on the TV, 4-6 px on phones.
-- Misregistration: a big shape or numeral is printed twice, the second ink offset 3-6 px down-right
-  (TV) or 2-3 px (phones). Use it on display type and key shapes, not on body text.
-- Ink edges are slightly rough on big shapes (an SVG displacement filter), crisp on text.
+The aurora is three large blurred radial gradients (indigo top-left, purple right, pink bottom) on `--night`,
+drifting very slowly (40-60 s loops; still under reduced motion). It is atmosphere: never behind small text at
+full strength, never competing with the focal point.
 
 ## Type
 
-- **Display + UI:** Bricolage Grotesque (variable, self-hosted via `@fontsource-variable`), weights 700-800
-  for display, 500-600 for UI; tight tracking on display (-0.02em).
-- **Numerals:** Bricolage Grotesque 800 with `font-variant-numeric: tabular-nums` for anything that counts.
-  Answers, timers and scores are set huge: the number is the hero of every frame.
-- **Labels / small caps:** Space Mono 700, uppercase, +0.08em tracking (like a print job's slug line).
-- Minimum sizes on the TV (1920x1080): body/labels 28 px, player names 36 px, question 72-96 px,
-  answer numerals 240 px+. On phones: 16 px minimum, buttons 20 px+.
+- **Inter** (variable, self-hosted via `@fontsource-variable/inter`) for everything. Display 800-900 with
+  -0.02 to -0.04em tracking; UI 500-700. `font-variant-numeric: tabular-nums` for every number that counts.
+- Question text uses the lavender gradient (`--lav-1` → `--lav-2`, `background-clip: text`).
+- The answer numeral: 800-900, white → `--glow` vertical gradient with a soft lavender drop-shadow glow.
+- Labels: Inter 600, uppercase, +0.12em tracking, `--text-3`.
+- TV minimums (1920x1080): labels 28 px, names 36 px, question 72-96 px, answer 240 px+. Phones: 14 px minimum.
 
-## Shape language
+## Surfaces and shape
 
-Chunky rectangles with 0-4 px radius (printed cards), circles (stamps, dots, player tokens), thick
-4-6 px ink rules, stars/sunbursts only as print ornaments. Player tokens are solid ink circles with the
-initial set in paper colour, one ink per player (blue, pink, teal, yellow on ink, then repeats with a
-halftone variant).
+- Glass: `--glass` fill, `--glass-edge` border, `backdrop-filter: blur(16-24px)`, radius 16-24 px (pills for
+  chips and stamps). No hard offset shadows, no ink outlines, no halftone, no paper grain, no misregistration.
+- Player tokens: round glass chips with the initial; the winner's chip fills with `--win` and glows.
+- Stamps (EXACT!, CLOSEST!, GOT IT!): solid pills (`--win` for exact/correct, `--close` for closest), short
+  pop-in, never rotated more than 3 degrees.
+- The number line: a 4-6 px rounded bar in the indigo → purple gradient with a soft glow; ticks `--text-3`.
 
-## Motion (the print is alive)
+## Motion
 
-- Things are *stamped* or *slid under the roller*: stamps land with an anticipation lift and a 1-frame
-  squash; sheets slide in on a quick ease-out (cubic-bezier(.2,.9,.2,1.15)) with a small overshoot.
-- Numbers roll up (counter tick) and flip; misregistration can briefly jitter on impact.
-- One focal motion at a time on the TV; the background never competes.
+Soft and confident: glass panels fade-and-rise (12-20 px, 300-450 ms, ease-out), numbers count up, the answer
+slams in with a scale-down from 1.4 and a glow bloom, winners' chips lift and glow. One focal motion at a time
+on the TV; the aurora drifts underneath. `prefers-reduced-motion`: shorter and calmer, never absent.
 
-## TV composition
+## Generated art
 
-The TV is a poster with one focal point per beat: the question while answering, the number line on the
-reveal, the podium at the end. Nothing covers the centre. The scoreboard is a strip, shown between
-questions, not a sidebar during them.
-
-## Generated art (Codex, then code)
-
-Generated art is a small kit: a transparent wordmark/logo, a 2:3 cover, a 1:1 icon, a 16:9 clean hero for
-the OGS launcher, and a few printed ornaments (sunburst, stars, confetti sheet). Everything else is type,
-CSS and SVG. Prompt prefix for every image:
-
-> Risograph print, three spot inks only: fluorescent pink #FF48B0, medium blue #3255A4, yellow #FFE800,
-> plus warm black, on natural cream paper #F3EEE3. Visible halftone dots, slight ink misregistration,
-> paper grain, flat shapes, bold Swiss-poster graphic design, no gradients, no 3D, no photorealism,
-> no faces, no characters, no emoji.
+None needed in the game. The OGS art kit (icon, cover, logo, clean hero) is rendered from HTML/CSS in this style
+(Jon prefers live HTML/CSS over image generation for this game).
