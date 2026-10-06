@@ -1121,3 +1121,16 @@ export const TvRevealStampSlamsOnce: Story = {
     expect(shownTotals).toBeGreaterThan(0);
   },
 };
+
+/** Round 07: everybody nails it, so the takeover has no "rest of the room" and is composed centred from its first frame. */
+export const TvRevealEveryoneExactLive: Story = {
+  play: liveReveal(
+    "q1",
+    1,
+    resultFor("q1", 1, [
+      ["p-mom", "Mom", 8, 4],
+      ["p-sam", "Sam", 8, 3],
+    ]),
+    { "p-sam": 0, "p-mom": 0, "p-grandpa": 0, "p-lou": 0 },
+  ),
+};
