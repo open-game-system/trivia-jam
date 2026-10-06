@@ -48,3 +48,11 @@ pnpm exec tsx e2e/record-session.ts && python3 scripts/evidence.py critic/rounds
   qa-agent enroll = [env.qa] in wrangler with its own resources (needs Jon's yes to create), e2e config with qa/prod
   targets (pin e2e@0.17.0, chatgpt() from e2e/oauth/chatgpt), qa/charters.yml, qa/qa-agent.yml, then register the repo
   path in ~/.config/qa-agent/repos.txt. Not done tonight (outside this /goal); see ~/src/skills/qa-agent/SKILL.md.
+- TEST CONFLICT for Jon (tied to "lock the host's Next during the TV reveal"): story
+  Phone/Screens HostHoldsTheRevealUntilTheTvLands (src/components/phone/phone.stories.tsx ~L440, written tonight with
+  the host reveal gate) expects the host to hold results and disable Next until the TV lands; e2e
+  flow-07-auto-advance-reveal.spec.ts L25-27 expects results and Next within 5 s. The gate was reverted to keep flow 07
+  (existing behaviour), so the story fails. Neither test was edited. Your answer decides which one changes.
+- Known story failures: Views/PlayerView/ActiveQuestion (timer, pre-existing) and the one above.
+- Riso leftovers kept only because stories assert them: `font-display`/`text-blue` class names on two nodes in
+  PlayerResult.tsx (stories/player-view.stories.tsx ~L405/409); neutralised in CSS.
