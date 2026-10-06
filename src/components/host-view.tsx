@@ -72,7 +72,7 @@ const Page = ({ children }: { children: React.ReactNode }) => (
 
 const Masthead = ({ children }: { children?: React.ReactNode }) => (
   <div className="flex items-center justify-between gap-3 pb-2 pt-3">
-    <span className="pslug">Trivia Jam / Host</span>
+    <span className="pslug">Hosting</span>
     {children}
   </div>
 );
@@ -178,7 +178,7 @@ const ResultAnswerRow = ({
         <div className="truncate text-xl font-extrabold leading-tight">
           {answer.playerName}
         </div>
-        <div className="pslug truncate">
+        <div className="pslug" style={{ overflowWrap: "anywhere" }}>
           {answer.value}
           {score ? ` - ${score.timeTaken.toFixed(1)}s` : ""}
         </div>
@@ -398,8 +398,11 @@ const SettingsModal = ({
   );
 };
 
-const EXAMPLE_QUESTIONS = `How many legs does a spider have?
-8`;
+const EXAMPLE_QUESTIONS = `How many floors does the Burj Khalifa have?
+163
+
+How many bones are in an adult human body?
+206`;
 
 const QuestionImportForm = ({
   documentContent,
@@ -420,7 +423,8 @@ const QuestionImportForm = ({
         className="pnotice mb-3 h-detail"
         role="alert"
       >
-        <strong>Could not parse questions:</strong> {parsingErrorMessage}
+        <strong>Could not parse questions:</strong> {parsingErrorMessage}{" "}
+        Each question needs an answer on the line below it, with a blank line between questions.
       </div>
     )}
     {isParsing ? (
@@ -435,7 +439,7 @@ const QuestionImportForm = ({
       </div>
     ) : (
       <div className="hform">
-        <p className="mb-2 text-base font-bold leading-snug">Question, then answer. Blank line between.</p>
+        <p className="mb-2 text-base font-bold leading-snug">One question, then its answer on the next line. Leave a blank line between questions.</p>
         <pre className="hform-example" aria-label="Example">{EXAMPLE_QUESTIONS}</pre>
         <textarea
           value={documentContent}
@@ -493,7 +497,7 @@ const QuestionListDisplay = ({
             {index + 1}
           </span>
           <div className="min-w-0 flex-1">
-            <div className="truncate text-base font-bold leading-snug">
+            <div className="text-base font-bold leading-snug" style={{ overflowWrap: "anywhere" }}>
               <span className="sr-only">Q{index + 1}: </span>
               {question.text}
             </div>
@@ -511,7 +515,7 @@ const QuestionListDisplay = ({
               </ul>
             )}
           </div>
-          <span className="tabular max-w-[34%] truncate text-xl font-extrabold">
+          <span className="tabular max-w-[34%] text-xl font-extrabold" style={{ overflowWrap: "anywhere" }}>
             <span className="sr-only">Answer: </span>
             {question.correctAnswer}
           </span>
@@ -969,7 +973,7 @@ const QuestionControls = ({
               )}
 
               <div className="mt-5">
-                <Details summary={isFirst ? "Details" : "Details: up next, players"}>
+                <Details summary="More">
                   {!(lastQuestionResult && isLastQuestion) && (
                     <section aria-label="Up next">
                       {!isFirst && <p className="pslug mb-2">Up next</p>}

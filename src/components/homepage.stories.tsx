@@ -1,7 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { expect } from '@storybook/test';
 import { userEvent, within } from '@storybook/testing-library';
+import { atom } from 'nanostores';
 import { Homepage } from './homepage';
+import { HomePageContent } from './homepage-content';
 
 const meta: Meta<typeof Homepage> = {
   title: 'Game/Homepage',
@@ -14,6 +16,16 @@ const meta: Meta<typeof Homepage> = {
 
 export default meta;
 type Story = StoryObj<typeof Homepage>;
+
+// The real front door (what the route renders): title up top, the buttons in thumb reach.
+export const FrontDoor: Story = {
+  render: () => <HomePageContent newGameId="demo-game" $showHelp={atom<boolean>(false)} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    expect(canvas.getByRole('link', { name: 'Create New Game' })).toBeInTheDocument();
+    expect(canvas.getByRole('button', { name: 'How to Play' })).toBeInTheDocument();
+  },
+};
 
 // Display Stories
 export const DefaultView: Story = {};

@@ -151,11 +151,11 @@ export const QuestionExtras = ({ question }: { question: Question }) => (
 );
 
 /**
- * "Details": everything the host can look up but does not need at a glance.
+ * "More": everything the host can look up but does not need at a glance.
  * Native <details>, so it is keyboard and screen-reader friendly and closed by default.
  */
 export const Details = ({
-  summary = "Details",
+  summary = "More",
   children,
   testId,
 }: {

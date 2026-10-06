@@ -12,12 +12,12 @@ export type HomePageContentProps = {
 /** The home page: the name on the aurora, one big button, a way to learn. */
 export function HomePageContent({ newGameId, $showHelp }: HomePageContentProps) {
   return (
-    <PhoneShell className="relative flex items-center justify-center overflow-hidden px-5 py-8">
+    <PhoneShell className="relative flex flex-col overflow-hidden px-5 pb-8 pt-[10dvh]">
       <motion.main
         initial={{ opacity: 0, y: 18 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ ease: [0.2, 0.9, 0.2, 1.15], duration: 0.45 }}
-        className="relative z-10 w-full max-w-xl"
+        className="relative z-10 mx-auto flex w-full max-w-xl flex-1 flex-col"
       >
         <p className="pslug mb-3">A numbers game for the whole room</p>
         <h1 className="pposter-title lav-text">Trivia Jam</h1>

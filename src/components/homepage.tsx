@@ -20,7 +20,7 @@ export function Homepage() {
   };
 
   return (
-    <PhoneShell className="flex items-center justify-center px-5 py-8">
+    <PhoneShell className="flex justify-center px-5 pb-8 pt-[8dvh]">
       <main className="w-full max-w-xl">
         <h1 className="pposter-title lav-text mb-8">Trivia Jam</h1>
 
