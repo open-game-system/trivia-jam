@@ -1,8 +1,9 @@
-/* TV (spectate page) styles. Owner: the TV pass. Riso kit lives in src/styles.css. */
+/* TV (spectate page) styles: Aurora Glass (docs/art-style.md). The shared kit lives in src/styles.css. */
 
-/* The poster: a fixed 1920x1080 sheet scaled to whatever screen it is cast to. */
-.riso.tv-screen,
-.tv-screen {
+/* The stage: a fixed 1920x1080 frame scaled to whatever screen it is cast to. */
+/* Doubled class: the kit's .aurora (position: relative) is declared after this file. */
+.tv-screen,
+.tv-screen.aurora {
   position: fixed;
   inset: 0;
   overflow: hidden;
@@ -15,6 +16,18 @@
   height: 1080px;
   transform-origin: center center;
   overflow: hidden;
+}
+
+/*
+ * The TV's aurora is quieter than the kit default: it sits behind 28-110 px text read from a couch, so its
+ * brightest point stays dark enough for white (>= 4.5:1) and the lavender question (large text, >= 3:1).
+ */
+.tv-screen.aurora::before {
+  background:
+    radial-gradient(40% 34% at 12% 6%, rgba(99, 102, 241, 0.38), transparent 72%),
+    radial-gradient(42% 40% at 94% 36%, rgba(168, 85, 247, 0.32), transparent 72%),
+    radial-gradient(48% 34% at 54% 110%, rgba(236, 72, 153, 0.28), transparent 72%);
+  filter: blur(48px);
 }
 
 /* Screen-reader text that still clears the rig's 28px floor if it is ever measured. */
@@ -31,80 +44,142 @@
   font-size: 28px;
 }
 
+/* Display type: Inter, heavy and tight. */
 .tv-display {
-  font-family: "Bricolage Grotesque Variable", system-ui, sans-serif;
+  font-family: "Inter Variable", "Inter", system-ui, sans-serif;
   font-weight: 800;
   letter-spacing: -0.03em;
-  line-height: 0.88;
+  line-height: 0.92;
+  font-variant-numeric: tabular-nums;
+}
+.tv-name {
+  font-family: "Inter Variable", "Inter", system-ui, sans-serif;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--text);
 }
 
-/* Two drums of ink: the under layer lands a few px off, the top layer overprints it. */
-.tv-riso-type {
-  position: relative;
-  display: inline-block;
-}
-.tv-riso-type > .tv-riso-under {
-  position: absolute;
-  inset: 0;
-  transform: translate(var(--reg-x, 8px), var(--reg-y, 8px));
-  pointer-events: none;
-}
-.tv-riso-type > .tv-riso-top {
-  position: relative;
-  mix-blend-mode: multiply;
-}
-.tv-rough {
-  filter: url(#tv-rough);
+/* Labels: Inter 600 caps, wide tracking. The TV floor is 28 px; the default is 32. */
+.tv-label {
+  font-family: "Inter Variable", "Inter", system-ui, sans-serif;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-3);
+  font-size: 32px;
+  line-height: 1.1;
 }
 
-/* Player tokens: a solid ink circle, or an outline before the player locks in. */
-.tv-token {
+/* Glass on the TV is a touch darker than the phones' so white type keeps its contrast over the aurora. */
+.tv-glass {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.05)), rgba(11, 15, 26, 0.38);
+  border: 2px solid var(--glass-edge);
+  border-radius: 24px;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.12), 0 24px 60px rgba(4, 6, 14, 0.35);
+}
+.tv-glass-pill {
+  background: rgba(255, 255, 255, 0.08);
+  border: 2px solid var(--glass-edge);
+  border-radius: 999px;
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+/* Player tokens: round glass chips with the initial and a tinted rim. */
+.tv-chip {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: 9999px;
-  font-family: "Bricolage Grotesque Variable", system-ui, sans-serif;
+  font-family: "Inter Variable", "Inter", system-ui, sans-serif;
   font-weight: 800;
   line-height: 1;
+  letter-spacing: -0.02em;
   flex: none;
+  color: var(--text);
   border-style: solid;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  transition: background-color 0.3s, box-shadow 0.3s, border-color 0.3s, color 0.3s;
+}
+/* Before a player locks in: an empty, dashed glass seat with a dim initial. */
+.tv-chip--thinking {
+  border-style: dashed;
+  border-color: rgba(255, 255, 255, 0.3) !important;
+  background: rgba(255, 255, 255, 0.03) !important;
+  color: var(--text-3);
+}
+/* The winner's chip fills green and glows. */
+.tv-chip--win {
+  background: rgba(74, 222, 128, 0.92) !important;
+  border-color: var(--win) !important;
+  color: var(--win-ink);
+  box-shadow: 0 0 0 6px rgba(74, 222, 128, 0.18), 0 0 48px rgba(74, 222, 128, 0.55);
 }
 
-/* A dashed, empty chair at the table. */
+/* An empty chair at the table. */
 .tv-seat {
-  border: 5px dashed color-mix(in srgb, var(--ink) 35%, transparent);
+  border: 3px dashed rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.025);
   border-radius: 9999px;
   flex: none;
 }
 
-/* A rubber stamp: ink block, mono caps, slightly rotated. */
-.tv-stamp {
-  font-family: "Space Mono", ui-monospace, monospace;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  border: 5px solid currentColor;
-  padding: 4px 18px;
-  line-height: 1.1;
+/* Stamps (EXACT!, CLOSEST!, GOT IT!) and badges: solid pills. */
+.tv-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  font-family: "Inter Variable", "Inter", system-ui, sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1;
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.tv-pill--win {
+  background: var(--win-fill);
+  color: var(--win-ink);
+  box-shadow: 0 0 40px rgba(74, 222, 128, 0.45);
+}
+.tv-pill--close {
+  background: var(--close);
+  color: #3b1d03;
+  box-shadow: 0 0 40px rgba(251, 191, 36, 0.4);
+}
+.tv-pill--lav {
+  background: var(--glow);
+  color: #1e1b4b;
+  box-shadow: 0 0 28px rgba(196, 181, 253, 0.45);
+}
+.tv-pill--glass {
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid var(--glass-edge);
+  color: var(--text);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
 }
 
-.tv-rule {
-  height: 6px;
-  background: var(--ink);
+/* The number line: a rounded indigo-to-purple bar with a soft glow. */
+.tv-axis {
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--aurora-indigo), var(--aurora-purple));
+  box-shadow: 0 0 24px rgba(139, 92, 246, 0.55), 0 0 4px rgba(196, 181, 253, 0.6);
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .tv-spin {
-    animation-duration: 600s !important;
-  }
+/* A soft bloom of light behind the moment that matters. */
+.tv-bloom {
+  position: absolute;
+  border-radius: 9999px;
+  pointer-events: none;
 }
 
-@keyframes tv-spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-.tv-spin {
-  animation: tv-spin 140s linear infinite;
+/* Glowing confetti: soft round particles in the aurora colours. */
+.tv-particle {
+  position: absolute;
+  border-radius: 9999px;
+  pointer-events: none;
 }

@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 import { QRCodeSVG } from "qrcode.react";
-import { InkToken, RisoType, Slug } from "./print";
-import { Sunburst } from "./sunburst";
+import { FitName } from "./fit-name";
+import { EASE_OUT, GlassToken, Label } from "./glass";
 
 /** The table always shows this many chairs, filled or empty. */
 export const LOBBY_SEATS = 10;
@@ -9,50 +9,53 @@ export const LOBBY_SEATS = 10;
 type LobbyPlayer = { id: string; name: string };
 
 const Wordmark = () => (
-  <h2 className="tv-display relative" aria-label="Trivia Jam">
-    <span className="block" style={{ fontSize: 250 }}>
-      <RisoType top="var(--blue)" under="var(--pink)" offset={10} rough>
-        TRIVIA
-      </RisoType>
-    </span>
-    <span className="block -mt-2" style={{ fontSize: 400, marginLeft: 120 }}>
-      <RisoType top="var(--pink)" under="var(--blue)" offset={12} rough>
-        JAM
-      </RisoType>
-    </span>
+  <h2 className="tv-display relative" aria-label="Trivia Jam" style={{ letterSpacing: "-0.045em" }}>
+    <motion.span
+      className="block lav-text"
+      style={{ fontSize: 230, lineHeight: 0.92, paddingBottom: 8 }}
+      initial={{ opacity: 0, y: 24 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease: EASE_OUT }}
+    >
+      Trivia
+    </motion.span>
+    <motion.span
+      className="block glow-text"
+      style={{ fontSize: 330, lineHeight: 0.88, marginLeft: 8, paddingBottom: 12 }}
+      initial={{ opacity: 0, y: 30 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.55, delay: 0.12, ease: EASE_OUT }}
+    >
+      Jam
+    </motion.span>
   </h2>
 );
 
 const JoinCard = ({ joinUrl, host, gameCode }: { joinUrl: string; host: string; gameCode?: string }) => (
   <motion.div
-    initial={{ y: 60, rotate: 6, opacity: 0 }}
-    animate={{ y: 0, rotate: 2.5, opacity: 1 }}
-    transition={{ duration: 0.6, ease: [0.2, 0.9, 0.2, 1.15] }}
-    className="sheet sheet-pink absolute flex flex-col items-center"
-    style={{ right: 96, top: 72, width: 560, padding: "30px 36px 26px" }}
+    initial={{ y: 30, opacity: 0 }}
+    animate={{ y: 0, opacity: 1 }}
+    transition={{ duration: 0.5, delay: 0.2, ease: EASE_OUT }}
+    className="tv-glass absolute flex flex-col items-center"
+    style={{ right: 96, top: 72, width: 560, padding: "34px 36px 30px", borderRadius: 32 }}
     data-testid="qr-code-section"
   >
-    <Slug className="mb-5 text-ink !text-[30px] whitespace-nowrap" testId="qr-code-label">
+    <Label className="mb-6 whitespace-nowrap" testId="qr-code-label" size={30}>
       Scan to join the game
-    </Slug>
-    <div className="p-3" style={{ background: "var(--paper)", border: "4px solid var(--ink)" }}>
-      <QRCodeSVG
-        value={joinUrl}
-        size={300}
-        bgColor="#F3EEE3"
-        fgColor="#1E1B1A"
-        level="M"
-        data-testid="game-qr-code"
-      />
+    </Label>
+    <div className="p-4" style={{ background: "#ffffff", borderRadius: 20, boxShadow: "0 0 60px rgba(196, 181, 253, 0.35)" }}>
+      <QRCodeSVG value={joinUrl} size={290} bgColor="#FFFFFF" fgColor="#0B0F1A" level="M" data-testid="game-qr-code" />
     </div>
-    <div className="slug text-[28px] mt-5 text-ink">or open</div>
-    <div className="tv-display text-[64px] text-blue mt-1 text-center" style={{ lineHeight: 1 }}>
-      {host}
-    </div>
+    <Label className="mt-6" size={28}>
+      or open
+    </Label>
+    <FitName text={host} max={60} floor={36} box={488} lineHeight={1.1} className="tv-display text-center mt-2 lav-text" />
     {gameCode ? (
-      <div className="mt-2 flex items-baseline gap-4">
-        <span className="slug text-[28px]">Code</span>
-        <span className="tv-display tabular text-[72px]">{gameCode}</span>
+      <div className="mt-3 flex items-baseline gap-4">
+        <Label size={28}>Code</Label>
+        <span className="tv-display text-[72px]" style={{ color: "var(--text)" }}>
+          {gameCode}
+        </span>
       </div>
     ) : null}
   </motion.div>
@@ -60,25 +63,20 @@ const JoinCard = ({ joinUrl, host, gameCode }: { joinUrl: string; host: string; 
 
 const Seat = ({ player, index }: { player: LobbyPlayer | undefined; index: number }) => (
   <div className="flex flex-col items-center" style={{ width: 168 }}>
-      {player ? (
-        <motion.div
-          key={player.id}
-          initial={{ scale: 1.7, opacity: 0, y: -40 }}
-          animate={{ scale: [1.7, 0.84, 1.05, 1], opacity: 1, y: 0 }}
-          transition={{ duration: 0.55, times: [0, 0.5, 0.8, 1] }}
-        >
-          <InkToken name={player.name} inkIndex={index} size={120} />
-        </motion.div>
-      ) : (
-        <motion.div key={`seat-${index}`} className="tv-seat" style={{ width: 120, height: 120 }} />
-      )}
     {player ? (
-      <span
-        className="tv-display text-[38px] mt-3 max-w-full truncate text-ink"
-        style={{ lineHeight: 1.1, letterSpacing: "-0.01em" }}
+      <motion.div
+        key={player.id}
+        initial={{ scale: 0.6, opacity: 0, y: 20 }}
+        animate={{ scale: [0.6, 1.08, 1], opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, times: [0, 0.6, 1], ease: EASE_OUT }}
       >
-        {player.name}
-      </span>
+        <GlassToken name={player.name} inkIndex={index} size={120} />
+      </motion.div>
+    ) : (
+      <motion.div key={`seat-${index}`} className="tv-seat" style={{ width: 120, height: 120 }} />
+    )}
+    {player ? (
+      <FitName text={player.name} max={36} floor={28} box={168} lineHeight={1.12} className="tv-name mt-3 text-center" />
     ) : (
       <span className="tv-sr">Empty Slot</span>
     )}
@@ -104,31 +102,28 @@ export const TvLobby = ({
   const shown = seats.slice(0, LOBBY_SEATS);
   const extra = players.length - LOBBY_SEATS;
   return (
-    <motion.div
-      key="lobby"
-      className="absolute inset-0"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-     
-    >
-      <Sunburst size={1400} x={560} y={330} />
-      <div className="absolute" style={{ left: 96, top: 84 }}>
-        <Slug className="flex items-center gap-4 text-ink">
-          <span className="inline-block" style={{ width: 28, height: 28, background: "var(--pink)", borderRadius: 999 }} />
+    <motion.div key="lobby" className="absolute inset-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+      <div className="absolute" style={{ left: 104, top: 88 }}>
+        <Label className="flex items-center gap-4">
+          <motion.span
+            className="inline-block"
+            style={{ width: 18, height: 18, background: "var(--glow)", borderRadius: 999, boxShadow: "0 0 18px var(--glow)" }}
+            animate={{ opacity: [1, 0.35, 1] }}
+            transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
+          />
           <span>Waiting for game to start</span>
-        </Slug>
+        </Label>
       </div>
-      <div className="absolute" style={{ left: 84, top: 150 }}>
+      <div className="absolute" style={{ left: 92, top: 150 }}>
         <Wordmark />
       </div>
 
       {onOgsTv ? null : <JoinCard joinUrl={joinUrl} host={host} gameCode={gameCode} />}
 
-      <div className="absolute" style={{ left: 96, right: 96, bottom: 56 }}>
-        <div className="tv-rule mb-6" />
-        <div className="flex items-baseline justify-between mb-5">
-          <Slug className="text-ink">{players.length === 0 ? "Waiting for players" : `${players.length} ${players.length === 1 ? "player" : "players"}`}</Slug>
-          {extra > 0 ? <Slug className="text-blue">+{extra} more at the table</Slug> : null}
+      <div className="absolute tv-glass" style={{ left: 72, right: 72, bottom: 40, padding: "26px 24px 24px", borderRadius: 32 }}>
+        <div className="flex items-baseline justify-between mb-5" style={{ paddingLeft: 12, paddingRight: 12 }}>
+          <Label>{players.length === 0 ? "Waiting for players" : `${players.length} ${players.length === 1 ? "player" : "players"}`}</Label>
+          {extra > 0 ? <Label className="lav-text">+{extra} more at the table</Label> : null}
         </div>
         <div className="flex justify-between">
           {shown.map((p, i) => (

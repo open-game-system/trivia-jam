@@ -1,9 +1,9 @@
 import { motion } from "framer-motion";
 import type { ReactNode } from "react";
 import { FitName } from "./fit-name";
-import { InkToken, Slug } from "./print";
-import { InkTimer } from "./timer";
-import { inkForIndex, optionLetter } from "./tv-model";
+import { EASE_OUT, EASE_POP, GlassToken, Label } from "./glass";
+import { GlassTimer } from "./timer";
+import { optionLetter } from "./tv-model";
 
 type TvPlayer = { id: string; name: string };
 
@@ -13,22 +13,20 @@ export const questionFontSize = (text: string, compact: boolean): number => {
   return compact ? Math.min(size, 80) : size;
 };
 
-/** "QUESTION 2 OF 5" reversed out of a solid ink block, like a print job's slug. */
+/** "QUESTION 2 OF 5" on a small glass pill. */
 export const QuestionSlug = ({ number, total, extra }: { number: number; total: number; extra?: string }) => (
   <div className="flex items-center gap-5">
-    <Slug>
-      <span style={{ background: "var(--ink)", color: "var(--paper)", padding: "12px 20px", display: "inline-block" }}>
+    <span className="tv-glass-pill inline-flex items-center" style={{ padding: "12px 26px" }}>
+      <Label className="!text-[color:var(--text-2)]">
         Question {number}
         {total > 0 ? ` of ${total}` : ""}
-      </span>
-    </Slug>
-    {extra ? <Slug className="text-blue">{extra}</Slug> : null}
+      </Label>
+    </span>
+    {extra ? <Label>{extra}</Label> : null}
   </div>
 );
 
-const TILE_INKS = [0, 1, 2, 3].map((i) => inkForIndex(i));
-
-/** Four printed answer tiles, one ink each. In the reveal, tokens stack on the tiles. */
+/** Four glass answer tiles, lettered. In the reveal, tokens stack on the tiles and the right one lights green. */
 export const OptionTiles = ({
   options,
   correctIndex,
@@ -42,47 +40,56 @@ export const OptionTiles = ({
 }) => (
   <div className="grid grid-cols-2 gap-x-10 gap-y-8">
     {options.map((option, i) => {
-      const ink = TILE_INKS[i % TILE_INKS.length];
       const isRight = correctIndex === i;
       const dimmed = correctIndex !== undefined && !isRight;
       return (
         <motion.div
           key={`${i}-${option}`}
-          initial={{ y: 40, opacity: 0 }}
-          animate={{ y: 0, opacity: dimmed ? 0.32 : 1, scale: isRight ? [1, 1.07, 1] : 1 }}
+          initial={{ y: 24, opacity: 0 }}
+          animate={{ y: 0, opacity: dimmed ? 0.32 : 1, scale: isRight ? [1, 1.04, 1] : 1 }}
           transition={{
-            duration: 0.45,
+            duration: 0.42,
             delay: correctIndex === undefined ? 0.25 + i * 0.08 : 0,
-            ease: [0.2, 0.9, 0.2, 1.15],
-            // The right tile is stamped: it punches up a size and settles.
-            scale: { duration: 0.4, times: [0, 0.4, 1] },
+            ease: EASE_OUT,
+            scale: { duration: 0.45, times: [0, 0.4, 1] },
           }}
-          className="relative flex items-center"
+          className="relative flex items-center tv-glass"
           style={{
             height,
-            background: "var(--paper-2)",
-            border: "5px solid var(--ink)",
-            boxShadow: `9px 9px 0 ${ink.color}`,
+            borderRadius: 28,
+            borderColor: isRight ? "var(--win)" : undefined,
+            boxShadow: isRight ? "0 0 0 2px var(--win), 0 0 60px rgba(74, 222, 128, 0.4)" : undefined,
+            transition: "border-color .3s, box-shadow .3s",
           }}
           data-testid={`tv-option-${i}`}
         >
-          <span
-            className="tv-display flex items-center justify-center h-full"
-            style={{ width: height, background: ink.color, color: ink.on, fontSize: 84, borderRight: "5px solid var(--ink)" }}
-          >
-            {optionLetter(i)}
+          <span className="flex items-center justify-center h-full flex-none" style={{ width: height }}>
+            <span
+              className="tv-display flex items-center justify-center"
+              style={{
+                width: height * 0.66,
+                height: height * 0.66,
+                borderRadius: 999,
+                fontSize: height * 0.4,
+                background: isRight ? "var(--win-fill)" : "linear-gradient(135deg, var(--aurora-indigo), var(--aurora-purple))",
+                color: isRight ? "var(--win-ink)" : "var(--text)",
+                boxShadow: isRight ? "0 0 30px rgba(74,222,128,.6)" : "0 0 24px rgba(139,92,246,.45)",
+              }}
+            >
+              {optionLetter(i)}
+            </span>
           </span>
-          <span className="tv-display px-8 flex-1" style={{ fontSize: 54, lineHeight: 1, letterSpacing: "-0.015em" }}>
-            {option}
+          <span className="flex-1 pr-8 min-w-0">
+            <FitName text={option} max={54} floor={36} box={844 - height - 40} lineHeight={1.05} className="tv-display" style={{ letterSpacing: "-0.02em", color: "var(--text)" }} />
           </span>
           {tokens?.[i] ? <span className="absolute flex gap-2" style={{ right: 20, top: -38 }}>{tokens[i]}</span> : null}
           {isRight ? (
             <motion.span
-              className="tv-stamp absolute"
-              style={{ left: height - 70, bottom: -30, color: "var(--paper)", fontSize: 52, background: "var(--teal)", borderColor: "var(--ink)", zIndex: 2 }}
-              initial={{ scale: 2.2, opacity: 0, rotate: -18 }}
-              animate={{ scale: [2.2, 0.88, 1], opacity: 1, rotate: -8 }}
-              transition={{ duration: 0.45, times: [0, 0.6, 1] }}
+              className="tv-pill tv-pill--win absolute"
+              style={{ left: height - 60, bottom: -30, fontSize: 44, padding: "10px 26px", zIndex: 2 }}
+              initial={{ scale: 0.4, opacity: 0, rotate: -2 }}
+              animate={{ scale: [0.4, 1.12, 1], opacity: 1, rotate: -2 }}
+              transition={{ duration: 0.42, times: [0, 0.6, 1], ease: EASE_POP }}
             >
               Right!
             </motion.span>
@@ -97,7 +104,7 @@ export const OptionTiles = ({
 export const lockInSize = (count: number): { token: number; slot: number } =>
   count <= 4 ? { token: 140, slot: 300 } : count <= 6 ? { token: 136, slot: 230 } : count <= 8 ? { token: 128, slot: 196 } : { token: 120, slot: 164 };
 
-/** One token per player: an empty dashed seat while thinking, stamped solid onto the band when they lock in. Never their answer. */
+/** One glass chip per player: a dashed empty seat while thinking, lit and glowing when they lock in. Never their answer. */
 export const LockInTokens = ({
   players,
   answeredIds,
@@ -114,24 +121,24 @@ export const LockInTokens = ({
           <div key={p.id} className="flex flex-col items-center" style={{ width: slot }} data-testid={`tv-lock-${p.id}`}>
             <motion.div
               key={locked ? "locked" : "thinking"}
-              style={{ borderRadius: 999, boxShadow: locked ? "8px 8px 0 var(--ink)" : "none" }}
-              initial={locked ? { scale: 1.7, rotate: -14, y: -60 } : false}
-              animate={locked ? { scale: [1.7, 0.8, 1.06, 1], rotate: [-14, 0, 0, 0], y: [-60, 0, 0, 0] } : { y: [0, -5, 0] }}
+              style={{ borderRadius: 999 }}
+              initial={locked ? { scale: 0.7, y: 10 } : false}
+              animate={locked ? { scale: [0.7, 1.12, 1], y: [10, -6, 0] } : { y: [0, -5, 0] }}
               transition={
                 locked
-                  ? { duration: 0.42, times: [0, 0.45, 0.75, 1] }
+                  ? { duration: 0.42, times: [0, 0.55, 1], ease: EASE_OUT }
                   : { duration: 2.4, repeat: Infinity, delay: i * 0.3, ease: "easeInOut" }
               }
             >
-              <InkToken name={p.name} inkIndex={i} size={token} filled={locked} />
+              <GlassToken name={p.name} inkIndex={i} size={token} filled={locked} />
             </motion.div>
             <FitName
               text={p.name}
-              max={44}
+              max={40}
               floor={28}
               box={slot}
-              className="tv-display mt-3 text-center"
-              style={{ letterSpacing: "-0.01em", color: locked ? "var(--ink)" : "color-mix(in srgb, var(--ink) 55%, var(--paper))" }}
+              className="tv-name mt-3 text-center"
+              style={{ color: locked ? "var(--text)" : "var(--text-3)", transition: "color .3s" }}
             />
           </div>
         );
@@ -140,18 +147,16 @@ export const LockInTokens = ({
   );
 };
 
-/** A faint printed number line: where the guesses will land when the answer comes in. */
+/** A faint glowing number line: where the guesses will land when the answer comes in. */
 const GhostLine = () => (
   <div aria-hidden="true" className="absolute" style={{ left: 96, right: 96, top: 640, height: 60 }}>
-    <svg className="absolute inset-0" width="1728" height="60" style={{ overflow: "visible" }}>
-      <line x1="0" y1="30" x2="1728" y2="30" stroke="var(--blue)" strokeWidth="6" strokeDasharray="2 18" strokeLinecap="round" />
-      {Array.from({ length: 9 }, (_, i) => (
-        <line key={i} x1={i * 216} y1="12" x2={i * 216} y2="48" stroke="var(--blue)" strokeWidth="6" opacity="0.45" />
-      ))}
-    </svg>
+    <div className="absolute tv-axis" style={{ left: 0, right: 0, top: 27, height: 6, opacity: 0.35 }} />
+    {Array.from({ length: 9 }, (_, i) => (
+      <span key={i} className="absolute" style={{ left: i * 216 - 2, top: 18, width: 4, height: 24, borderRadius: 4, background: "rgba(255,255,255,.18)" }} />
+    ))}
     <motion.span
-      className="tv-display absolute flex items-center justify-center"
-      style={{ left: 820, top: -34, width: 88, height: 88, borderRadius: 999, background: "var(--pink)", color: "var(--ink)", fontSize: 60, border: "5px solid var(--ink)" }}
+      className="tv-display tv-glass-pill absolute flex items-center justify-center"
+      style={{ left: 820, top: -14, width: 88, height: 88, fontSize: 52, color: "var(--glow)", boxShadow: "0 0 40px rgba(196,181,253,.35)" }}
       animate={{ x: [-260, 300, -120, 160, -260] }}
       transition={{ duration: 14, repeat: Infinity, ease: "easeInOut" }}
     >
@@ -185,26 +190,19 @@ export const TvQuestion = ({
   const hasOptions = options !== undefined && options.length > 0;
   const fontSize = questionFontSize(text, hasOptions);
   return (
-    <motion.div
-      key="question"
-      className="absolute inset-0"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-     
-      transition={{ duration: 0.25 }}
-    >
+    <motion.div key="question" className="absolute inset-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.25 }}>
       <motion.div
         className="absolute"
         style={{ left: 96, top: 72 }}
-        initial={{ x: -80, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        transition={{ duration: 0.45, ease: [0.2, 0.9, 0.2, 1.15] }}
+        initial={{ y: -12, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.4, ease: EASE_OUT }}
       >
         <QuestionSlug number={number} total={total} />
       </motion.div>
 
       <div className="absolute" style={{ right: 96, top: 56 }}>
-        <InkTimer remaining={remaining} total={timeWindow} />
+        <GlassTimer remaining={remaining} total={timeWindow} />
       </div>
 
       <div
@@ -212,17 +210,17 @@ export const TvQuestion = ({
         style={{
           left: 96,
           right: hasOptions ? 96 : 420,
-          top: hasOptions ? 170 : 170,
+          top: 170,
           bottom: hasOptions ? BAND_HEIGHT + 20 : 460,
           justifyContent: hasOptions ? "flex-start" : "center",
         }}
       >
         <motion.h2
-          className="tv-display text-ink"
-          style={{ fontSize, lineHeight: 1.02, letterSpacing: "-0.025em", maxWidth: hasOptions ? 1340 : 1400 }}
-          initial={{ y: 50, opacity: 0 }}
+          className="tv-display lav-text"
+          style={{ fontSize, lineHeight: 1.06, letterSpacing: "-0.03em", maxWidth: hasOptions ? 1340 : 1400, paddingBottom: "0.08em" }}
+          initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.55, ease: [0.2, 0.9, 0.2, 1.15], delay: 0.1 }}
+          transition={{ duration: 0.5, ease: EASE_OUT, delay: 0.1 }}
         >
           {text}
         </motion.h2>
@@ -231,20 +229,20 @@ export const TvQuestion = ({
             <OptionTiles options={options} height={128} />
           </div>
         ) : (
-          <div className="slug mt-8 text-blue" style={{ fontSize: 48, lineHeight: 1.1 }}>
+          <Label className="mt-8" size={40}>
             Guess the number on your phone
-          </div>
+          </Label>
         )}
       </div>
 
       {hasOptions ? null : <GhostLine />}
 
-      {/* The lock-in band: a second sheet along the bottom; each player's token is stamped onto it as they lock in. */}
-      <div className="absolute" style={{ left: 0, right: 0, bottom: 0, height: BAND_HEIGHT, background: "var(--paper-2)", borderTop: "6px solid var(--ink)" }}>
-        <div className="absolute flex items-center justify-between" style={{ left: 96, right: 96, top: 22 }}>
-          <Slug className="text-ink">{`Answers Submitted: ${answeredIds.size} / ${players.length}`}</Slug>
+      {/* The lock-in band: a glass shelf along the bottom; each player's chip lights up as they lock in. */}
+      <div className="absolute tv-glass" style={{ left: 48, right: 48, bottom: 32, height: BAND_HEIGHT - 32, borderRadius: 32 }}>
+        <div className="absolute flex items-center justify-between" style={{ left: 48, right: 48, top: 22 }}>
+          <Label>{`Answers Submitted: ${answeredIds.size} / ${players.length}`}</Label>
         </div>
-        <div className="absolute" style={{ left: 96, right: 96, top: 78 }}>
+        <div className="absolute" style={{ left: 48, right: 48, top: 72 }}>
           <LockInTokens players={players} answeredIds={answeredIds} />
         </div>
       </div>

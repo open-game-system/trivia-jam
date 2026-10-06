@@ -1,6 +1,6 @@
 import { animate, motion, useMotionValue, useTransform } from "framer-motion";
 import { useEffect } from "react";
-import { InkToken } from "./print";
+import { GlassToken, Label } from "./glass";
 import type { StandingRow } from "./tv-model";
 
 /** A number that rolls from one value to another, like a counter ticking over. */
@@ -28,11 +28,11 @@ export const RollingNumber = ({
     const controls = animate(value, to, { duration, ease: [0.2, 0.9, 0.2, 1] });
     return () => controls.stop();
   }, [from, to, run, duration, value]);
-  return <motion.span className={`tabular ${className}`}>{shown}</motion.span>;
+  return <motion.span className={`tabular-nums ${className}`}>{shown}</motion.span>;
 };
 
 /**
- * The small standings strip: one printed chip per player. With `settled` false
+ * The small standings strip: one glass chip per player. With `settled` false
  * it shows the order before the latest question; flipping it re-sorts the chips
  * (layout animation) and rolls the scores up.
  */
@@ -61,21 +61,21 @@ export const StandingsStrip = ({
           key={row.id}
           className="flex items-center gap-3"
         >
-          <span className="slug text-[28px] text-ink" style={{ width: 28 }}>
+          <span className="tv-display text-[32px]" style={{ width: 28, color: "var(--text-3)" }}>
             {settled ? row.rank : i + 1}
           </span>
-          <InkToken name={row.name} inkIndex={row.inkIndex} size={64} />
+          <GlassToken name={row.name} inkIndex={row.inkIndex} size={64} />
           <span className="flex flex-col" style={{ lineHeight: 1 }}>
-            <span className="tv-display text-[36px] truncate" style={{ maxWidth: 170, lineHeight: 1.05, letterSpacing: "-0.01em" }}>
+            <span className="tv-name text-[36px] whitespace-nowrap" style={{ lineHeight: 1.05 }}>
               {row.name}
             </span>
-            <span className="tv-display text-[36px] text-blue" style={{ lineHeight: 1 }}>
+            <span className="tv-display text-[36px]" style={{ lineHeight: 1, color: "var(--glow)" }}>
               <RollingNumber from={row.prevScore} to={settled ? row.score : row.prevScore} run={animateScores && settled} />
             </span>
           </span>
         </motion.div>
       ))}
-      {hidden > 0 ? <span className="slug text-[28px]">+{hidden}</span> : null}
+      {hidden > 0 ? <Label>+{hidden}</Label> : null}
     </div>
   );
 };
