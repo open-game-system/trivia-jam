@@ -3,11 +3,12 @@ import { motion, useReducedMotion } from "framer-motion";
 import { type ReactNode, useEffect, useMemo, useRef } from "react";
 import type { Question, QuestionResult } from "~/game.types";
 import { FitName } from "./fit-name";
-import { EASE_OUT, EASE_POP, GlassToken, Label } from "./glass";
-import { OptionTiles, QuestionSlug } from "./question";
+import { EASE_OUT, EASE_POP, Label } from "./glass";
+import { QuestionSlug } from "./question";
+import { type ChoicePick, ChoiceColumns } from "./choice-reveal";
+import { layoutChoiceColumns } from "./choice-columns";
 import { type LineGuess, layoutNumberLine, memberChipCentres, REVEAL_FRAME, sweepStops } from "./number-line-layout";
 import { GuessGroupView, Leaders, NumberLineAxis } from "./number-line-reveal";
-import { RollingNumber } from "./standings";
 import {
   choiceWinners,
   findHighlights,
@@ -27,23 +28,6 @@ import { stepTo } from "./motion-presets";
 type TvPlayer = { id: string; name: string; score: number };
 
 const AXIS_Y = REVEAL_FRAME.axisY;
-
-const PointsBadge = ({ points, live, compact = false }: { points: number; live: boolean; compact?: boolean }) => (
-  <motion.span
-    className="tv-pill tv-pill--lav inline-flex items-baseline gap-1"
-    style={{ fontSize: compact ? 34 : 40, padding: compact ? "4px 12px" : "5px 14px" }}
-    initial={live ? { scale: 0, opacity: 0 } : false}
-    animate={{ scale: [0, 1.15, 1], opacity: 1 }}
-    transition={{ duration: 0.4, ease: EASE_POP }}
-  >
-    +<RollingNumber from={0} to={points} run={live} duration={0.6} />
-    {compact ? null : (
-      <span style={{ fontSize: 28, fontWeight: 700 }}>
-        {" "}pts
-      </span>
-    )}
-  </motion.span>
-);
 
 /** Exact answers give the stage a short jolt as the answer lands. Nothing else does. */
 const Shake = ({ on, children }: { on: boolean; children: ReactNode }) => (
@@ -286,58 +270,16 @@ export const TvReveal = ({
     const options = question.options;
     const correctIndex = matchOptionIndex(question.correctAnswer, options);
     const winnerIds = new Set(choiceWinners(result.answers, question.correctAnswer, options));
-    const byOption: Array<Array<{ playerId: string; name: string; inkIndex: number; order: number }>> = options.map(() => []);
+    const byOption: ChoicePick[][] = options.map(() => []);
     result.answers.forEach((a, order) => {
       const idx = matchOptionIndex(a.value, options);
       if (idx >= 0) byOption[idx].push({ playerId: a.playerId, name: a.playerName, inkIndex: inkOf(a.playerId, order), order });
     });
-    const tokens = byOption.map((list, oi) =>
-      list.length === 0 ? null : (
-        <>
-          {list.map((t, k) => {
-            // As the answer lands, the tokens on the wrong tiles drop away off the sheet.
-            const dropped = phase >= PHASE.answer && correctIndex >= 0 && oi !== correctIndex;
-            return (
-            <motion.span
-              key={t.playerId}
-              className="relative inline-flex flex-col items-center"
-              data-testid={`player-result-${t.playerId}`}
-              initial={live ? { y: -360, opacity: 0 } : false}
-              animate={dropped ? { y: 60, opacity: 0, scale: 0.7 } : { y: 0, opacity: 1 }}
-              transition={
-                dropped
-                  ? { duration: live ? 0.45 : 0, delay: live ? 0.18 + k * 0.06 : 0, ease: EASE_OUT }
-                  : { y: { delay: live ? firstDrop + t.order * stagger : 0, type: "spring", stiffness: 420, damping: 17 }, opacity: { delay: live ? firstDrop + t.order * stagger : 0 } }
-              }
-            >
-              <motion.span
-                className="inline-flex"
-                animate={phase >= PHASE.spotlight && winnerIds.has(t.playerId) ? { scale: 1.3, y: -8 } : phase === PHASE.suspense ? { rotate: [0, -6, 6, -4, 4, 0] } : { scale: 1, rotate: 0 }}
-                transition={phase === PHASE.suspense ? { duration: 0.45, repeat: Infinity } : { type: "spring", stiffness: 400, damping: 12 }}
-              >
-                <GlassToken name={t.name} inkIndex={t.inkIndex} size={72} win={phase >= PHASE.answer && winnerIds.has(t.playerId)} />
-              </motion.span>
-              <span className="tv-sr">{t.name}</span>
-              {phase >= PHASE.points && (pointsOf.get(t.playerId) ?? 0) > 0 ? (
-                <span className="absolute" style={{ top: 62, left: 0 }}>
-                  <PointsBadge points={pointsOf.get(t.playerId) ?? 0} live={live} compact />
-                </span>
-              ) : null}
-            </motion.span>
-            );
-          })}
-        </>
-      ),
-    );
-    // Where each token sat on its tile, so the winners can break forward from there.
-    const TILE_W = (1728 - 40) / 2;
-    const tokenAt = (optionIndex: number, k: number, n: number) => ({
-      x: 96 + (optionIndex % 2) * (TILE_W + 40) + TILE_W - 20 - (n - 1 - k) * 80 - 36,
-      y: 300 + Math.floor(optionIndex / 2) * (150 + 32) - 38 + 36,
-      size: 72,
-    });
+    const columns = layoutChoiceColumns(options.length, byOption.map((l) => l.length));
+    const lastDropEndMs = schedule.firstDrop + Math.max(0, guessCount - 1) * schedule.stagger + schedule.dropDuration;
+    // Where each winner's chip sat on its column, so they can break forward from there.
     const winners: Winner[] = byOption.flatMap((list, oi) =>
-      list.flatMap((t, k) => (winnerIds.has(t.playerId) ? [winner(t.playerId, t.name, t.inkIndex, tokenAt(oi, k, list.length))] : [])),
+      list.flatMap((t, k) => (winnerIds.has(t.playerId) ? [winner(t.playerId, t.name, t.inkIndex, { ...columns.chipAt(oi, k), size: columns.chip })] : [])),
     );
     const kind: WinnersKind = winners.length > 0 ? "right" : "nobody";
     return (
@@ -345,16 +287,21 @@ export const TvReveal = ({
         <TopBand question={question} number={number} total={total} phase={phase} live={live} />
         <LineLayer back={forward && correctIndex >= 0} live={live}>
           <NoGuessNote names={noGuess} />
-          <div className="absolute" style={{ left: 96, right: 96, top: 300 }}>
-            <OptionTiles
-              options={options}
-              height={150}
-              correctIndex={phase >= PHASE.answer && correctIndex >= 0 ? correctIndex : undefined}
-              tokens={tokens}
-            />
-          </div>
+          <ChoiceColumns
+            options={options}
+            picks={byOption}
+            layout={columns}
+            correctIndex={correctIndex}
+            winnerIds={winnerIds}
+            phase={phase}
+            live={live}
+            firstDrop={firstDrop}
+            stagger={stagger}
+            suspenseMs={Math.max(0, schedule.answer - lastDropEndMs)}
+          />
         </LineLayer>
-        {phase >= PHASE.answer && correctIndex >= 0 ? (
+        {/* The answer line takes the stage with the winners (the columns hold it until then). */}
+        {forward && correctIndex >= 0 ? (
           <ChoiceAnswerLine letter={optionLetter(correctIndex)} text={options[correctIndex]} live={live} compact={settling} />
         ) : null}
         {forward && correctIndex >= 0 ? <WinnersCard kind={kind} winners={winners} scoring={phase >= PHASE.points} live={live} compact={settling} /> : null}
