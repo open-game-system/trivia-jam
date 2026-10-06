@@ -39,3 +39,7 @@ pnpm exec tsx e2e/record-session.ts && python3 scripts/evidence.py critic/rounds
   off origin/main, conflicts resolved, tests/build green). NOT pushed: Jon must OK the push (peer session chose (b)).
   SRE_CLOUDFLARE_API_TOKEN is an org secret (all). arch-agent on hold (Claude app install + Jon's OK on the workflow).
 - Open decisions for Jon: aesthetic pick; AI question drafter vs paste-only; same-room rematch (changes a pinned test).
+- qa-agent (relayed by the SRE session, 2026-10-06): enroll trivia-jam in /qa-agent after the SRE PR and arch-agent.
+  Needs Jon: `! pnpm exec e2e login openai` (ChatGPT plan), the QA copy's Cloudflare resources ([env.qa] Worker + own
+  DO namespaces/KV), OK for qa-deploy.yml / qa-agent.yml and a push. Not started: tonight's /goal forbids new workflows
+  and pushes, and there is no QA copy for the charters to run against. Repo NOT yet in ~/.config/qa-agent/repos.txt.
