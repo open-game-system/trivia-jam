@@ -12,6 +12,7 @@ import { defaultGameSnapshot, defaultSessionSnapshot } from "../../../stories/ut
 import { HostView } from "../host-view";
 import { PlayerView } from "../player-view";
 import { NumberPad } from "./NumberPad";
+import { QuestionHeader } from "./QuestionHeader";
 import { PhoneShell } from "./PhoneShell";
 import { PlayerResult } from "./PlayerResult";
 
@@ -108,6 +109,40 @@ export const NumberPadBigNumber: StoryObj<typeof PadHarness> = {
     expect(display).toHaveTextContent("1000000");
     expect(display.querySelectorAll(".pgroup")).toHaveLength(3);
     expect(display.querySelectorAll(".pgroup-sep")).toHaveLength(2);
+  },
+};
+
+/** The real answer layout: question above, the guess sitting right over the pad, millions on one line. */
+const AnswerLayoutHarness = () => {
+  const [value, setValue] = useState("");
+  return (
+    <PhoneShell fill>
+      <QuestionHeader text="How many people live in Tokyo's metro area?" timeLeft={18} totalTime={30} />
+      <NumberPad value={value} onChange={setValue} onSubmit={fn()} isSubmitting={false} />
+    </PhoneShell>
+  );
+};
+
+export const AnswerLayoutEmpty: StoryObj<typeof AnswerLayoutHarness> = {
+  render: () => <AnswerLayoutHarness />,
+  decorators: [],
+  play: async ({ canvasElement }) => {
+    expect(within(canvasElement).getByTestId("answer-display")).toHaveTextContent("Your guess");
+  },
+};
+
+export const AnswerLayoutMillions: StoryObj<typeof AnswerLayoutHarness> = {
+  render: () => <AnswerLayoutHarness />,
+  decorators: [],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    for (const key of ["3", "7", "0", "0", "0", "0", "0", "0"]) {
+      await userEvent.click(canvas.getByRole("button", { name: key }));
+    }
+    const display = canvas.getByTestId("answer-display");
+    expect(display).toHaveTextContent("37000000");
+    expect(display.querySelectorAll(".pgroup-sep")).toHaveLength(2);
+    expect(display.scrollWidth).toBeLessThanOrEqual(display.parentElement?.clientWidth ?? 0);
   },
 };
 

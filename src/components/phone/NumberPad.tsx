@@ -79,7 +79,7 @@ export const NumberPad = ({
           aria-live="polite"
         >
           {value === ""
-            ? "?"
+            ? "Your guess"
             : digitGroups(value).map((group, index) => (
                 <span key={index} className={index === 0 ? "pgroup" : "pgroup pgroup-sep"}>
                   {group}
