@@ -10,7 +10,8 @@ import { takeoverLayout, type TakeoverLayout } from "./takeover-layout";
 import { type ChoicePick, ChoiceColumns } from "./choice-reveal";
 import { layoutChoiceColumns } from "./choice-columns";
 import { type LineGuess, layoutNumberLine, memberChipCentres, REVEAL_FRAME, sweepStops } from "./number-line-layout";
-import { GuessGroupView, Leaders, NumberLineAxis } from "./number-line-reveal";
+import { GuessGroupView, LandingGlows, Leaders, NumberLineAxis } from "./number-line-reveal";
+import { AnswerSpotlight, RevealStage } from "./brand-axis";
 import {
   choiceWinners,
   findHighlights,
@@ -365,6 +366,9 @@ export const TvReveal = ({
         <TopBand question={question} number={number} total={total} phase={phase} live={live} isChoice={false} />
         <LineLayer back={forward && winners.length > 0} live={live}>
           <NoGuessNote names={noGuess} />
+          <RevealStage axisY={AXIS_Y} left={layout.axisLeft - 36} right={layout.axisRight + 36} live={live} />
+          {phase >= PHASE.answer ? <AnswerSpotlight x={layout.correctX} axisY={AXIS_Y} live={live} /> : null}
+          <LandingGlows groups={layout.groups} axisY={AXIS_Y} delays={delays} live={live} />
           <NumberLineAxis layout={layout} axisY={AXIS_Y} live={live} from={ghostAxis} />
           {phase === PHASE.suspense ? <SuspenseMarker stops={suspenseStops} seconds={suspenseSeconds} /> : null}
           <Leaders groups={layout.groups} axisY={AXIS_Y} delays={delays} live={live} />

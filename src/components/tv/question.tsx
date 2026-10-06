@@ -1,6 +1,7 @@
 import { motion, useIsPresent } from "framer-motion";
 import { type ReactNode, useLayoutEffect, useRef } from "react";
 import { leaveBox, stageBox } from "./flip";
+import { FloorGlow, PinLight } from "./brand-axis";
 import { FitName } from "./fit-name";
 import { EASE_OUT, EASE_POP, GlassToken, Label } from "./glass";
 import { GlassTimer } from "./timer";
@@ -164,18 +165,30 @@ const GhostLine = ({ leaving }: { leaving: boolean }) => {
     if (box && !leaving) leaveBox(GHOST_AXIS_KEY, box);
   });
   return (
-  <div aria-hidden="true" className="absolute" style={{ left: 96, right: 96, top: 640, height: 60, opacity: leaving ? 0 : 1 }}>
-    <div ref={axis} className="absolute tv-axis" style={{ left: 0, right: 0, top: 27, height: 6, opacity: 0.35 }} />
+  <div aria-hidden="true" className="absolute" style={{ left: 96, right: 96, top: 690, height: 60, opacity: leaving ? 0 : 1 }}>
+    <div ref={axis} className="absolute tv-axis" style={{ left: 0, right: 0, top: 27, height: 6, opacity: 0.6 }} />
+    <span className="absolute block" style={{ left: 0, top: 30, width: 1728, height: 0 }}>
+      <FloorGlow width={1728} height={150} strength={0.8} />
+    </span>
     {Array.from({ length: 9 }, (_, i) => (
-      <span key={i} className="absolute" style={{ left: i * 216 - 2, top: 18, width: 4, height: 24, borderRadius: 4, background: "rgba(255,255,255,.18)" }} />
+      <span key={i} className="absolute" style={{ left: i * 216 - 2, top: 18, width: 4, height: 24, borderRadius: 4, background: "rgba(255,255,255,.22)" }} />
     ))}
+    {/* The signature pin, carrying the question mark: it wanders the line until the answer comes in. */}
     <motion.span
-      className="tv-display tv-glass-pill absolute flex items-center justify-center"
-      style={{ left: 820, top: -14, width: 88, height: 88, fontSize: 52, color: "var(--glow)", boxShadow: "0 0 40px rgba(196,181,253,.35)" }}
-      animate={{ x: [-260, 300, -120, 160, -260] }}
+      className="absolute block"
+      style={{ left: 864, top: 30, width: 0, height: 0 }}
+      animate={{ x: [-300, 340, -140, 180, -300] }}
       transition={{ duration: 14, repeat: Infinity, ease: "easeInOut" }}
     >
-      ?
+      <span className="absolute block" style={{ left: 0, top: -34, height: 34 }}>
+        <PinLight height={34} head={20} />
+      </span>
+      <span
+        className="tv-display tv-glass-pill absolute flex items-center justify-center"
+        style={{ left: -35, top: -34 - 74, width: 70, height: 70, fontSize: 42, color: "var(--glow)", borderColor: "rgba(196,181,253,.6)", boxShadow: "0 0 40px rgba(196,181,253,.35)" }}
+      >
+        ?
+      </span>
     </motion.span>
   </div>
   );
@@ -243,7 +256,7 @@ export const TvQuestion = ({
           left: 96,
           right: hasOptions ? 96 : 420,
           top: 170,
-          bottom: hasOptions ? BAND_HEIGHT + 20 : 460,
+          bottom: hasOptions ? BAND_HEIGHT + 20 : 500,
           justifyContent: hasOptions ? "flex-start" : "center",
         }}
       >

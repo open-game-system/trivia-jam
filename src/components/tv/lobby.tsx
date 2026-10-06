@@ -2,11 +2,15 @@ import { motion } from "framer-motion";
 import { QRCodeSVG } from "qrcode.react";
 import { FitName } from "./fit-name";
 import { EASE_OUT, GlassToken, Label } from "./glass";
+import { BrandAxis } from "./brand-axis";
 
 /** The table always shows this many chairs, filled or empty. */
 export const LOBBY_SEATS = 10;
 
 type LobbyPlayer = { id: string; name: string };
+
+/** Lifts the mark so its line sits on the wordmark's baseline (the mark's line is 96 px down its 120 px box). */
+const BASELINE_LIFT = 10;
 
 const Wordmark = () => (
   <h2 className="tv-display relative" aria-label="Trivia Jam" style={{ letterSpacing: "-0.045em" }}>
@@ -19,15 +23,21 @@ const Wordmark = () => (
     >
       Trivia
     </motion.span>
-    <motion.span
-      className="block glow-text"
-      style={{ fontSize: 330, lineHeight: 0.88, marginLeft: 8, paddingBottom: 12 }}
-      initial={{ opacity: 0, y: 30 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.55, delay: 0.12, ease: EASE_OUT }}
-    >
-      Jam
-    </motion.span>
+    <span className="flex items-end">
+      <motion.span
+        className="block glow-text"
+        style={{ fontSize: 330, lineHeight: 0.88, marginLeft: 8, paddingBottom: 12 }}
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.55, delay: 0.12, ease: EASE_OUT }}
+      >
+        Jam
+      </motion.span>
+      {/* The signature: the line runs on from the wordmark's baseline and its pin seeks, then settles. */}
+      <span className="block" style={{ marginLeft: 28, marginBottom: BASELINE_LIFT }}>
+        <BrandAxis width={400} pin={0.7} seek />
+      </span>
+    </span>
   </h2>
 );
 

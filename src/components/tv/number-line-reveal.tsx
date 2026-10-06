@@ -107,6 +107,23 @@ export const NumberLineAxis = ({ layout, axisY, live, from }: { layout: LineLayo
   );
 };
 
+/** Where each guess lands, the floor lights up: a soft pool of lavender under its point on the line. */
+export const LandingGlows = ({ groups, axisY, delays, live }: { groups: GuessGroup[]; axisY: number; delays: Map<string, number>; live: boolean }) => (
+  <>
+    {groups.map((g) => (
+      <motion.span
+        key={g.key}
+        aria-hidden="true"
+        className="absolute block pointer-events-none"
+        style={{ left: g.axisX - 130, width: 260, top: axisY - 26, height: 64, borderRadius: 999, background: "radial-gradient(closest-side, rgba(196, 181, 253, 0.45), rgba(139, 92, 246, 0.12) 60%, transparent)", zIndex: 1 }}
+        initial={live ? { opacity: 0, scaleX: 0.2 } : false}
+        animate={{ opacity: 1, scaleX: 1 }}
+        transition={{ delay: live ? (delays.get(g.key) ?? 0) + 0.28 : 0, duration: 0.5, ease: [0.2, 0.8, 0.2, 1] }}
+      />
+    ))}
+  </>
+);
+
 /** Leader lines from each group's label stack down to its value on the line. */
 export const Leaders = ({ groups, axisY, delays, live }: { groups: GuessGroup[]; axisY: number; delays: Map<string, number>; live: boolean }) => (
   <svg aria-hidden="true" className="absolute inset-0 pointer-events-none" width={1920} height={1080} style={{ zIndex: 2 }}>
@@ -157,7 +174,8 @@ export const GuessGroupView = ({
       <motion.div
         className="absolute flex flex-col items-center justify-end"
         style={{ left: group.x - group.width / 2, width: group.width, top: group.bottom - group.height, height: group.height, zIndex: lit ? 6 : 4 }}
-        initial={live ? { y: -480, opacity: 0 } : false}
+        // Dropped in from above the frame, through the empty upper field.
+        initial={live ? { y: -(group.bottom + 40), opacity: 0 } : false}
         animate={{ y: 0, opacity: 1 }}
         transition={{
           y: { delay: live ? delay : 0, type: "spring", stiffness: 420, damping: 17, mass: 0.9 },
@@ -176,7 +194,9 @@ export const GuessGroupView = ({
                   animate={lit ? { scale: 1.16, y: -10 } : shiver ? { rotate: [0, -7, 6, -5, 4, 0], y: [0, -3, 0, -2, 0] } : { scale: 1, rotate: 0, y: 0 }}
                   transition={shiver ? { duration: 0.42, repeat: Infinity } : { type: "spring", stiffness: 420, damping: 11 }}
                 >
-                  <GlassToken name={m.name} inkIndex={m.inkIndex} size={size.chip} win={lit} />
+                  <span className="inline-flex" style={{ borderRadius: 999, boxShadow: "0 18px 28px rgba(4, 6, 14, 0.55)" }}>
+                    <GlassToken name={m.name} inkIndex={m.inkIndex} size={size.chip} win={lit} />
+                  </span>
                 </motion.span>
                 <span className="tv-name mt-1" style={{ ...fade, fontSize: size.name, lineHeight: 1.04, whiteSpace: "nowrap", color: lit ? "var(--text)" : "var(--text-2)" }}>
                   {shortName(m.name, size.maxName)}
