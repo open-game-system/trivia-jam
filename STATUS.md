@@ -43,3 +43,8 @@ pnpm exec tsx e2e/record-session.ts && python3 scripts/evidence.py critic/rounds
   Done: Jon ran `e2e@0.17.0 login openai` (pin e2e@0.17.0; use chatgpt() from "e2e/oauth/chatgpt"). Still needs Jon: the QA copy's Cloudflare resources ([env.qa] Worker + own
   DO namespaces/KV), OK for qa-deploy.yml / qa-agent.yml and a push. Not started: tonight's /goal forbids new workflows
   and pushes, and there is no QA copy for the charters to run against. Repo NOT yet in ~/.config/qa-agent/repos.txt.
+- Plan change (relayed 2026-10-06): arch-agent and qa-agent are now LOCAL routines on Jon's Mac. arch-agent: nothing to
+  install (the "arch-agent daily" routine finds active repos; no workflow, no Claude app needed) — cancelled here.
+  qa-agent enroll = [env.qa] in wrangler with its own resources (needs Jon's yes to create), e2e config with qa/prod
+  targets (pin e2e@0.17.0, chatgpt() from e2e/oauth/chatgpt), qa/charters.yml, qa/qa-agent.yml, then register the repo
+  path in ~/.config/qa-agent/repos.txt. Not done tonight (outside this /goal); see ~/src/skills/qa-agent/SKILL.md.
