@@ -10,6 +10,18 @@ import {
 } from "./game.schemas";
 import type { ActorEnv } from "./actor-env";
 import { OGS_APP_ID, joinFromMessage, trustJoin } from "./ogs-join";
+import { SERVICE, versionOf, withWideEvent } from "./wide-event";
+
+/** The event type of a socket message (only the type: never its payload, which can hold names). */
+function actionOf(message: string | ArrayBuffer): string {
+  try {
+    const raw: unknown = JSON.parse(typeof message === "string" ? message : new TextDecoder().decode(message));
+    const type: unknown = raw && typeof raw === "object" ? Reflect.get(raw, "type") : undefined;
+    return typeof type === "string" && /^[A-Z_]{1,40}$/.test(type) ? type : "unknown";
+  } catch {
+    return "unparseable";
+  }
+}
 
 const GameMachineServer = createMachineServer({
   machine: gameMachine,
@@ -33,15 +45,31 @@ const AttachmentSchema = z.object({ caller: z.object({ id: z.string(), type: z.e
  */
 export class Game extends GameMachineServer {
   readonly #jwksUrl: string | undefined;
+  readonly #version: string;
 
   constructor(...args: ConstructorParameters<typeof GameMachineServer>) {
     super(...args);
     const [, env] = args;
+    this.#version = versionOf(env);
     const url: unknown = Reflect.get(env, "OGS_JWKS_URL");
     this.#jwksUrl = typeof url === "string" ? url : undefined;
   }
 
   override async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer): Promise<void> {
+    // One wide event per room action (the action type and ids only).
+    return withWideEvent(
+      { event: "room.action", service: SERVICE, version: this.#version, source: "server", room_id: this.#roomId(), action: actionOf(message) },
+      async () => this.#handleMessage(ws, message),
+    );
+  }
+
+  /** actor-kit keeps the game id on the instance (not in its public types). */
+  #roomId(): string {
+    const id: unknown = Reflect.get(this, "actorId");
+    return typeof id === "string" ? id : "unknown";
+  }
+
+  async #handleMessage(ws: WebSocket, message: string | ArrayBuffer): Promise<void> {
     const join = joinFromMessage(message);
     const attachment = AttachmentSchema.safeParse(ws.deserializeAttachment());
     if (join && attachment.success && attachment.data.caller.type === "client") {
