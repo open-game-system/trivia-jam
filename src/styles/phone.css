@@ -840,8 +840,6 @@ textarea.pfield { min-height: 132px; padding: 14px 16px; font-size: 16px; line-h
   transform-origin: left center;
 }
 
-/* The import form's Submit stays in view above the action bar while the form is on screen. */
-.hform .pbtn-primary { position: sticky; bottom: 6px; z-index: 1; }
 .hform textarea.pfield { margin-bottom: 12px; }
 
 /* Waiting chips (who has not answered yet). */
