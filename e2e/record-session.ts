@@ -1,6 +1,6 @@
 /**
  * Critic evidence: plays a whole game of Trivia Jam through the real UI and records it.
- *   TV (the /spectate page, 1920x1080) | host phone (grown-up, iPhone 15) | kid iPad (landscape)
+ *   TV (the /spectate page, 1920x1080) | host phone (grown-up, iPhone 15) | player phone (iPhone 15)
  * plus two off-camera players, stitched side by side with the TV's audio (if the TV exposes a tap).
  *
  *   TJ_URL=http://127.0.0.1:3000 TJ_OUT=critic/rounds/00/session.mp4 pnpm exec tsx e2e/record-session.ts
@@ -57,7 +57,7 @@ async function stubParsing(page: Page) {
   });
 }
 
-/** Answers per question for [kid, mom, grandpa]: some exact, some close, some wrong. */
+/** Answers per question for [Sam (recorded), Priya, Jordan]: some exact, some close, some wrong. */
 const ANSWERS: string[][] = [
   ["8", "8", "6"],
   ["7", "7", "7"],
@@ -226,7 +226,7 @@ async function answer(page: Page, value: string) {
     await option.first().click({ force: true, timeout: 3000 });
     return;
   }
-  // Tapped on the on-screen number pad, key by key, the way a kid does it.
+  // Tapped on the on-screen number pad, key by key, the way a player does it.
   const pad = page.getByRole("group", { name: /number pad/i });
   await pad.waitFor({ timeout: 10_000 });
   for (const digit of value) {
@@ -248,7 +248,7 @@ async function main() {
   const recorded = [
     { key: "tv", label: "TV", opts: { viewport: { width: 1920, height: 1080 } } },
     { key: "host", label: "Grown-up phone (host)", opts: asContext("iPhone 15") },
-    { key: "kid", label: "Kid iPad (landscape)", opts: asContext("iPad (gen 7)", true) },
+    { key: "player", label: "Player phone", opts: asContext("iPhone 15") },
   ];
   const pages: Page[] = [];
   const startedAt: number[] = [];
@@ -263,27 +263,27 @@ async function main() {
     page.on("pageerror", (e) => console.log(`[pageerror ${s.key}] ${e.message.slice(0, 300)}`));
     pages.push(page);
   }
-  const [tv, host, kid] = pages;
-  if (!tv || !host || !kid) throw new Error("pages missing");
+  const [tv, host, player] = pages;
+  if (!tv || !host || !player) throw new Error("pages missing");
   const offCamera = async () => (await browser.newContext(asContext("iPhone 15"))).newPage();
   const mom = await offCamera();
   const grandpa = await offCamera();
-  const screens = { tv, host, kid };
+  const screens = { tv, host, player };
   t0 = Math.max(...startedAt); // the stitched video starts when the last panel started recording
 
   const faults = FAULT.split(",");
   const faultCss = faults.map((f) => FAULT_CSS[f] ?? "").join("\n").trim();
-  if (faultCss) for (const p of [tv, host, kid]) await p.addInitScript(`addEventListener("DOMContentLoaded", () => { const s = document.createElement("style"); s.textContent = ${JSON.stringify(faultCss)}; document.head.append(s); });`);
+  if (faultCss) for (const p of [tv, host, player]) await p.addInitScript(`addEventListener("DOMContentLoaded", () => { const s = document.createElement("style"); s.textContent = ${JSON.stringify(faultCss)}; document.head.append(s); });`);
   if (faults.includes("jank")) await tv.addInitScript(`const burn = () => { const t = performance.now(); while (performance.now() - t < 30) {} requestAnimationFrame(burn); }; requestAnimationFrame(burn);`);
   // mute: nothing reaches the recording tap (the TV's mix is silent as captured).
   if (faults.includes("mute")) await tv.addInitScript(`{ const connect = AudioNode.prototype.connect; AudioNode.prototype.connect = function (dest, ...rest) { if (dest instanceof MediaStreamAudioDestinationNode) return dest; return connect.call(this, dest, ...rest); }; }`);
 
-  // The kid's iPad records its own pointer-down time, so latency is press -> TV, not Playwright overhead.
-  await kid.addInitScript(`document.addEventListener("pointerdown", () => { window.__pressAt = Date.now(); }, true);`);
+  // The player's phone records its own pointer-down time, so latency is press -> TV, not Playwright overhead.
+  await player.addInitScript(`document.addEventListener("pointerdown", () => { window.__pressAt = Date.now(); }, true);`);
   const frameCollector = `window.__frames = []; let last = performance.now();
     const tick = (t) => { window.__frames.push(t - last); last = t; requestAnimationFrame(tick); }; requestAnimationFrame(tick);`;
   await tv.addInitScript(frameCollector);
-  await kid.addInitScript(frameCollector);
+  await player.addInitScript(frameCollector);
 
   try {
     // Host creates a game.
@@ -329,17 +329,17 @@ async function main() {
       await page.getByLabel(/your name/i).pressSequentially(name, { delay: 120 });
       await page.getByRole("button", { name: /join game/i }).click();
     };
-    await kid.goto(gameUrl);
+    await player.goto(gameUrl);
     await wait(800);
-    await shoot("03-join", { kid });
-    await join(kid, "Sam");
-    mark("kid joined");
+    await shoot("03-join", { player });
+    await join(player, "Sam");
+    mark("player joined");
     await wait(1200);
-    await join(mom, "Mom");
-    await join(grandpa, "Grandpa");
+    await join(mom, "Priya");
+    await join(grandpa, "Jordan");
     mark("everyone joined");
     await wait(1500);
-    await shoot("04-lobby-full", { tv, host, kid });
+    await shoot("04-lobby-full", { tv, host, player });
 
     await host.getByRole("button", { name: /start game/i }).click();
     mark("game started");
@@ -348,27 +348,27 @@ async function main() {
     for (let q = 0; q < ANSWERS.length; q++) {
       const start = host.getByRole("button", { name: /start.*question|next.*question/i });
       await start.waitFor({ timeout: 40_000 });
-      await shoot(`1${q}a-before-q${q + 1}`, { tv, host, kid });
+      await shoot(`1${q}a-before-q${q + 1}`, { tv, host, player });
       await start.click();
       mark(`question ${q + 1}`);
-      await kid.getByTestId("question-timer").waitFor({ timeout: 10_000 });
+      await player.getByTestId("question-timer").waitFor({ timeout: 10_000 });
       await wait(1500);
-      await shoot(`1${q}b-q${q + 1}-asked`, { tv, host, kid });
+      await shoot(`1${q}b-q${q + 1}-asked`, { tv, host, player });
       const answers = ANSWERS[q] ?? [];
-      // The kid thinks; grown-ups answer at their own pace.
+      // Players answer at their own pace.
       await wait(2500);
       await answer(mom, answers[1] ?? "1");
       await wait(1500);
-      await answer(kid, answers[0] ?? "1");
-      mark(`kid answers q${q + 1}`);
+      await answer(player, answers[0] ?? "1");
+      mark(`player answers q${q + 1}`);
       await wait(600);
-      await shoot(`1${q}c-q${q + 1}-kid-answered`, { tv, host, kid });
+      await shoot(`1${q}c-q${q + 1}-player-answered`, { tv, host, player });
       await wait(1200);
       await answer(grandpa, answers[2] ?? "1");
       // Everyone answered: results come up (auto-advance) or after the timer.
       await wait(2500);
       mark(`results q${q + 1}`);
-      await shoot(`1${q}d-q${q + 1}-results`, { tv, host, kid });
+      await shoot(`1${q}d-q${q + 1}-results`, { tv, host, player });
       // The TV stages its reveal over ~10 s: shoot the answer landing and the standings that follow.
       await wait(4500);
       await shoot(`1${q}e-q${q + 1}-reveal-settled`, { tv });
@@ -387,10 +387,10 @@ async function main() {
     await over.waitFor({ timeout: 40_000 }).catch(() => undefined);
     mark("game over");
     await wait(2500);
-    await shoot("20-game-over", { tv, host, kid });
+    await shoot("20-game-over", { tv, host, player });
     // The TV stages its finale (podium, winner takeover, awards) over ~11 s.
     await wait(9500);
-    await shoot("21-game-over-settled", { tv, host, kid });
+    await shoot("21-game-over-settled", { tv, host, player });
     await wait(3000);
     mark("end");
 
@@ -398,12 +398,12 @@ async function main() {
     const frames = Array.isArray(rawFrames) ? rawFrames.filter((x): x is number => typeof x === "number") : [];
     const sorted = frames.slice(60).sort((a, b) => a - b);
     const at = (p: number) => Math.round((sorted[Math.floor(p * (sorted.length - 1))] ?? 0) * 10) / 10;
-    const pressAt: unknown = await kid.evaluate(() => Reflect.get(window, "__pressAt"));
-    // The kid's iPad page too: heavy compositing there shows up as frame time (and as lag in its video pane).
-    const kidRaw: unknown = await kid.evaluate(() => Reflect.get(window, "__frames"));
-    const kidFrames = (Array.isArray(kidRaw) ? kidRaw.filter((x): x is number => typeof x === "number") : []).slice(60).sort((a, b) => a - b);
-    const kidAt = (p: number) => Math.round((kidFrames[Math.floor(p * (kidFrames.length - 1))] ?? 0) * 10) / 10;
-    writeFileSync(`${RAW}/perf.json`, JSON.stringify({ frames: sorted.length, p50: at(0.5), p95: at(0.95), p99: at(0.99), max: at(1), lastKidPressAt: pressAt, kid: { frames: kidFrames.length, p50: kidAt(0.5), p95: kidAt(0.95), max: kidAt(1) } }, null, 2));
+    const pressAt: unknown = await player.evaluate(() => Reflect.get(window, "__pressAt"));
+    // The player's phone page too: heavy compositing there shows up as frame time (and as lag in its video pane).
+    const playerRaw: unknown = await player.evaluate(() => Reflect.get(window, "__frames"));
+    const playerFrames = (Array.isArray(playerRaw) ? playerRaw.filter((x): x is number => typeof x === "number") : []).slice(60).sort((a, b) => a - b);
+    const playerAt = (p: number) => Math.round((playerFrames[Math.floor(p * (playerFrames.length - 1))] ?? 0) * 10) / 10;
+    writeFileSync(`${RAW}/perf.json`, JSON.stringify({ frames: sorted.length, p50: at(0.5), p95: at(0.95), p99: at(0.99), max: at(1), lastPlayerPressAt: pressAt, player: { frames: playerFrames.length, p50: playerAt(0.5), p95: playerAt(0.95), max: playerAt(1) } }, null, 2));
 
     const audioPath = `${RAW}/tv-audio.webm`;
     if (hasTap) {

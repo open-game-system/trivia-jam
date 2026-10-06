@@ -1,5 +1,5 @@
 """Critic sheets for one round, from recordings/raw (written by e2e/record-session.ts):
-tv-contact-sheet.png (every TV shot, labeled), phones-sheet.png (host phone + kid iPad per phase, CSS scale),
+tv-contact-sheet.png (every TV shot, labeled), phones-sheet.png (host phone + player phone per phase, CSS scale),
 session-tiles.png, metrics.json (TV luma per shot, perf, audio presence), tv-audio-spectrogram.png when there is audio.
 
   python3 scripts/evidence.py critic/rounds/NN
@@ -45,8 +45,8 @@ def sheet(paths, tile_h, cols, dest):
 
 tv = sorted(glob.glob(f"{raw}/shots/*-tv.png"))
 sheet(tv, 360, 4, f"{out}/tv-contact-sheet.png")
-# Phones: one row per phase, host phone then kid iPad, at the same height (CSS pixels differ: see labels).
-phones = sorted(glob.glob(f"{raw}/shots/*-host.png") + glob.glob(f"{raw}/shots/*-kid.png"))
+# Phones: one row per phase, host phone then player phone, at the same height (CSS pixels differ: see labels).
+phones = sorted(glob.glob(f"{raw}/shots/*-host.png") + glob.glob(f"{raw}/shots/*-player.png"))
 sheet(phones, 480, 6, f"{out}/phones-sheet.png")
 
 marks = json.load(open(f"{raw}/marks.json"))

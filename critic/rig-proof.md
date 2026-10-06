@@ -34,3 +34,6 @@ Panels are now recorded with Chrome's screencast (frame swap timestamps) and reb
 ## Rig change after round 03 (2026-10-05)
 - Panes are resampled onto an exact 30 fps grid by frame arrival time. The round 03 critic found the TV pane ~3.2 s ahead: the concat demuxer rounded each frame duration to 1/25 s (panes encoded 3.4 s short / 8.3 s long), and the screencast timestamps had per-page bases. Verified after: pane lengths 158.5/158.4/158.2 s and all three timers read 25/20/19 together at question 4. Round 03 was re-shot with it (critic/rounds/03/session-synced.mp4, same build).
 - Added tv-no-truncated-text (leaf elements with ellipsis/overflow-hidden whose text overflows). Shown failing on the round 03 build: 21-game-over-settled-tv "Grandpa" (the critic saw "Gra...").
+
+## Rig change before round 05 (2026-10-06)
+Re-scope (Jon): Trivia Jam is an adult game. The recorded third pane is now an adult player on an iPhone 15 (portrait), shots `*-player.png`; off-camera players are adults (Priya, Jordan). Checks and thresholds unchanged. Round 05 re-baselines (rounds 00-04 used a kid-on-iPad persona).

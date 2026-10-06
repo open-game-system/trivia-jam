@@ -10,8 +10,9 @@ A 7 = "competent indie demo". **8 = a first-party art director would sign off on
 Grade every row against the references, never against the previous round. Stop when every row ≥ 8
 (after at least 3 rounds), or the minimum stays flat through one pivot round.
 
-Players: a family. Two grown-ups on phones (one hosts), a 5-year-old on an iPad in landscape (thumbs at the
-bottom edge, reads little), a toddler who may tap along, and the TV (cast from the OGS app, nobody touches it).
+Players (re-scoped 2026-10-06 by Jon): an ADULT party game. Grown-ups each on their own phone (portrait, one-
+handed), one of them hosts, and the TV (cast from the OGS app, nobody touches it) is the shared screen. There is
+no kid audience. Rounds 00-04 were graded against a kid-on-iPad persona; round 05 re-baselines on this rubric.
 
 | Row | 6 | 8 (ship bar) | 10 |
 |---|---|---|---|
@@ -21,16 +22,16 @@ bottom edge, reads little), a toddler who may tap along, and the TV (cast from t
 | Motion & juice | fades and tweens | Nintendo-grade easing, anticipation, number roll-ups, satisfying lock-ins, score changes you feel | alive, delightful |
 | Reveal & payoff drama | answer shown in a list | the answer reveal is a staged moment (closest-guess tension, number line or equivalent), standings change with drama, the winner gets a real finale | a moment people cheer at |
 | Audio | none or stock beeps | music bed per phase, countdown tension, lock-in and reveal stingers, winner fanfare; mixed, never harsh | a theme you'd hum |
-| Kid UX (5-year-old, iPad landscape) | usable with help | a 5-year-old answers alone: giant number pad in thumb reach, no system keyboard, instant feedback on every press, little reading | effortless |
+| Player phone UX (adults, portrait phone) | usable | answering is fast and one-handed (no system keyboard, thumb-reach pad, big-number formatting), instant feedback on every press, results are competitive and witty (place, points, how far off, who beat you) | effortless |
 | Phone UI polish (host + players) | functional | first-party UI: hierarchy, motion, no dev feel, nothing clipped, comfortable on iPhone SE to Pro Max | invisible |
 | Host flow | several steps of admin | from "new game" to the first question in under 30 s with good questions ready; host can also play or just run it | effortless |
-| Content & family fit | whatever the host pastes | questions a mixed-age family enjoys out of the box; numbers a kid can guess; tone warm and funny | you'd buy the pack |
+| Content & game-night fit | whatever the host pastes | the host gets good adult trivia on screen fast; the game supports and checks whatever is brought; tone witty and competitive | you'd buy the pack |
 | Replay & payoff | final score list | a finale and reasons to play again (packs, streaks, rematch) | the family asks for another round |
 | Performance & stability | ok | 60 fps on the TV page, no hitches or layout jumps, state never stalls, every press lands < 150 ms | — |
 
 ## Log
 
-| Round | Art | TV | Type | Motion | Reveal | Audio | Kid | Phone | Host | Content | Replay | Perf | Min | Changed |
+| Round | Art | TV | Type | Motion | Reveal | Audio | Kid/Player | Phone | Host | Content | Replay | Perf | Min | Changed |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | 00 | 3 | 3 | 3 | 2 | 2 | 1 | 2 | 3 | 4 | 3 | 2 | 5 | 1 | baseline: DaisyUI dark kit, list reveal with hard cuts, no audio, keyboard text field for the kid, emoji finale, timer resets on submit |
 | 01 | 6 | 5 | 6 | 5 | 4 | 4 | 6 | 6 | 5 | 3 | 3 | 6 | 3 | riso redesign (TV, phones, kid pad), audio beds + SFX, OGS; reveal labels collide, dead air + clipping after reveals, podium missing winner, no rematch |
