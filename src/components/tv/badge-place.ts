@@ -41,9 +41,10 @@ export const placeBadge = (
   obstacles: ReadonlyArray<Rect>,
 ): Rect => {
   const { cx, top, size } = token;
-  const right = cx + size * 0.28;
+  const right = cx + size * 0.28 + MARGIN + 2;
   const candidates: Rect[] = [
     { x: right, y: top - badge.h * 0.3, w: badge.w, h: badge.h },
+    { x: right, y: top, w: badge.w, h: badge.h },
     { x: right, y: top - badge.h - 4, w: badge.w, h: badge.h },
     { x: cx + size / 2 + 4, y: top + size * 0.5 - badge.h, w: badge.w, h: badge.h },
     { x: cx + size / 2 + 4, y: top + size - badge.h, w: badge.w, h: badge.h },

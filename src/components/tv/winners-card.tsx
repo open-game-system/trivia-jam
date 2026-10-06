@@ -25,6 +25,9 @@ const STAMP = {
   right: { label: "Got it!", bg: "var(--teal)", fg: "var(--paper)", size: 110, rotate: -5 },
 } as const;
 
+/** The lowest point of the angled stamp (row top + height + its tilt). */
+const STAMP_ROW_BOTTOM = 284;
+
 /** A total that holds its old value until the "+N" badge has stamped, then ticks over. */
 const ArrivingTotal = ({ from, to, afterMs, live }: { from: number; to: number; afterMs: number; live: boolean }) => {
   const [arrived, setArrived] = useState(!live);
@@ -93,7 +96,8 @@ export const WinnersCard = ({
   const nameTop = layout.chipTop + layout.chip + 18;
   const totalTop = nameTop + layout.name * 1.05 + 14;
   const big = kind === "exact";
-  const badges = winnerCardRects(winners, layout, (big ? 70 : 110) + (big ? 200 : 150));
+  // The stamp is printed at an angle: its low corner reaches ~30 px under its row.
+  const badges = winnerCardRects(winners, layout, STAMP_ROW_BOTTOM);
   return (
     <div className="absolute inset-0" style={{ zIndex: 30 }} data-testid="tv-highlight">
       {big ? (
@@ -120,7 +124,7 @@ export const WinnersCard = ({
           <circle cx={450} cy={450} r={kind === "closest" ? 360 : 400} fill="url(#tv-dots-yellow)" />
         </motion.svg>
       )}
-      <div className="absolute flex items-center justify-center gap-10" style={{ left: 0, right: 0, top: big ? 70 : 110, height: big ? 200 : 150 }}>
+      <div className="absolute flex items-center justify-center gap-10" style={{ left: 0, right: 0, top: big ? 50 : 100, height: big ? 200 : 150 }}>
         <motion.span
           className="tv-stamp"
           style={{ fontSize: stamp.size, color: stamp.fg, background: stamp.bg, borderColor: "var(--ink)", borderWidth: big ? 10 : 6, padding: big ? "6px 40px" : "4px 26px" }}
