@@ -26,3 +26,16 @@ pnpm exec tsx e2e/record-session.ts && python3 scripts/evidence.py critic/rounds
 - [x] Art kit (Codex, 4 images): assets/art -> ~/src/ogs-trivia-jam/apps/tv/public/art/trivia-jam
 - [x] Catalogue entry: ~/src/ogs-trivia-jam branch feat/trivia-jam-catalogue (worktree of open-game-system, from design/ogs-app-hillclimb), not pushed
 - No theme.m4a: the catalogue has no art.theme field yet.
+
+## 2026-10-06 (Jon asleep ~8 h)
+- RE-SCOPE (Jon): Trivia Jam is an ADULT party game; no kid/grown-up roles. Scorecard Kid row -> Player phone UX;
+  recorder third pane = adult player on iPhone; OGS catalogue roles host+player both grownup, ages 12+ (worktree
+  ~/src/ogs-trivia-jam, commit 73c13575, catalogue test exempts ADULT_GAMES from the kid-seat rule).
+- Jon doesn't love the riso aesthetic: 8 sketches (assets/art/aesthetics) on https://claude.ai/artifact/VyeiGL8m4qJzfwnQE8McNY
+  — WAIT for his pick before any visual polish; climb only structure/staging/timing/audio/copy meanwhile.
+- Round 05 agents: phones adult re-scope (remove read-aloud/stars/landscape kid pad, adult results, host reveal-aware),
+  TV structural (chip collisions, misses beat, finale blocking, exported takeover time).
+- SRE: commits dda6828/9fb2509/76d904a on this branch; split onto `sre-agent-setup` (worktree ~/src/trivia-jam-sre,
+  off origin/main, conflicts resolved, tests/build green). NOT pushed: Jon must OK the push (peer session chose (b)).
+  SRE_CLOUDFLARE_API_TOKEN is an org secret (all). arch-agent on hold (Claude app install + Jon's OK on the workflow).
+- Open decisions for Jon: aesthetic pick; AI question drafter vs paste-only; same-room rematch (changes a pinned test).
