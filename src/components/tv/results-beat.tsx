@@ -11,14 +11,20 @@ import { buildStandings, revealSchedule } from "./tv-model";
  * Short, so the board's reorder lands early: the host's Next unlocks at the reveal's `end`.
  */
 export const HOLD_MS = 1600;
-/**
- * The takeover leaves before the board arrives: it blurs and fades fully to 0 over this long, ending
- * exactly as the board's glass rows start to rise onto the bare aurora (never two translucent layers).
- */
+/** How long the takeover takes to leave: it blurs and fades fully to 0 over this long. */
 export const LEAVE_MS = 400;
 
-/** When the standings board appears, ms after the results arrive (live): the board's BOARD beats count from here. */
-export const boardAt = (revealEnd: number) => revealEnd + HOLD_MS;
+/**
+ * The hand-off from the takeover to the standings, ms after the results arrive (live). The takeover
+ * starts leaving at `leaveAt` (its fade is front-loaded); just after, the board mounts and its glass rows
+ * rise as the takeover blurs away (`boardAt`, where the board's BOARD beats count from), so the stage is
+ * never empty; the takeover is gone at `goneAt`. The two never sit fully overlapped at full strength.
+ */
+export const beatTimeline = (revealEnd: number): { leaveAt: number; boardAt: number; goneAt: number } => {
+  const goneAt = revealEnd + HOLD_MS;
+  const leaveAt = goneAt - LEAVE_MS;
+  return { leaveAt, boardAt: leaveAt + LEAVE_MS / 8, goneAt };
+};
 
 /** After a question: the staged reveal, then the big standings board until the next question. */
 export const TvResultsBeat = ({
@@ -38,18 +44,20 @@ export const TvResultsBeat = ({
   const revealMs = live ? revealSchedule(result.answers.length, reduced).end : 0;
   const [leaving, setLeaving] = useState(false);
   const [showBoard, setShowBoard] = useState(false);
+  const [gone, setGone] = useState(false);
   useEffect(() => {
-    const leave = setTimeout(() => setLeaving(true), Math.max(0, boardAt(revealMs) - LEAVE_MS));
-    const show = setTimeout(() => setShowBoard(true), boardAt(revealMs));
-    return () => {
-      clearTimeout(leave);
-      clearTimeout(show);
-    };
+    const t = beatTimeline(revealMs);
+    const timers = [
+      setTimeout(() => setLeaving(true), Math.max(0, t.leaveAt)),
+      setTimeout(() => setShowBoard(true), Math.max(0, t.boardAt)),
+      setTimeout(() => setGone(true), Math.max(0, t.goneAt)),
+    ];
+    return () => timers.forEach(clearTimeout);
   }, [revealMs]);
   const rows = useMemo(() => buildStandings(players, result.scores), [players, result.scores]);
   return (
     <>
-      {showBoard ? null : (
+      {gone ? null : (
         <motion.div
           className="absolute inset-0"
           initial={false}
