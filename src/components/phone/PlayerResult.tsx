@@ -3,8 +3,9 @@ import type { Question, QuestionResult } from "~/game.types";
 import { PlayerToken } from "./ink";
 import { LookAtTv } from "./LookAtTv";
 import { useSpoilerGate } from "./useSpoilerGate";
-import { beatenBy, formatNumber, offBy, placeOnQuestion, quip, standingFact } from "./competitive";
-import { describeOutcome, ordinal, resultHeadline, type Outcome } from "./outcome";
+import { beatenBy, formatNumber, offBy, placeOnQuestion, standingFact } from "./competitive";
+import { describeOutcome, ordinal, type Outcome } from "./outcome";
+import { honestHeadline, honestQuip, relativeError } from "./honesty";
 import { useCountUp } from "./useCountUp";
 
 type Person = { id: string; name: string; score: number };
@@ -32,15 +33,17 @@ const MyOutcome = ({
   const myScore = result.scores.find((s) => s.playerId === me.id);
   const outcome = describeOutcome(question, myAnswer?.value);
   const earned = myScore?.points ?? 0;
-  const headline = resultHeadline(outcome, earned, question.questionType);
-  const tone = earned > 0 && outcome === "miss" ? "pres-stamp-close" : TONE[outcome];
+  const error = relativeError(question, myAnswer?.value);
+  const headline = honestHeadline(outcome, earned, question.questionType, error);
+  const wayOff = error !== null && error > 0.5;
+  const tone = earned > 0 && outcome === "miss" && !wayOff ? "pres-stamp-close" : TONE[outcome];
   const points = useCountUp(earned);
   const total = useCountUp(me.score);
   const numeric = question.questionType === "numeric";
   const here = placeOnQuestion(result.scores, me.id);
   const beaten = beatenBy(result.scores, me.id);
   const fact = standingFact(outcome, offBy(question, myAnswer?.value), question.questionType);
-  const line = quip({ outcome, points: earned, place: here?.place ?? null, beatenBy: beaten });
+  const line = honestQuip({ outcome, points: earned, place: here?.place ?? null, beatenBy: beaten, relativeError: error });
   const show = (value: string | number) => (numeric ? formatNumber(value) : String(value));
 
   return (
@@ -122,7 +125,7 @@ const MyOutcome = ({
 
       {beaten.length > 0 && (
         <p className="pres-beaten" data-testid="beaten-by">
-          <span className="pslug">Beat you</span> {beaten.join(", ")}
+          <span className="pslug">Beat you:</span> {beaten.join(", ")}
         </p>
       )}
     </motion.section>
@@ -169,7 +172,7 @@ const Everyone = ({
               <div className="truncate text-xl font-extrabold leading-tight">
                 {answer.playerName}
               </div>
-              <div className="pslug truncate">
+              <div className="pslug truncate normal-case">
                 {question.questionType === "numeric" ? formatNumber(answer.value) : answer.value} -{" "}
                 {score.timeTaken.toFixed(1)}s
               </div>
