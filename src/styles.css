@@ -1,3 +1,4 @@
+@import "@fontsource-variable/inter/index.css";
 @import "@fontsource-variable/bricolage-grotesque/index.css";
 @import "@fontsource/space-mono/700.css";
 @import "./styles/tv.css";
@@ -159,3 +160,95 @@ body {
 }
 .sheet-pink { box-shadow: 6px 6px 0 var(--pink); }
 .sheet-yellow { box-shadow: 6px 6px 0 var(--yellow); }
+
+/* ---------- Aurora Glass kit (docs/art-style.md) ---------- */
+:root {
+  --night: #0b0f1a;
+  --night-2: #111827;
+  --aurora-indigo: #6366f1;
+  --aurora-purple: #a855f7;
+  --aurora-pink: #ec4899;
+  --text: #ffffff;
+  --text-2: #d1d5db;
+  --text-3: #9ca3af;
+  --lav-1: #818cf8;
+  --lav-2: #c084fc;
+  --glow: #c4b5fd;
+  --win: #4ade80;
+  --win-fill: #22c55e;
+  --win-ink: #052e16;
+  --close: #fbbf24;
+  --glass: rgba(255, 255, 255, 0.07);
+  --glass-strong: rgba(255, 255, 255, 0.12);
+  --glass-edge: rgba(255, 255, 255, 0.18);
+  --ease-out: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --ease-pop: cubic-bezier(0.2, 0.9, 0.2, 1.25);
+}
+
+/* A page on the aurora: night base, three soft drifting glows behind everything, Inter. */
+.aurora {
+  background: var(--night);
+  color: var(--text);
+  font-family: "Inter Variable", "Inter", system-ui, sans-serif;
+  color-scheme: dark;
+  position: relative;
+  isolation: isolate;
+}
+.aurora::before {
+  content: "";
+  position: fixed;
+  inset: -10%;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(42% 32% at 18% 14%, rgba(99, 102, 241, 0.5), transparent 70%),
+    radial-gradient(46% 36% at 86% 30%, rgba(168, 85, 247, 0.4), transparent 70%),
+    radial-gradient(44% 30% at 58% 104%, rgba(236, 72, 153, 0.3), transparent 70%);
+  filter: blur(40px);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .aurora::before { animation: aurora-drift 48s ease-in-out infinite alternate; }
+}
+@keyframes aurora-drift {
+  from { transform: translate3d(0, 0, 0) scale(1); }
+  to { transform: translate3d(-3%, 2%, 0) scale(1.06); }
+}
+
+/* Frosted glass surfaces. */
+.glass {
+  background: var(--glass);
+  border: 1px solid var(--glass-edge);
+  border-radius: 20px;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+}
+.glass-strong { background: var(--glass-strong); }
+.glass-chip {
+  background: var(--glass);
+  border: 1px solid var(--glass-edge);
+  border-radius: 999px;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+/* The original's signature: lavender gradient text. */
+.lav-text {
+  background: linear-gradient(90deg, var(--lav-1), var(--lav-2));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+/* The answer: white to lavender with a soft glow. */
+.glow-text {
+  background: linear-gradient(180deg, #ffffff 20%, var(--glow));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 0.35em rgba(196, 181, 253, 0.45));
+}
+.label-caps {
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--text-3);
+}
