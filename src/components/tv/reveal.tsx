@@ -22,6 +22,7 @@ import { MissesStrip } from "./misses-strip";
 import { choiceAnswerText, PUCK } from "./reveal-geometry";
 import { PHASE, useRevealPhase } from "./use-reveal-phase";
 import { type Winner, WinnersCard, type WinnersKind } from "./winners-card";
+import { stepTo } from "./motion-presets";
 
 type TvPlayer = { id: string; name: string; score: number };
 
@@ -93,33 +94,44 @@ const AnswerPin = ({ x, live }: { x: number; live: boolean }) => (
   </>
 );
 
+/** The answer's place in the misses beat: one transform tween with the winners card (never a one-frame snap). */
+const stepped = (compact: boolean, fromTop: number) =>
+  stepTo(compact ? { scale: STEPPED_ANSWER.scale, y: STEPPED_ANSWER.top - fromTop } : { scale: 1, y: 0 });
+
 /** The answer, huge and glowing, under the line: it stays put while everything else steps back. */
 const AnswerNumeral = ({ value, x, live, compact }: { value: string; x: number; live: boolean; compact: boolean }) => {
   const center = answerCenter(x);
+  const step = stepped(compact, AXIS_Y + 58);
   return (
     <motion.div
-      className="absolute tv-display"
-      style={{ top: AXIS_Y + 58, fontSize: 252, lineHeight: 0.8, letterSpacing: "-0.045em", x: "-50%", zIndex: 35, transformOrigin: "50% 0" }}
-      initial={live ? { scale: 1.4, opacity: 0, left: center } : false}
-      animate={compact ? { scale: STEPPED_ANSWER.scale, opacity: 1, y: STEPPED_ANSWER.top - (AXIS_Y + 58), left: center } : { scale: 1, opacity: 1, y: 0, left: center }}
-      transition={
-        compact
-          ? { type: "spring", stiffness: 260, damping: 26 }
-          : { duration: 0.5, delay: 0.12, ease: EASE_OUT, left: { type: "spring", stiffness: 200, damping: 22 } }
-      }
+      className="absolute"
+      style={{ top: AXIS_Y + 58, x: "-50%", zIndex: 35 }}
+      initial={live ? { left: center } : false}
+      animate={{ left: center }}
+      transition={{ type: "spring", stiffness: 200, damping: 22 }}
       data-testid="correct-answer"
     >
-      <motion.span
-        aria-hidden="true"
-        className="tv-bloom"
-        style={{ left: "50%", top: "50%", width: 760, height: 520, marginLeft: -380, marginTop: -260, background: "radial-gradient(closest-side, rgba(196, 181, 253, 0.4), transparent)", zIndex: -1 }}
-        initial={live ? { scale: 0.2, opacity: 0 } : false}
-        animate={{ scale: [0.2, 1.25, 1], opacity: [0, 1, 0.75] }}
-        transition={{ duration: 0.9, delay: 0.25, ease: EASE_OUT }}
-      />
-      <span className="glow-text relative" style={{ paddingInline: "0.06em" }}>
-        {value}
-      </span>
+      <motion.div style={{ transformOrigin: "50% 0" }} initial={false} animate={step.animate} transition={step.transition}>
+        <motion.div
+          className="tv-display"
+          style={{ fontSize: 252, lineHeight: 0.8, letterSpacing: "-0.045em", transformOrigin: "50% 0" }}
+          initial={live ? { scale: 1.4, opacity: 0 } : false}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.12, ease: EASE_OUT }}
+        >
+          <motion.span
+            aria-hidden="true"
+            className="tv-bloom"
+            style={{ left: "50%", top: "50%", width: 760, height: 520, marginLeft: -380, marginTop: -260, background: "radial-gradient(closest-side, rgba(196, 181, 253, 0.4), transparent)", zIndex: -1 }}
+            initial={live ? { scale: 0.2, opacity: 0 } : false}
+            animate={{ scale: [0.2, 1.25, 1], opacity: [0, 1, 0.75] }}
+            transition={{ duration: 0.9, delay: 0.25, ease: EASE_OUT }}
+          />
+          <span className="glow-text relative" style={{ paddingInline: "0.06em" }}>
+            {value}
+          </span>
+        </motion.div>
+      </motion.div>
     </motion.div>
   );
 };
@@ -127,20 +139,22 @@ const AnswerNumeral = ({ value, x, live, compact }: { value: string; x: number; 
 const ChoiceAnswerLine = ({ letter, text, live, compact }: { letter: string; text: string; live: boolean; compact: boolean }) => {
   const size = text.length <= 10 ? 180 : text.length <= 18 ? 130 : 88;
   const full = choiceAnswerText(letter, text);
+  const step = stepped(compact, 850);
   return (
-    <motion.div
-      className="absolute flex items-end justify-center gap-10"
-      style={{ left: 96, right: 96, top: 850, zIndex: 35, transformOrigin: "50% 0" }}
-      initial={live ? { scale: 1.4, opacity: 0 } : false}
-      animate={compact ? { scale: STEPPED_ANSWER.scale, opacity: 1, y: STEPPED_ANSWER.top - 850 } : { scale: 1, opacity: 1, y: 0 }}
-      transition={compact ? { type: "spring", stiffness: 260, damping: 26 } : { duration: 0.5, ease: EASE_OUT }}
-      data-testid="correct-answer"
-    >
-      <FitName text={full} max={size} floor={72} box={1728} lineHeight={1.02} className="tv-display text-center glow-text" style={{ letterSpacing: "-0.035em", paddingBottom: "0.06em" }}>
-        {letter}
-        <span style={{ margin: "0 0.28em" }}>{"\u00b7"}</span>
-        {text}
-      </FitName>
+    <motion.div className="absolute" style={{ left: 96, right: 96, top: 850, zIndex: 35, transformOrigin: "50% 0" }} initial={false} animate={step.animate} transition={step.transition} data-testid="correct-answer">
+      <motion.div
+        className="flex items-end justify-center gap-10"
+        style={{ transformOrigin: "50% 0" }}
+        initial={live ? { scale: 1.4, opacity: 0 } : false}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ duration: 0.5, ease: EASE_OUT }}
+      >
+        <FitName text={full} max={size} floor={72} box={1728} lineHeight={1.02} className="tv-display text-center glow-text" style={{ letterSpacing: "-0.035em", paddingBottom: "0.06em" }}>
+          {letter}
+          <span style={{ margin: "0 0.28em" }}>{"\u00b7"}</span>
+          {text}
+        </FitName>
+      </motion.div>
     </motion.div>
   );
 };

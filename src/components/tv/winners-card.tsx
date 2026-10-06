@@ -4,6 +4,7 @@ import { Bloom, EASE_OUT, EASE_POP, GlassToken, Label } from "./glass";
 import { RollingNumber } from "./standings";
 import { winnerCardRects } from "./badge-place";
 import { layoutWinners } from "./winners-layout";
+import { popIn, slamIn, STEP, stepTo } from "./motion-presets";
 
 export type WinnersKind = "exact" | "closest" | "right" | "nobody";
 
@@ -19,24 +20,42 @@ export type Winner = {
 };
 
 const STAMP = {
-  exact: { label: "Exact!", tone: "tv-pill--win", size: 140, rotate: -2 },
-  closest: { label: "Closest!", tone: "tv-pill--close", size: 84, rotate: -2 },
-  right: { label: "Got it!", tone: "tv-pill--win", size: 104, rotate: -2 },
+  exact: { label: "Exact!", tone: "tv-pill--win", size: 140, rotate: -2, bloom: "rgba(74, 222, 128, 0.55)" },
+  closest: { label: "Closest!", tone: "tv-pill--close", size: 84, rotate: -2, bloom: "rgba(251, 191, 36, 0.45)" },
+  right: { label: "Got it!", tone: "tv-pill--win", size: 104, rotate: -2, bloom: "rgba(74, 222, 128, 0.55)" },
 } as const;
 
 /** How far the card shrinks for the misses beat (from the top centre of the frame). */
 export const STEP_UP_SCALE = 0.62;
 
-const StepUp = ({ compact, children }: { compact: boolean; children: ReactNode }) => (
-  <motion.div
-    className="absolute inset-0"
-    style={{ transformOrigin: "50% 0" }}
-    initial={false}
-    animate={{ scale: compact ? STEP_UP_SCALE : 1, y: compact ? -14 : 0 }}
-    transition={{ type: "spring", stiffness: 260, damping: 26 }}
-  >
-    {children}
-  </motion.div>
+/** One tween of one transform (compositor-driven), so the step-up never lands in a single frame. */
+const StepUp = ({ compact, children }: { compact: boolean; children: ReactNode }) => {
+  const step = stepTo(compact ? { scale: STEP_UP_SCALE, y: -14 } : { scale: 1, y: 0 });
+  return (
+    <motion.div className="absolute inset-0" style={{ transformOrigin: "50% 0" }} initial={false} animate={step.animate} transition={step.transition}>
+      {children}
+    </motion.div>
+  );
+};
+
+/** How long the step-up takes (ms), for anything that has to move with it. */
+export const STEP_UP_MS = STEP.duration * 1000;
+
+/** The stamp's moment: when it starts to fall, and the light that blooms behind it as it hits. */
+const STAMP_DELAY = 0.3;
+
+/** When winner i's "+N" lands on their chip (s after scoring starts) and their total starts to roll. */
+const rollAt = (i: number) => 0.28 + i * 0.12;
+
+const StampBloom = ({ color, live }: { color: string; live: boolean }) => (
+  <motion.span
+    aria-hidden="true"
+    className="absolute pointer-events-none"
+    style={{ left: "50%", top: "50%", width: 1100, height: 520, marginLeft: -550, marginTop: -260, borderRadius: 999, background: `radial-gradient(closest-side, ${color}, transparent)`, zIndex: -1 }}
+    initial={live ? { transform: "scale(0.3)", opacity: 0 } : false}
+    animate={live ? { transform: ["scale(0.3)", "scale(0.3)", "scale(1.15)", "scale(1)"], opacity: [0, 0, 1, 0.55] } : { transform: "scale(1)", opacity: 0.55 }}
+    transition={{ delay: STAMP_DELAY, duration: 0.9, times: [0, 0.22, 0.45, 1], ease: EASE_OUT }}
+  />
 );
 
 /** The lowest point of the stamp (row top + height + its slight tilt). */
@@ -51,6 +70,11 @@ const ArrivingTotal = ({ from, to, afterMs, live }: { from: number; to: number; 
     return () => clearTimeout(t);
   }, [live, afterMs]);
   return <RollingNumber from={from} to={arrived ? to : from} run={live && arrived} duration={0.5} />;
+};
+
+const stumped = (live: boolean) => {
+  const p = popIn({ delay: live ? 1.1 : 0, rotate: 3 });
+  return live ? { initial: p.initial, animate: p.animate, transition: p.transition } : { initial: false as const, animate: { transform: p.animate.transform.at(-1), opacity: 1 } };
 };
 
 /** "Nobody got it": a dry beat, the line sags a little and the room is stamped "stumped". */
@@ -68,9 +92,7 @@ const NobodyBeat = ({ live }: { live: boolean }) => (
     <motion.span
       className="tv-pill tv-pill--lav mt-28"
       style={{ fontSize: 56, padding: "16px 40px" }}
-      initial={live ? { scale: 0.3, opacity: 0, rotate: 0 } : false}
-      animate={{ scale: [0.3, 1.1, 1], opacity: 1, rotate: 3 }}
-      transition={{ duration: 0.45, times: [0, 0.6, 1], delay: live ? 1.1 : 0, ease: EASE_POP }}
+      {...stumped(live)}
     >
       Stumped the room
     </motion.span>
@@ -108,6 +130,10 @@ export const WinnersCard = ({
     );
   }
   const stamp = STAMP[kind];
+  const slam = slamIn({ delay: STAMP_DELAY, rotate: stamp.rotate });
+  const stampMotion = live
+    ? { initial: slam.initial, animate: slam.animate, transition: slam.transition }
+    : { initial: false as const, animate: { transform: slam.animate.transform.at(-1), opacity: 1 } };
   const layout = layoutWinners(winners);
   const byId = new Map(winners.map((w) => [w.id, w]));
   const nameTop = layout.chipTop + layout.chip + 18;
@@ -127,15 +153,17 @@ export const WinnersCard = ({
       />
       <StepUp compact={compact}>
       <div className="absolute flex items-center justify-center gap-10" style={{ left: 0, right: 0, top: big ? 50 : 100, height: big ? 200 : 150 }}>
-        <motion.span
-          className={`tv-pill ${stamp.tone}`}
-          style={{ fontSize: stamp.size, padding: big ? "18px 64px" : "14px 44px", letterSpacing: "-0.02em" }}
-          initial={live ? { scale: 0.3, opacity: 0, rotate: 0 } : false}
-          animate={{ scale: [0.3, 1.12, 1], opacity: 1, rotate: stamp.rotate }}
-          transition={{ duration: 0.45, times: [0, 0.6, 1], delay: live ? 0.35 : 0, ease: EASE_POP }}
-        >
-          {stamp.label}
-        </motion.span>
+        <span className="relative inline-flex">
+          <StampBloom color={stamp.bloom} live={live} />
+          <motion.span
+            className={`tv-pill ${stamp.tone}`}
+            style={{ fontSize: stamp.size, padding: big ? "18px 64px" : "14px 44px", letterSpacing: "-0.02em" }}
+            {...stampMotion}
+            data-testid="tv-stamp"
+          >
+            {stamp.label}
+          </motion.span>
+        </span>
         {detail ? (
           <motion.span
             className="tv-pill tv-pill--glass"
@@ -182,16 +210,17 @@ export const WinnersCard = ({
                   style={{ left: spot.x - 300, width: 600, top: totalTop, zIndex: 3 }}
                   initial={live ? { opacity: 0, y: 16 } : false}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: live ? 0.2 : 0, duration: 0.3 }}
+                  // A total of 0 is not shown waiting: it appears as the "+N" lands and is already rolling.
+                  transition={{ delay: live ? (w.prevScore === 0 ? rollAt(i) : 0.1) : 0, duration: 0.2 }}
                 >
                   <motion.span
                     className="tv-display"
                     style={{ fontSize: layout.total, lineHeight: 1, color: "var(--glow)" }}
                     initial={false}
-                    animate={live ? { scale: [1, 1, 1.18, 1] } : { scale: 1 }}
-                    transition={{ duration: 0.45, times: [0, 0.6, 0.8, 1], delay: 0.3 + i * 0.12 }}
+                    animate={live ? { transform: ["scale(1)", "scale(1.18)", "scale(1)"] } : { transform: "scale(1)" }}
+                    transition={{ duration: 0.4, times: [0, 0.5, 1], delay: live ? rollAt(i) + 0.3 : 0 }}
                   >
-                    <ArrivingTotal from={w.prevScore} to={w.prevScore + w.points} afterMs={450 + i * 120} live={live} />
+                    <ArrivingTotal from={w.prevScore} to={w.prevScore + w.points} afterMs={rollAt(i) * 1000} live={live} />
                   </motion.span>
                   <Label size={30} className="!leading-none">total</Label>
                 </motion.span>

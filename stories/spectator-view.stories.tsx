@@ -1059,3 +1059,65 @@ export const TvRevealThreeWinnersLive: Story = {
     { "p-sam": 0, "p-mom": 0, "p-grandpa": 0, "p-lou": 0 },
   ),
 };
+
+/** Samples the page every frame for `ms`, handing each frame to `check`. */
+const sampleFrames = (ms: number, check: (t: number) => void) =>
+  new Promise<void>((resolve, reject) => {
+    const t0 = performance.now();
+    const tick = () => {
+      const t = performance.now() - t0;
+      try {
+        check(t);
+      } catch (e) {
+        reject(e);
+        return;
+      }
+      if (t >= ms) resolve();
+      else requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
+
+const opacityUpTo = (node: Element, root: Element) => {
+  let o = 1;
+  for (let n: Element | null = node; n && n !== root; n = n.parentElement) o *= Number(getComputedStyle(n).opacity);
+  return o;
+};
+
+/**
+ * Round 05: the EXACT! stamp vanished for half a second mid-slam (a keyframe / times mismatch) and the
+ * winner's total sat on "0 TOTAL". Samples every frame of the takeover: one stamp node, mounted once,
+ * that never fades back out once seen; and a total that is never shown reading 0.
+ */
+export const TvRevealStampSlamsOnce: Story = {
+  // `mount` is destructured so Storybook waits for the play function to mount the story.
+  play: async ({ mount, canvasElement, ...ctx }) => {
+    await liveReveal("q2", 2, Q2_RESULT, AFTER_Q1)?.({ ...ctx, mount, canvasElement });
+    const root = canvasElement;
+    let first: Element | null = null;
+    let peak = 0;
+    let shownTotals = 0;
+    await sampleFrames(10500, () => {
+      const stamps = root.querySelectorAll("[data-testid=tv-stamp]");
+      expect(stamps.length).toBeLessThanOrEqual(1);
+      const stamp = stamps[0];
+      if (stamp) {
+        if (first === null) first = stamp;
+        expect(stamp).toBe(first);
+        const o = Number(getComputedStyle(stamp).opacity);
+        if (peak > 0.6) expect(o).toBeGreaterThan(0.6);
+        peak = Math.max(peak, o);
+      }
+      const highlight = root.querySelector("[data-testid=tv-highlight]");
+      for (const n of highlight ? Array.from(highlight.querySelectorAll(".tabular-nums")) : []) {
+        if (opacityUpTo(n, highlight ?? root) > 0.35) {
+          shownTotals++;
+          expect(n.textContent).not.toBe("0");
+        }
+      }
+    });
+    expect(first).not.toBeNull();
+    expect(peak).toBe(1);
+    expect(shownTotals).toBeGreaterThan(0);
+  },
+};
