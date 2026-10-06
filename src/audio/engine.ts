@@ -12,7 +12,9 @@ const BED_URLS: Record<Bed, string> = {
   finale: "/audio/music/finale.m4a",
 };
 // Beds sit well under the moments: thinking ~4 dB under the lobby, so the reveal hit lands ~8 LU over it.
-const BED_LEVEL: Record<Bed, number> = { lobby: 0.45, think: 0.28, finale: 0.95 };
+const BED_LEVEL: Record<Bed, number> = { lobby: 0.45, think: 0.4, finale: 0.67 };
+/** The Trivia Jam motif (scale steps): the question bell states it, the finale fanfare answers it. */
+const MOTIF = [0, 2, 4, 7, 4];
 // The thinking bed steps key each question (whole-tone up, down, up a third…) so no two questions sound the same.
 const THINK_RATES = [1, 1.1225, 0.8909, 1.2599, 0.9439];
 const XFADE = 1.6; // seconds of overlap at each loop seam
@@ -138,7 +140,7 @@ export class TvAudio {
         this.stamp(takeover * 0.52, 0.6);
         this.drumroll(takeover * 0.68, takeover * 0.32);
         this.hit(takeover);
-        this.arp([0, 2, 4, 5, 7, 9], 0.09, 0.42, takeover + 0.15);
+        this.arp(MOTIF.map((m) => m + 2), 0.11, 0.44, takeover + 0.15);
         this.arp([5, 7, 9], 0.0, 0.45, takeover + 0.9);
         return;
       }
@@ -157,7 +159,8 @@ export class TvAudio {
       this.burst(at(beats.firstDrop + i * beats.stagger + 380), 0.05, 900, 0.8, 0.12);
     }
     const lastDrop = beats.firstDrop + Math.max(0, beats.guesses - 1) * beats.stagger + 500;
-    this.drone(at(beats.firstDrop), Math.max(0.5, at(beats.answer - beats.firstDrop)));
+    // The drone starts at once, under the outgoing bed's fade, so results never land in a hole.
+    this.drone(0, Math.max(0.5, at(beats.answer)));
     this.drumroll(at(lastDrop), Math.max(0.4, at(beats.answer - lastDrop)));
     this.hit(at(beats.answer));
     this.arp(beats.exact ? [4, 5, 7, 9] : [2, 4, 5], 0.1, 0.24, at(beats.spotlight));
@@ -205,9 +208,9 @@ export class TvAudio {
     if (old) {
       old.gain.gain.cancelScheduledValues(ctx.currentTime);
       old.gain.gain.setValueAtTime(old.gain.gain.value, ctx.currentTime);
-      old.gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.7);
+      old.gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 1.2);
       window.clearTimeout(old.timer);
-      for (const s of old.sources) s.stop(ctx.currentTime + 0.8);
+      for (const s of old.sources) s.stop(ctx.currentTime + 1.3);
       this.bed = null;
     }
     if (!name) return;
@@ -217,7 +220,13 @@ export class TvAudio {
       const rate = name === "think" ? (THINK_RATES[this.thinkCount++ % THINK_RATES.length] ?? 1) : 1;
       const gain = ctx.createGain();
       gain.gain.setValueAtTime(0, ctx.currentTime);
-      gain.gain.linearRampToValueAtTime(BED_LEVEL[name], ctx.currentTime + 1.2);
+      if (name === "finale") {
+        // The finale bed holds back under the podium build and swells into the winner takeover.
+        const takeover = finaleTakeoverMs(this.reducedMotion()) / 1000;
+        gain.gain.linearRampToValueAtTime(BED_LEVEL.finale * 0.4, ctx.currentTime + 1.2);
+        gain.gain.setValueAtTime(BED_LEVEL.finale * 0.4, ctx.currentTime + Math.max(1.3, takeover - 0.6));
+        gain.gain.linearRampToValueAtTime(BED_LEVEL.finale, ctx.currentTime + takeover + 0.2);
+      } else gain.gain.linearRampToValueAtTime(BED_LEVEL[name], ctx.currentTime + 1.2);
       if (name === "think") {
         // The generated thinking bed is dull above ~5 kHz: lift the air a little.
         const shelf = ctx.createBiquadFilter();
@@ -282,13 +291,12 @@ export class TvAudio {
     steps.forEach((s, i) => this.mallet(SCALE[s] ?? 880, level, 0.6, delay + i * gap));
   }
 
+  /** The question bell: the Trivia Jam motif on bright mallets, with a soft shimmer. */
   private bell(delay: number) {
-    for (const [f, l] of [[1318.51, 0.22], [1567.98, 0.18]] as const) {
-      this.voice(f, "sine", l, 1.1, delay);
-      this.voice(f * 2.76, "sine", l * 0.25, 0.5, delay);
-    }
-    for (const [f, l] of [[1318.51, 0.18], [1567.98, 0.15]] as const) this.voice(f, "sine", l, 0.9, delay + 0.22);
+    MOTIF.forEach((step, k) => this.mallet((SCALE[step + 3] ?? 1046.5), 0.22, 0.5, delay + k * 0.085));
+    this.voice(1567.98 * 2.76, "sine", 0.03, 0.6, delay + 0.34);
   }
+
 
   private noise(seconds: number): AudioBufferSourceNode {
     const { ctx } = this.context();
