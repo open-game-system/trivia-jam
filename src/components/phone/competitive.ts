@@ -4,11 +4,15 @@ type Scored = { playerId: string; playerName: string; points: number; timeTaken:
 
 const GROUPING = new Intl.NumberFormat("en-US", { maximumFractionDigits: 20 });
 
+/** Numbers up to 9999 stay plain (a year is not "1,776"); from 10,000 up they are grouped. */
+const GROUPING_FROM = 10_000;
+
 /** 1000000 -> "1,000,000". Anything that is not a plain number is returned as it came. */
 export const formatNumber = (value: string | number): string => {
   if (value === "") return "";
   const n = typeof value === "number" ? value : /^-?\d+(\.\d+)?$/.test(value) ? Number(value) : NaN;
-  return Number.isFinite(n) ? GROUPING.format(n) : String(value);
+  if (!Number.isFinite(n)) return String(value);
+  return Math.abs(n) >= GROUPING_FROM ? GROUPING.format(n) : String(value);
 };
 
 /** How far a numeric guess was from the answer; null when there is no distance to talk about. */

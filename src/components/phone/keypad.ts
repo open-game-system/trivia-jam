@@ -34,8 +34,12 @@ export const toAnswerNumber = (value: string): number | null => {
   return Number.isFinite(n) ? n : null;
 };
 
-/** "1000000" -> ["1", "000", "000"]: the digits in groups of three from the right, for display. */
+/**
+ * "1000000" -> ["1", "000", "000"]: the digits in groups of three from the right, for display.
+ * Four digits or fewer stay one group (a year is not "1,776").
+ */
 export const digitGroups = (value: string): string[] => {
+  if (value.length <= 4) return value === "" ? [] : [value];
   const groups: string[] = [];
   for (let end = value.length; end > 0; end -= 3) groups.unshift(value.slice(Math.max(0, end - 3), end));
   return groups;

@@ -60,7 +60,8 @@ describe("digitGroups", () => {
   it("groups in threes from the right", () => {
     expect(digitGroups("")).toEqual([]);
     expect(digitGroups("8")).toEqual(["8"]);
-    expect(digitGroups("1776")).toEqual(["1", "776"]);
+    expect(digitGroups("1776")).toEqual(["1776"]);
+    expect(digitGroups("12345")).toEqual(["12", "345"]);
     expect(digitGroups("123456")).toEqual(["123", "456"]);
     expect(digitGroups("1000000")).toEqual(["1", "000", "000"]);
   });

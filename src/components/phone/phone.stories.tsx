@@ -95,6 +95,22 @@ export const NumberPadTyping: StoryObj<typeof PadHarness> = {
   },
 };
 
+export const NumberPadBigNumber: StoryObj<typeof PadHarness> = {
+  render: () => <PadHarness onSubmit={fn()} />,
+  decorators: [],
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    for (const key of ["1", "0", "0", "0", "0", "0", "0"]) {
+      await userEvent.click(canvas.getByRole("button", { name: key }));
+    }
+    const display = canvas.getByTestId("answer-display");
+    // Groups of three are drawn by CSS between the spans; the text itself stays plain digits.
+    expect(display).toHaveTextContent("1000000");
+    expect(display.querySelectorAll(".pgroup")).toHaveLength(3);
+    expect(display.querySelectorAll(".pgroup-sep")).toHaveLength(2);
+  },
+};
+
 /* ---------- Player screens ---------- */
 
 export const LockedInNumber: Story = {
@@ -374,5 +390,71 @@ export const HostRemovePlayerIsQuiet: Story = {
     const remove = await canvas.findByTestId("remove-player-p2");
     expect(remove).toHaveTextContent("Remove");
     expect(remove).toHaveAccessibleName("Remove Mom");
+  },
+};
+
+/** The host's phone keeps quiet while the TV stages the reveal: no answer, Next locked, then Skip reveal opens it. */
+export const HostHoldsTheRevealUntilTheTvLands: Story = {
+  parameters: { actorKit: { session: hostSession } },
+  render: () => <HostView host="dev.triviajam.tv" />,
+  play: async ({ mount, canvasElement }) => {
+    const live = {
+      questionId: "q1",
+      startTime: Date.now() - 4000,
+      answers: [{ playerId: "p2", playerName: "Mom", value: 8, timestamp: Date.now() - 2000 }],
+    };
+    const gameClient = createActorKitMockClient<GameMachine>({
+      initialSnapshot: {
+        ...defaultGameSnapshot,
+        public: {
+          ...defaultGameSnapshot.public,
+          players: people,
+          questions: {
+            q1: numericQuestion,
+            q2: { ...numericQuestion, id: "q2", text: "How many days in a week?", correctAnswer: 7 },
+          },
+          questionNumber: 1,
+          currentQuestion: live,
+        },
+        value: { active: "questionActive" },
+      },
+    });
+    await mount(
+      <GameContext.ProviderFromClient client={gameClient}>
+        <HostView host="dev.triviajam.tv" />
+      </GameContext.ProviderFromClient>,
+    );
+    const canvas = within(canvasElement);
+    await canvas.findByTestId("question-timer");
+
+    gameClient.produce((draft) => {
+      draft.public.currentQuestion = null;
+      draft.public.questionResults = [
+        {
+          questionId: "q1",
+          questionNumber: 1,
+          answers: live.answers,
+          scores: [{ playerId: "p2", playerName: "Mom", points: 4, position: 1, timeTaken: 2 }],
+        },
+      ];
+      draft.value = { active: "questionPrep" };
+    });
+
+    expect(await canvas.findByTestId("reveal-progress")).toHaveTextContent("Revealing on the TV");
+    expect(canvas.getByRole("heading", { name: "Results" })).toBeInTheDocument();
+    const results = canvas.getByRole("region", { name: "Results" });
+    expect(within(results).queryByText("Answer")).toBeNull();
+    expect(canvas.queryByTestId("player-result-p2")).toBeNull();
+    expect(canvas.getByRole("button", { name: "Start Next Question" })).toBeDisabled();
+
+    // Still quiet a moment later: the TV has not landed the answer yet.
+    await new Promise((resolve) => setTimeout(resolve, 1200));
+    expect(within(results).queryByText("Answer")).toBeNull();
+    expect(canvas.getByRole("button", { name: "Start Next Question" })).toBeDisabled();
+
+    await userEvent.click(canvas.getByRole("button", { name: "Skip reveal" }));
+    expect(await canvas.findByTestId("player-result-p2")).toBeInTheDocument();
+    expect(canvas.getByRole("button", { name: "Start Next Question" })).toBeEnabled();
+    expect(canvas.queryByRole("button", { name: "Skip reveal" })).toBeNull();
   },
 };

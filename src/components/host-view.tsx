@@ -1,4 +1,4 @@
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Check, Copy, Loader2, Settings, Share2 } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { useMemo, useState } from "react";
@@ -22,7 +22,10 @@ import {
   QuestionExtras,
   QuestionHeadline,
 } from "./phone/HostParts";
+import type { RevealPhase } from "./phone/hostReveal";
 import { PlayerToken } from "./phone/ink";
+import { useResultArrival } from "./phone/useResultArrival";
+import { useRevealPhase } from "./phone/useRevealPhase";
 import { PhoneShell } from "./phone/PhoneShell";
 import { QuestionProgress } from "./question-progress";
 
@@ -68,7 +71,7 @@ const Page = ({ children }: { children: React.ReactNode }) => (
 );
 
 const Masthead = ({ children }: { children?: React.ReactNode }) => (
-  <div className="flex items-center justify-between gap-3 pb-4 pt-4">
+  <div className="flex items-center justify-between gap-3 pb-2 pt-3">
     <span className="pslug">Trivia Jam / Host</span>
     {children}
   </div>
@@ -194,15 +197,34 @@ const ResultAnswerRow = ({
   );
 };
 
+/** The host's phone while the TV stages the reveal: no answer, no results, just progress. */
+const RevealStrip = ({ phase, compact = false }: { phase: RevealPhase; compact?: boolean }) => (
+  <div className={compact ? "hreveal hreveal-compact" : "hreveal"} role="status" data-testid="reveal-progress">
+    <p className={compact ? "pslug" : "h-head"}>Revealing on the TV…</p>
+    <div className="hreveal-track" aria-hidden="true">
+      <motion.div
+        key={phase.name}
+        className="hreveal-fill"
+        initial={{ scaleX: phase.totalMs > 0 ? phase.elapsedMs / phase.totalMs : 1 }}
+        animate={{ scaleX: 1 }}
+        transition={{ duration: Math.max(0, phase.totalMs - phase.elapsedMs) / 1000, ease: "linear" }}
+      />
+    </div>
+  </div>
+);
+
 const PreviousQuestionResults = ({
   lastQuestionResult,
   questions,
   players,
+  phase,
 }: {
   lastQuestionResult: QuestionResult;
   questions: Record<string, Question>;
   players: Person[];
+  phase: RevealPhase;
 }) => {
+  const held = phase.name === "hold";
   const question = questions[lastQuestionResult.questionId];
   const shortAnswer = String(question.correctAnswer).length <= 6;
   return (
@@ -213,19 +235,31 @@ const PreviousQuestionResults = ({
       aria-labelledby="results-heading"
     >
       <h1 className="h-head text-blue">{question.text}</h1>
-      <div className="hstatus-card mt-4">
-        <div className="pslug">Answer</div>
-        <div
-          className={`tabular ${shortAnswer ? "hstatus-figure" : "h-head"}`}
-          style={shortAnswer ? undefined : { marginTop: 4 }}
-        >
-          {question.correctAnswer}
+      {!held && (
+        <div className="hstatus-card mt-4">
+          <div className="pslug">Answer</div>
+          <div
+            className={`tabular ${shortAnswer ? "hstatus-figure" : "h-head"}`}
+            style={shortAnswer ? undefined : { marginTop: 4 }}
+          >
+            {question.correctAnswer}
+          </div>
         </div>
-      </div>
+      )}
+      {phase.name === "settling" && (
+        <div className="mt-3">
+          <RevealStrip phase={phase} compact />
+        </div>
+      )}
       <h2 id="results-heading" className="pslug mb-2 mt-5" style={{ fontSize: 16 }}>
         Results
       </h2>
-      {lastQuestionResult.answers.length === 0 ? (
+      {held && (
+        <div className="mt-2">
+          <RevealStrip phase={phase} />
+        </div>
+      )}
+      {held && lastQuestionResult.answers.length > 0 ? null : lastQuestionResult.answers.length === 0 ? (
         <p className="prow">
           <span className="text-xl font-bold">No one answered this question</span>
         </p>
@@ -398,7 +432,7 @@ const QuestionImportForm = ({
       </div>
     ) : (
       <div className="hform">
-        <p className="h-detail mb-2">Question, then answer. Blank line between.</p>
+        <p className="mb-2 text-base font-bold leading-snug">Question, then answer. Blank line between.</p>
         <pre className="hform-example" aria-label="Example">{EXAMPLE_QUESTIONS}</pre>
         <textarea
           value={documentContent}
@@ -413,7 +447,7 @@ Question?
 a) Option 1 b) Option 2 c) Option 3 d) Option 4
 Correct answer: B`}
           className="pfield mb-3"
-          rows={5}
+          rows={3}
         />
         <button
           type="button"
@@ -710,8 +744,8 @@ const LobbyControls = ({
               <Settings size={26} strokeWidth={2.6} aria-hidden="true" />
             </button>
           </Masthead>
-          <hgroup className="mb-4">
-            <h1 className="misreg misreg-sm text-4xl font-extrabold">Game Setup</h1>
+          <hgroup className="mb-3">
+            <h1 className="misreg misreg-sm text-3xl font-extrabold">Game Setup</h1>
             {(!hasQuestions || isEditingQuestions) && (
               <h2 className="pslug mt-1" style={{ fontSize: 16 }}>
                 Import Questions
@@ -863,6 +897,19 @@ const QuestionControls = ({
   const isQuestionActive = isActive && currentQuestion !== null;
   const timeLeft = useQuestionTimer(currentQuestion, answerTimeWindow, isQuestionActive);
 
+  // The TV stages its reveal; this phone stays quiet (no answer, Next locked) until it has landed.
+  const latestResultId = lastQuestionResult?.questionId ?? null;
+  const arrivedAt = useResultArrival(currentQuestion?.questionId ?? null, latestResultId);
+  const [skippedFor, setSkippedFor] = useState<string | null>(null);
+  const reducedMotion = useReducedMotion() ?? false;
+  const phase = useRevealPhase({
+    arrivedAt,
+    guessCount: lastQuestionResult?.answers.length ?? 0,
+    reducedMotion,
+    skipped: skippedFor !== null && skippedFor === latestResultId,
+  });
+  const revealing = !currentQuestion && phase.name !== "settled";
+
   const nextQuestion: Question | undefined = Object.values(questions)[questionNumber];
 
   const handleNextQuestion = () => {
@@ -893,6 +940,7 @@ const QuestionControls = ({
                   lastQuestionResult={lastQuestionResult}
                   questions={questions}
                   players={players}
+                  phase={phase}
                 />
               )}
               {isFirst && (
@@ -974,6 +1022,7 @@ const QuestionControls = ({
             <button
               type="button"
               onClick={endGame}
+              disabled={revealing}
               className="pbtn pbtn-pink pbtn-lg pbtn-block"
               data-testid="end-game-button"
             >
@@ -983,11 +1032,18 @@ const QuestionControls = ({
             <button
               type="button"
               onClick={handleNextQuestion}
-              disabled={!nextQuestion}
+              disabled={!nextQuestion || revealing}
               className="pbtn pbtn-pink pbtn-lg pbtn-block"
             >
               {isFirst ? "Start First Question" : "Start Next Question"}
             </button>
+          )}
+          {revealing && (
+            <div className="mt-2 flex justify-center">
+              <button type="button" className="pbtn pbtn-quiet" onClick={() => setSkippedFor(latestResultId)}>
+                Skip reveal
+              </button>
+            </div>
           )}
         </ActionBar>
       )}

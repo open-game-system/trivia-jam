@@ -43,7 +43,7 @@ describe("beatenBy", () => {
 describe("standingFact", () => {
   it("says how far off a numeric guess was", () => {
     expect(standingFact("miss", 2, "numeric")).toBe("Off by 2");
-    expect(standingFact("close", 1000, "numeric")).toBe("Off by 1,000");
+    expect(standingFact("close", 25000, "numeric")).toBe("Off by 25,000");
     expect(standingFact("exact", 0, "numeric")).toBe("Dead on");
   });
   it("has nothing to add for multiple choice or no answer", () => {
@@ -68,12 +68,18 @@ describe("quip", () => {
 describe("formatNumber", () => {
   it("groups thousands of digit strings and numbers", () => {
     expect(formatNumber("1000000")).toBe("1,000,000");
-    expect(formatNumber(1776)).toBe("1,776");
+    expect(formatNumber(123456)).toBe("123,456");
     expect(formatNumber("12")).toBe("12");
     expect(formatNumber("")).toBe("");
   });
+  it("leaves years and other 4-digit numbers plain", () => {
+    expect(formatNumber(1776)).toBe("1776");
+    expect(formatNumber("2020")).toBe("2020");
+    expect(formatNumber(9999)).toBe("9999");
+    expect(formatNumber(10000)).toBe("10,000");
+  });
   it("keeps decimals and leaves non-numbers alone", () => {
-    expect(formatNumber(1234.5)).toBe("1,234.5");
+    expect(formatNumber(12345.5)).toBe("12,345.5");
     expect(formatNumber("Blue whale")).toBe("Blue whale");
   });
 });
