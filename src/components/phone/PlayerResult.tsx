@@ -74,7 +74,7 @@ const MyOutcome = ({
 
       <div className="pres-stats">
         <div className="pres-stat" data-testid="my-question-place">
-          <span className="pslug">This question</span>
+          <span className="pslug">This round</span>
           <span className="pres-stat-fig glow-text tabular">
             {here ? ordinal(here.place) : "-"}
             {here && <small> of {here.of}</small>}
@@ -87,15 +87,20 @@ const MyOutcome = ({
           </span>
         </div>
         <div className="pres-stat">
-          <span className="pslug" data-testid="my-overall" aria-label={`Place ${overallRank}`}>
-            Overall {ordinal(overallRank)}
-          </span>
+          <span className="pslug">Overall</span>
           <span
             className="pres-stat-fig glow-text tabular"
+            data-testid="my-overall"
+            aria-label={`Place ${overallRank}`}
+          >
+            {ordinal(overallRank)}
+          </span>
+          <span
+            className="pres-stat-sub tabular"
             data-testid="my-total"
             aria-label={`${me.score} points in total`}
           >
-            {total}
+            {total} pts
           </span>
         </div>
       </div>

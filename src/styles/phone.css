@@ -312,6 +312,10 @@ body:has(.phone-shell) {
   margin: 0 auto;
   padding: 0 16px calc(14px + env(safe-area-inset-bottom));
 }
+/* Tall phones: the keys take the spare height so the question is not stranded in a gap. */
+@media (min-height: 780px) {
+  .ppad { --key: clamp(66px, 10.4dvh, 92px); gap: 12px; max-width: 460px; }
+}
 .pkey {
   position: relative;
   height: var(--key);
@@ -761,6 +765,7 @@ textarea.pfield { min-height: 132px; padding: 14px 16px; font-size: 16px; line-h
   letter-spacing: -0.035em;
   white-space: nowrap;
 }
+.pres-stat-sub { font-size: 16px; font-weight: 800; color: var(--text-2); white-space: nowrap; }
 .pres-stat-fig small { font-size: 0.5em; letter-spacing: 0; font-weight: 700; }
 .pres-beaten { width: 100%; font-size: 17px; font-weight: 700; text-align: center; color: var(--text); }
 .pres-beaten .pslug { color: var(--close); }
