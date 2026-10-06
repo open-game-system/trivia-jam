@@ -1,5 +1,4 @@
 import { useOnOgsTv } from "~/ogs/use-ogs-game";
-import { AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { GameContext } from "~/game.context";
 import type { GamePublicContext } from "~/game.types";
@@ -10,6 +9,7 @@ import { TvResultsBeat } from "./tv/results-beat";
 import { TvFinale } from "./tv/finale";
 import { buildStandings } from "./tv/tv-model";
 import { TvLobby } from "./tv/lobby";
+import { TvScreens } from "./tv/screens";
 import { TvStage } from "./tv/stage";
 
 const GameplayDisplay = ({
@@ -59,7 +59,7 @@ const ActiveGameContent = ({
 }) => {
   // Results that were already in when this TV loaded are shown settled, not replayed.
   const [resultsSeenAtMount] = useState(questionResults.length);
-  const screen = currentQuestion ? (
+  const question = currentQuestion ? (
     <GameplayDisplay
       key={`q-${currentQuestion.questionId}`}
       currentQuestion={currentQuestion}
@@ -67,26 +67,30 @@ const ActiveGameContent = ({
       questions={questions}
       questionNumber={questionNumber}
     />
-  ) : questionResults.length > 0 ? (
-    <QuestionResultsDisplay
-      key={`results-${questionResults.length}`}
-      questionResults={questionResults}
-      questions={questions}
-      players={players}
-      live={questionResults.length > resultsSeenAtMount}
-    />
-  ) : (
-    <TvAnticipation
-      key="anticipation"
-      nextNumber={questionNumber + 1}
-      total={Object.keys(questions).length}
-      rows={buildStandings(players, [])}
-      showScores={false}
-    />
-  );
-  // The question screen exits under AnimatePresence: it hands its text and axis to the results screen,
-  // which mounts in the same frame, and fades the rest out underneath (no cut to an empty stage).
-  return <AnimatePresence>{screen}</AnimatePresence>;
+  ) : null;
+  const between =
+    questionResults.length > 0 ? (
+      <QuestionResultsDisplay
+        key={`results-${questionResults.length}`}
+        questionResults={questionResults}
+        questions={questions}
+        players={players}
+        live={questionResults.length > resultsSeenAtMount}
+      />
+    ) : (
+      <TvAnticipation
+        key="anticipation"
+        nextNumber={questionNumber + 1}
+        total={Object.keys(questions).length}
+        rows={buildStandings(players, [])}
+        showScores={false}
+      />
+    );
+  // The question screen leaves under the results: it hands its text and axis over, which mount in the
+  // same frame, and fades the rest out underneath (no cut to an empty stage). Keyed by the question
+  // in play (or, between questions, the one just asked) so a new question never sits beside the old one.
+  const questionKey = currentQuestion?.questionId ?? questionResults[questionResults.length - 1]?.questionId ?? "none";
+  return <TvScreens question={question} questionKey={questionKey} between={between} />;
 };
 
 export const SpectatorView = ({ host }: { host: string }) => {
