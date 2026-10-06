@@ -16,7 +16,7 @@ import type {
   QuestionResult,
 } from "./game.types";
 import { parseQuestions } from "./gemini";
-import { calculateScores } from "./game/scoring";
+import { declareWinner, settleQuestion } from "./game/standings";
 
 export const gameMachine = setup({
   types: {} as {
@@ -86,11 +86,7 @@ export const gameMachine = setup({
       })
     ),
     setWinner: assign(({ context }) => ({
-      public: produce(context.public, (draft) => {
-        draft.winner = draft.players.reduce((a, b) =>
-          a.score > b.score ? a : b
-        ).id;
-      }),
+      public: declareWinner(context.public),
     })),
     removePlayer: assign(({ context }, { playerId }: { playerId: string }) => ({
       public: produce(context.public, (draft) => {
@@ -112,44 +108,7 @@ export const gameMachine = setup({
       }),
     })),
     processQuestionResults: assign(({ context }) => ({
-      public: produce(context.public, (draft) => {
-        if (!draft.currentQuestion) return;
-
-        const question = draft.questions[draft.currentQuestion.questionId];
-        const scores = calculateScores(
-          draft.currentQuestion.answers,
-          question,
-          draft.currentQuestion.startTime
-        );
-
-        const questionResult = {
-          questionId: draft.currentQuestion.questionId,
-          questionNumber: draft.questionNumber,
-          answers: draft.currentQuestion.answers,
-          scores,
-        };
-
-        // Update player scores
-        scores.forEach((score) => {
-          const player = draft.players.find((p) => p.id === score.playerId);
-          if (player) {
-            player.score += Math.round(score.points);
-          }
-        });
-
-        // Add to question results history
-        draft.questionResults.push(questionResult);
-
-        // Clear current question and increment counter
-        draft.currentQuestion = null;
-
-        // Check if game should end
-        if (draft.questionNumber >= Object.keys(draft.questions).length) {
-          const maxScore = Math.max(...draft.players.map((p) => p.score));
-          const winners = draft.players.filter((p) => p.score === maxScore);
-          draft.winner = winners[0].id;
-        }
-      }),
+      public: settleQuestion(context.public),
     })),
     assignParsedQuestions: assign(
       (
