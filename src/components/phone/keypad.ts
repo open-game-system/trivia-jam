@@ -33,3 +33,10 @@ export const toAnswerNumber = (value: string): number | null => {
   const n = Number(value);
   return Number.isFinite(n) ? n : null;
 };
+
+/** "1000000" -> ["1", "000", "000"]: the digits in groups of three from the right, for display. */
+export const digitGroups = (value: string): string[] => {
+  const groups: string[] = [];
+  for (let end = value.length; end > 0; end -= 3) groups.unshift(value.slice(Math.max(0, end - 3), end));
+  return groups;
+};

@@ -25,7 +25,7 @@ const STAMP = {
   right: { label: "Got it!", bg: "var(--teal)", fg: "var(--paper)", size: 110, rotate: -5 },
 } as const;
 
-/** A total that holds its old value until the travelling "+N" arrives, then ticks over. */
+/** A total that holds its old value until the "+N" badge has stamped, then ticks over. */
 const ArrivingTotal = ({ from, to, afterMs, live }: { from: number; to: number; afterMs: number; live: boolean }) => {
   const [arrived, setArrived] = useState(!live);
   useEffect(() => {
@@ -65,7 +65,7 @@ const NobodyBeat = ({ live }: { live: boolean }) => (
 /**
  * The break-forward beat: the winners' chips leave the line and come to the front as one big
  * centred group, names huge, stamped EXACT / CLOSEST / GOT IT. Then (`scoring`) each "+N" lands
- * on its chip and travels down into that player's total, which ticks over.
+ * top-right of its chip (never over a name or total) and that player's total ticks over.
  */
 export const WinnersCard = ({
   kind,

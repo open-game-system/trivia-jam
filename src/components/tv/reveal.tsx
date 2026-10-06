@@ -17,6 +17,7 @@ import {
   revealSchedule,
   toNumber,
 } from "./tv-model";
+import { choiceAnswerText, PUCK } from "./reveal-geometry";
 import { PHASE, useRevealPhase } from "./use-reveal-phase";
 import { type Winner, WinnersCard, type WinnersKind } from "./winners-card";
 
@@ -123,6 +124,7 @@ const AnswerNumeral = ({ value, x, live }: { value: string; x: number; live: boo
 
 const ChoiceAnswerLine = ({ letter, text, live }: { letter: string; text: string; live: boolean }) => {
   const size = text.length <= 10 ? 180 : text.length <= 18 ? 130 : 88;
+  const full = choiceAnswerText(letter, text);
   return (
     <motion.div
       className="absolute flex items-end justify-center gap-10"
@@ -132,34 +134,41 @@ const ChoiceAnswerLine = ({ letter, text, live }: { letter: string; text: string
       transition={{ duration: 0.5, times: [0, 0.65, 1] }}
       data-testid="correct-answer"
     >
-      <FitName text={`${letter}\u00a0${text}`} max={size} floor={72} box={1728} lineHeight={1} className="tv-display text-center">
+      <FitName text={full} max={size} floor={72} box={1728} lineHeight={1} className="tv-display text-center">
         <RisoType top="var(--blue)" under="var(--pink)" offset={10} rough>
-          {letter}&nbsp;{text}
+          {letter}
+          <span style={{ margin: "0 0.28em", color: "var(--ink)" }}>{"\u00b7"}</span>
+          {text}
         </RisoType>
       </FitName>
     </motion.div>
   );
 };
 
-/** The "?" puck sweeps between the guesses while the room holds its breath: above the axis, so the ticks stay readable. */
+/**
+ * The "?" puck sweeps between the guesses while the room holds its breath. It travels UNDER the axis,
+ * below the tick labels and pointing up at the line, so it never sits over a guess or its numeral;
+ * the answer numeral lands in the same place.
+ */
 const SuspenseMarker = ({ stops, seconds }: { stops: number[]; seconds: number }) => {
   const path = stops.length > 0 ? stops : [960];
-  const size = 84;
+  const size = PUCK.size;
   return (
     <motion.span
       aria-hidden="true"
       className="absolute"
-      style={{ left: -size / 2, top: AXIS_Y - 14 - size - 10, width: size, height: size + 24, zIndex: 8 }}
+      style={{ left: -size / 2, top: PUCK.top, width: size, height: size + 24, zIndex: 8 }}
       initial={{ x: path[0], scale: 0 }}
       animate={{ x: path, scale: 1 }}
       transition={{ x: { duration: seconds, ease: "easeInOut" }, scale: { type: "spring", stiffness: 500, damping: 15 } }}
+      data-testid="tv-suspense-puck"
     >
-      <svg className="absolute" style={{ left: size / 2 - 14, top: size - 6 }} width={28} height={26} viewBox="0 0 28 26">
-        <polygon points="0,0 28,0 14,24" fill="var(--ink)" />
+      <svg className="absolute" style={{ left: size / 2 - 14, top: 0 }} width={28} height={26} viewBox="0 0 28 26">
+        <polygon points="14,0 28,24 0,24" fill="var(--ink)" />
       </svg>
       <span
         className="tv-display absolute flex items-center justify-center"
-        style={{ left: 0, top: 0, width: size, height: size, borderRadius: 999, background: "var(--pink)", fontSize: 58, border: "6px solid var(--ink)" }}
+        style={{ left: 0, top: 22, width: size, height: size, borderRadius: 999, background: "var(--pink)", fontSize: 58, border: "6px solid var(--ink)" }}
       >
         ?
       </span>

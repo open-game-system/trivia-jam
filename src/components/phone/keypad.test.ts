@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { MAX_DIGITS, keypadReducer, toAnswerNumber } from "./keypad";
+import { MAX_DIGITS, digitGroups, keypadReducer, toAnswerNumber } from "./keypad";
 
 describe("keypadReducer", () => {
   it("appends digits", () => {
@@ -53,5 +53,15 @@ describe("toAnswerNumber", () => {
   });
   it("returns null when nothing typed", () => {
     expect(toAnswerNumber("")).toBeNull();
+  });
+});
+
+describe("digitGroups", () => {
+  it("groups in threes from the right", () => {
+    expect(digitGroups("")).toEqual([]);
+    expect(digitGroups("8")).toEqual(["8"]);
+    expect(digitGroups("1776")).toEqual(["1", "776"]);
+    expect(digitGroups("123456")).toEqual(["123", "456"]);
+    expect(digitGroups("1000000")).toEqual(["1", "000", "000"]);
   });
 });

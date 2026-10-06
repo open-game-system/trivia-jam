@@ -1044,3 +1044,18 @@ export const TvStandingsAfterQ1ThreeLive: Story = {
     },
   ),
 };
+
+/** Three exact guesses (11e in round 04): three "+N" badges beside three names, none over a name or a total. */
+export const TvRevealThreeWinnersLive: Story = {
+  play: liveReveal(
+    "q1",
+    1,
+    resultFor("q1", 1, [
+      ["p-mom", "Mom", 8, 4],
+      ["p-sam", "Sam", 8, 3],
+      ["p-grandpa", "Grandpa", 8, 2],
+      ["p-lou", "Lou", 5, 0],
+    ]),
+    { "p-sam": 0, "p-mom": 0, "p-grandpa": 0, "p-lou": 0 },
+  ),
+};

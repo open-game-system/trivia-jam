@@ -195,6 +195,14 @@ body:has(.phone-shell) {
 }
 
 /* ---------- Answer display ---------- */
+.pdisplay-wrap {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+}
 .pdisplay {
   font-family: "Bricolage Grotesque Variable", system-ui, sans-serif;
   font-weight: 800;
@@ -203,16 +211,17 @@ body:has(.phone-shell) {
   line-height: 1;
   text-align: center;
   color: var(--ink);
-  font-size: clamp(72px, 22dvh, 240px);
-  text-shadow: 5px 5px 0 var(--pink);
+  font-size: clamp(56px, 11dvh, 96px);
+  text-shadow: 3px 3px 0 var(--pink);
   min-height: 1em;
   white-space: nowrap;
 }
 .pdisplay[data-len="6"],
 .pdisplay[data-len="7"],
 .pdisplay[data-len="8"] {
-  font-size: clamp(56px, 15dvh, 160px);
+  font-size: clamp(44px, 8dvh, 72px);
 }
+.pgroup-sep::before { content: ","; letter-spacing: 0; margin: 0 0.02em; }
 .pdisplay-empty {
   color: color-mix(in srgb, var(--ink) 25%, var(--paper));
   text-shadow: none;
@@ -232,12 +241,12 @@ body:has(.phone-shell) {
 
 /* ---------- Number pad ---------- */
 .ppad {
-  --key: clamp(60px, 9.5dvh, 84px);
+  --key: clamp(52px, 8.4dvh, 66px);
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 10px;
   width: 100%;
-  max-width: 520px;
+  max-width: 380px;
   margin: 0 auto;
   padding: 0 16px calc(14px + env(safe-area-inset-bottom));
 }
