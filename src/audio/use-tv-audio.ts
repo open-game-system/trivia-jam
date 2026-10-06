@@ -17,6 +17,7 @@ export function useTvAudio() {
   const answered = GameContext.useSelector((s) => s.public.currentQuestion?.answers.length ?? 0);
   const players = GameContext.useSelector((s) => s.public.players.length);
   const results = GameContext.useSelector((s) => s.public.questionResults.length);
+  const totalQuestions = GameContext.useSelector((s) => Object.keys(s.public.questions).length);
   const currentQuestion = GameContext.useSelector((s) => s.public.currentQuestion);
   const answerTimeWindow = GameContext.useSelector((s) => s.public.settings.answerTimeWindow);
   const secondsLeft = useQuestionTimer(currentQuestion, answerTimeWindow, isQuestion);
@@ -39,6 +40,11 @@ export function useTvAudio() {
       audio.play({ type: "bed", bed: null });
     };
   }, []);
+
+  // The last question's reveal escalates (engine.setFinalReveal).
+  useEffect(() => {
+    tvAudio().setFinalReveal(totalQuestions > 0 && questionNumber === totalQuestions);
+  }, [questionNumber, totalQuestions]);
 
   useEffect(() => {
     const next: TvAudioView = { phase, questionNumber, answered, players, results };

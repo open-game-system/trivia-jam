@@ -152,6 +152,12 @@ export class TvAudio {
    * a mallet per guess dropping in, a drumroll through the suspense, the answer hit, a fanfare on the
    * spotlight (brighter for an exact guess), and a counting run as points stamp on.
    */
+  private finalReveal = false;
+  /** The next reveal is the last question's: a longer, bigger build and a heavier hit. */
+  setFinalReveal(final: boolean) {
+    this.finalReveal = final;
+  }
+
   revealScore(beats: { firstDrop: number; stagger: number; guesses: number; answer: number; spotlight: number; points: number; standings: number; exact: boolean }) {
     const at = (ms: number) => ms / 1000;
     for (let i = 0; i < beats.guesses; i++) {
@@ -162,12 +168,17 @@ export class TvAudio {
     // The drone starts at once, under the outgoing bed's fade, so results never land in a hole.
     this.drone(0, Math.max(0.5, at(beats.answer)));
     this.drumroll(at(lastDrop), Math.max(0.4, at(beats.answer - lastDrop)));
+    if (this.finalReveal) {
+      // Last question: a second, lower roll layer and a sub boom under the hit.
+      this.drumroll(at(lastDrop) + 0.03, Math.max(0.4, at(beats.answer - lastDrop)));
+      this.voice(41.2, "sine", 0.55, 1.4, at(beats.answer), 0.015);
+    }
     this.hit(at(beats.answer));
     this.arp(beats.exact ? [4, 5, 7, 9] : [2, 4, 5], 0.1, 0.24, at(beats.spotlight));
     this.arp([5, 6, 7], 0.07, 0.16, at(beats.points));
     // No dead air after the answer: a warm chord holds under the spotlight, then the lobby groove comes
     // back for the standings (unless the next question or the finale has already taken over).
-    this.pad(at(beats.answer) + 0.25, Math.max(2, at(beats.standings - beats.answer)));
+    this.pad(at(beats.answer) + 0.05, Math.max(2.4, at(beats.standings - beats.answer)));
     window.setTimeout(() => {
       if (this.wanted === null) this.setBed("lobby");
     }, Math.max(0, beats.standings - 600));
@@ -232,7 +243,7 @@ export class TvAudio {
         const shelf = ctx.createBiquadFilter();
         shelf.type = "highshelf";
         shelf.frequency.value = 4500;
-        shelf.gain.value = 5;
+        shelf.gain.value = 8;
         gain.connect(shelf);
         shelf.connect(beds);
       } else gain.connect(beds);
@@ -434,8 +445,8 @@ export class TvAudio {
       lp.frequency.value = 1800;
       const g = ctx.createGain();
       g.gain.setValueAtTime(0.0001, t);
-      g.gain.linearRampToValueAtTime(0.045, t + 0.6);
-      g.gain.setValueAtTime(0.045, t + Math.max(0.7, seconds - 0.8));
+      g.gain.linearRampToValueAtTime(0.085, t + 0.25);
+      g.gain.setValueAtTime(0.085, t + Math.max(0.7, seconds - 0.8));
       g.gain.linearRampToValueAtTime(0.0001, t + seconds);
       osc.connect(lp);
       lp.connect(g);
