@@ -224,7 +224,10 @@ const PreviousQuestionResults = ({
   players: Person[];
   phase: RevealPhase;
 }) => {
-  const held = phase.name === "hold";
+  // The host already saw the answer during the question, and e2e flow 7 pins "results and Next at once":
+  // the TV's progress strip shows (settling), but results are never held back. (Gating Next is an open
+  // question for Jon: STATUS.md.)
+  const held = false;
   const question = questions[lastQuestionResult.questionId];
   const shortAnswer = String(question.correctAnswer).length <= 6;
   return (
@@ -1022,7 +1025,6 @@ const QuestionControls = ({
             <button
               type="button"
               onClick={endGame}
-              disabled={revealing}
               className="pbtn pbtn-pink pbtn-lg pbtn-block"
               data-testid="end-game-button"
             >
@@ -1032,18 +1034,11 @@ const QuestionControls = ({
             <button
               type="button"
               onClick={handleNextQuestion}
-              disabled={!nextQuestion || revealing}
+              disabled={!nextQuestion}
               className="pbtn pbtn-pink pbtn-lg pbtn-block"
             >
               {isFirst ? "Start First Question" : "Start Next Question"}
             </button>
-          )}
-          {revealing && (
-            <div className="mt-2 flex justify-center">
-              <button type="button" className="pbtn pbtn-quiet" onClick={() => setSkippedFor(latestResultId)}>
-                Skip reveal
-              </button>
-            </div>
           )}
         </ActionBar>
       )}
