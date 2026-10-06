@@ -33,6 +33,19 @@ for one without, e.g. `--- ??? ---`.
 | 9. Host skips a live question (results at once, Next starts q2); host ends the game between questions -> game over on host, phone, TV | `e2e/flow-09-skip-and-end.spec.ts` |
 | 10. Full game (numeric + multiple choice) -> End Game -> final standings on TV, host, phones | `e2e/flow-10-full-game.spec.ts` |
 | 11. Host/player reload mid-question keep role and seat; late TV shows the live question; TV refreshed after results shows the settled reveal | `e2e/flow-11-refresh.spec.ts` |
+| 12. OGS TV seam: TV framed by a stand-in launcher; `ogs:start` hides the QR/join card; `ogs:suspend` suspends every AudioContext (a press does not wake it), `ogs:resume` -> running | `e2e/flow-12-ogs-tv.spec.ts` |
+| 13. OGS phone seam: fake app WebView with a profile + signed game token -> no name form, joins as the token's name (phone, host, TV; reload keeps one seat); a forged page name loses to the token; another game's token falls back to the page's name | `e2e/flow-13-ogs-phone.spec.ts` |
+| 14. TV audio: `?record` -> `window.__tvAudioTap()` metered with an AnalyserNode is audible (peak > 0.05) during a question | `e2e/flow-14-tv-audio.spec.ts` |
+
+**OGS seams (flows 12-14).** `e2e/helpers/ogs.ts` holds the fake OGS app WebView
+(`window.ReactNativeWebView` answering BRIDGE_READY with STATE_INIT for the `profile` store), a fixed
+ES256 test key (`e2e/fixtures/ogs-test-key.json`, test only: the server caches the key set, so the key
+never changes) and the token signer. Playwright's global setup (`e2e/global-setup.ts`) serves its key set
+on :8833 (`OGS_JWKS_PORT`); flow 13 needs the server pointed at it:
+`E2E_PORT=3104 pnpm e2e:serve --var OGS_JWKS_URL:http://localhost:8833/.well-known/jwks.json`, then
+`PLAYWRIGHT_BASE_URL=http://localhost:3104 pnpm exec playwright test e2e/flow-1[234]-*.spec.ts`. Flow 13
+skips in CI (CI's server verifies against production OGS per wrangler.toml). Flows 12 and 14 press the TV
+once, because a test browser may block autoplay (the cloud stream and the recorder allow it).
 
 In-game helpers (`startFirstQuestion`, `answerOnPad`, `setAnswerTime`, `answersSubmitted`, ...) live in
 `e2e/helpers/play.ts`. Flow 8 records each value a timer shows with a MutationObserver (instrumentation,
