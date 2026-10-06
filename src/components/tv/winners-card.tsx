@@ -4,7 +4,8 @@ import { Bloom, EASE_OUT, EASE_POP, GlassToken, Label } from "./glass";
 import { RollingNumber } from "./standings";
 import { winnerCardRects } from "./badge-place";
 import { layoutWinners } from "./winners-layout";
-import { popIn, slamIn, STEP, stepTo } from "./motion-presets";
+import { popIn, slamIn } from "./motion-presets";
+import { type CardPlace, stageToCard } from "./takeover-layout";
 
 export type WinnersKind = "exact" | "closest" | "right" | "nobody";
 
@@ -15,7 +16,7 @@ export type Winner = {
   points: number;
   /** Their total before this question. */
   prevScore: number;
-  /** Where their chip sat on the line or tile, so it can break forward from there. */
+  /** Where their chip sat on the line or tile (stage pixels), so it can break forward from there. */
   from?: { x: number; y: number; size: number };
 };
 
@@ -25,21 +26,17 @@ const STAMP = {
   right: { label: "Got it!", tone: "tv-pill--win", size: 104, rotate: -2, bloom: "rgba(74, 222, 128, 0.55)" },
 } as const;
 
-/** How far the card shrinks for the misses beat (from the top centre of the frame). */
-export const STEP_UP_SCALE = 0.62;
+/**
+ * The card is authored centred on a 1920x1080 frame; `place` scales it about its top centre and offsets
+ * it, once, from its first frame (the takeover never re-flows mid-beat).
+ */
+const Placed = ({ place, children }: { place: CardPlace; children: ReactNode }) => (
+  <div className="absolute inset-0" style={{ transformOrigin: "50% 0", transform: `translate(${place.x}px, ${place.y}px) scale(${place.scale})` }}>
+    {children}
+  </div>
+);
 
-/** One tween of one transform (compositor-driven), so the step-up never lands in a single frame. */
-const StepUp = ({ compact, children }: { compact: boolean; children: ReactNode }) => {
-  const step = stepTo(compact ? { scale: STEP_UP_SCALE, y: -14 } : { scale: 1, y: 0 });
-  return (
-    <motion.div className="absolute inset-0" style={{ transformOrigin: "50% 0" }} initial={false} animate={step.animate} transition={step.transition}>
-      {children}
-    </motion.div>
-  );
-};
-
-/** How long the step-up takes (ms), for anything that has to move with it. */
-export const STEP_UP_MS = STEP.duration * 1000;
+const CENTRED: CardPlace = { x: 0, y: 0, scale: 1 };
 
 /** The stamp's moment: when it starts to fall, and the light that blooms behind it as it hits. */
 const STAMP_DELAY = 0.3;
@@ -110,22 +107,22 @@ export const WinnersCard = ({
   detail,
   scoring,
   live,
-  compact = false,
+  place = CENTRED,
 }: {
   kind: WinnersKind;
   winners: Winner[];
   detail?: string;
   scoring: boolean;
   live: boolean;
-  /** The misses beat: the whole card steps up and shrinks to the top of the frame. */
-  compact?: boolean;
+  /** Where the card sits in the takeover (see takeover-layout.ts). */
+  place?: CardPlace;
 }) => {
   if (kind === "nobody" || winners.length === 0) {
     return (
       <div className="absolute inset-0" style={{ zIndex: 30 }} data-testid="tv-highlight">
-        <StepUp compact={compact}>
+        <Placed place={place}>
           <NobodyBeat live={live} />
-        </StepUp>
+        </Placed>
       </div>
     );
   }
@@ -143,6 +140,7 @@ export const WinnersCard = ({
   const badges = winnerCardRects(winners, layout, STAMP_ROW_BOTTOM);
   return (
     <div className="absolute inset-0" style={{ zIndex: 30 }} data-testid="tv-highlight">
+      <Placed place={place}>
       {/* A bloom of light behind the winners: green and frame-wide for EXACT, lavender (or amber for closest) otherwise. */}
       <Bloom
         x={960}
@@ -151,7 +149,6 @@ export const WinnersCard = ({
         color={big ? "rgba(74, 222, 128, 0.3)" : kind === "closest" ? "rgba(251, 191, 36, 0.2)" : "rgba(196, 181, 253, 0.3)"}
         live={live}
       />
-      <StepUp compact={compact}>
       <div className="absolute flex items-center justify-center gap-10" style={{ left: 0, right: 0, top: big ? 50 : 100, height: big ? 200 : 150 }}>
         <span className="relative inline-flex">
           <StampBloom color={stamp.bloom} live={live} />
@@ -179,7 +176,9 @@ export const WinnersCard = ({
       {layout.spots.map((spot, i) => {
         const w = byId.get(spot.id);
         if (!w) return null;
-        const from = w.from;
+        // The chip's spot on the line, carried into the placed card's own pixels.
+        const at = w.from ? stageToCard(w.from, place) : undefined;
+        const from = w.from && at ? { x: at.x, y: at.y, size: w.from.size / place.scale } : undefined;
         const centreY = layout.chipTop + layout.chip / 2;
         return (
           <div key={spot.id}>
@@ -254,7 +253,7 @@ export const WinnersCard = ({
           +{layout.more}
         </span>
       ) : null}
-      </StepUp>
+      </Placed>
     </div>
   );
 };

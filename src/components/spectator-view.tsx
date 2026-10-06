@@ -1,4 +1,5 @@
 import { useOnOgsTv } from "~/ogs/use-ogs-game";
+import { AnimatePresence } from "framer-motion";
 import { useState } from "react";
 import { GameContext } from "~/game.context";
 import type { GamePublicContext } from "~/game.types";
@@ -58,31 +59,23 @@ const ActiveGameContent = ({
 }) => {
   // Results that were already in when this TV loaded are shown settled, not replayed.
   const [resultsSeenAtMount] = useState(questionResults.length);
-  if (currentQuestion) {
-    return (
-      <GameplayDisplay
-        key={`q-${currentQuestion.questionId}`}
-        currentQuestion={currentQuestion}
-        players={players}
-        questions={questions}
-        questionNumber={questionNumber}
-      />
-    );
-  }
-
-  if (questionResults.length > 0) {
-    return (
-      <QuestionResultsDisplay
-        key={`results-${questionResults.length}`}
-        questionResults={questionResults}
-        questions={questions}
-        players={players}
-        live={questionResults.length > resultsSeenAtMount}
-      />
-    );
-  }
-
-  return (
+  const screen = currentQuestion ? (
+    <GameplayDisplay
+      key={`q-${currentQuestion.questionId}`}
+      currentQuestion={currentQuestion}
+      players={players}
+      questions={questions}
+      questionNumber={questionNumber}
+    />
+  ) : questionResults.length > 0 ? (
+    <QuestionResultsDisplay
+      key={`results-${questionResults.length}`}
+      questionResults={questionResults}
+      questions={questions}
+      players={players}
+      live={questionResults.length > resultsSeenAtMount}
+    />
+  ) : (
     <TvAnticipation
       key="anticipation"
       nextNumber={questionNumber + 1}
@@ -91,6 +84,9 @@ const ActiveGameContent = ({
       showScores={false}
     />
   );
+  // The question screen exits under AnimatePresence: it hands its text and axis to the results screen,
+  // which mounts in the same frame, and fades the rest out underneath (no cut to an empty stage).
+  return <AnimatePresence>{screen}</AnimatePresence>;
 };
 
 export const SpectatorView = ({ host }: { host: string }) => {

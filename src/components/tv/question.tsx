@@ -1,5 +1,6 @@
-import { motion } from "framer-motion";
-import type { ReactNode } from "react";
+import { motion, useIsPresent } from "framer-motion";
+import { type ReactNode, useLayoutEffect, useRef } from "react";
+import { leaveBox, stageBox } from "./flip";
 import { FitName } from "./fit-name";
 import { EASE_OUT, EASE_POP, GlassToken, Label } from "./glass";
 import { GlassTimer } from "./timer";
@@ -12,6 +13,13 @@ export const questionFontSize = (text: string, compact: boolean): number => {
   const size = n <= 40 ? 110 : n <= 70 ? 96 : n <= 110 ? 84 : 72;
   return compact ? Math.min(size, 80) : size;
 };
+
+/** How wide the question text sets, in its own font's pixels (the results header wraps it the same way). */
+export const questionMeasure = (hasOptions: boolean): number => (hasOptions ? 1340 : 1400);
+
+/** The hand-off keys: the results screen picks the question text and the placeholder axis up from here. */
+export const questionTextKey = (text: string) => `question-text:${text}`;
+export const GHOST_AXIS_KEY = "ghost-axis";
 
 /** "QUESTION 2 OF 5" on a small glass pill. */
 export const QuestionSlug = ({ number, total, extra }: { number: number; total: number; extra?: string }) => (
@@ -148,9 +156,16 @@ export const LockInTokens = ({
 };
 
 /** A faint glowing number line: where the guesses will land when the answer comes in. */
-const GhostLine = () => (
-  <div aria-hidden="true" className="absolute" style={{ left: 96, right: 96, top: 640, height: 60 }}>
-    <div className="absolute tv-axis" style={{ left: 0, right: 0, top: 27, height: 6, opacity: 0.35 }} />
+const GhostLine = ({ leaving }: { leaving: boolean }) => {
+  const axis = useRef<HTMLDivElement>(null);
+  // Leave the axis's box every render: the results screen grows its number line out of it.
+  useLayoutEffect(() => {
+    const box = axis.current ? stageBox(axis.current) : undefined;
+    if (box && !leaving) leaveBox(GHOST_AXIS_KEY, box);
+  });
+  return (
+  <div aria-hidden="true" className="absolute" style={{ left: 96, right: 96, top: 640, height: 60, opacity: leaving ? 0 : 1 }}>
+    <div ref={axis} className="absolute tv-axis" style={{ left: 0, right: 0, top: 27, height: 6, opacity: 0.35 }} />
     {Array.from({ length: 9 }, (_, i) => (
       <span key={i} className="absolute" style={{ left: i * 216 - 2, top: 18, width: 4, height: 24, borderRadius: 4, background: "rgba(255,255,255,.18)" }} />
     ))}
@@ -163,7 +178,8 @@ const GhostLine = () => (
       ?
     </motion.span>
   </div>
-);
+  );
+};
 
 /** Height of the lock-in band along the bottom of the question screen. */
 const BAND_HEIGHT = 330;
@@ -189,8 +205,24 @@ export const TvQuestion = ({
 }) => {
   const hasOptions = options !== undefined && options.length > 0;
   const fontSize = questionFontSize(text, hasOptions);
+  // When the results arrive this screen leaves (under AnimatePresence): its question text and placeholder
+  // axis are handed to the results screen at once, the rest fades out underneath.
+  const present = useIsPresent();
+  const heading = useRef<HTMLHeadingElement>(null);
+  const leave = () => {
+    const box = heading.current ? stageBox(heading.current) : undefined;
+    if (box && present) leaveBox(questionTextKey(text), box);
+  };
+  useLayoutEffect(leave);
   return (
-    <motion.div key="question" className="absolute inset-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.25 }}>
+    <motion.div
+      key="question"
+      className="absolute inset-0"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0, transition: { duration: 0.32, ease: "easeOut" } }}
+      transition={{ duration: 0.25 }}
+    >
       <motion.div
         className="absolute"
         style={{ left: 96, top: 72 }}
@@ -216,11 +248,13 @@ export const TvQuestion = ({
         }}
       >
         <motion.h2
+          ref={heading}
           className="tv-display lav-text"
-          style={{ fontSize, lineHeight: 1.06, letterSpacing: "-0.03em", maxWidth: hasOptions ? 1340 : 1400, paddingBottom: "0.08em" }}
+          style={{ fontSize, lineHeight: 1.06, letterSpacing: "-0.03em", maxWidth: questionMeasure(hasOptions), paddingBottom: "0.08em", visibility: present ? "visible" : "hidden" }}
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.5, ease: EASE_OUT, delay: 0.1 }}
+          onAnimationComplete={leave}
         >
           {text}
         </motion.h2>
@@ -235,7 +269,7 @@ export const TvQuestion = ({
         )}
       </div>
 
-      {hasOptions ? null : <GhostLine />}
+      {hasOptions ? null : <GhostLine leaving={!present} />}
 
       {/* The lock-in band: a glass shelf along the bottom; each player's chip lights up as they lock in. */}
       <div className="absolute tv-glass" style={{ left: 48, right: 48, bottom: 32, height: BAND_HEIGHT - 32, borderRadius: 32 }}>

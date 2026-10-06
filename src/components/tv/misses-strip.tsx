@@ -3,53 +3,59 @@ import { motion } from "framer-motion";
 import { FitName } from "./fit-name";
 import type { Misses } from "./misses";
 import { GlassToken, Label } from "./glass";
+import type { TakeoverLayout } from "./takeover-layout";
 
-/** Where the strip sits: under the winners and the answer, once they have stepped up out of the way. */
-export const MISSES_TOP = 664;
+type Slot = NonNullable<TakeoverLayout["misses"]>;
 
 /**
- * The misses beat: once the winners have their points, everyone else slides in along the bottom with
- * how far off they were; the nearest miss gets a small "next closest" stamp. Then the standings.
+ * The rest of the room: a column down the right third of the takeover. Its slot is laid out with the
+ * winners (the label is there from the first frame, nothing re-flows); once the winners have their
+ * points (`rowsIn`), everyone else slides in with how far off they were, and the nearest miss gets a
+ * small "next closest" stamp. Then the standings.
  */
-export const MissesStrip = ({ misses, live }: { misses: Misses; live: boolean }) => {
+export const MissesStrip = ({ misses, live, slot, rowsIn }: { misses: Misses; live: boolean; slot: Slot; rowsIn: boolean }) => {
   if (misses.rows.length === 0) return null;
   const stampAt = 0.25 + misses.rows.length * 0.12;
+  const chip = Math.min(84, slot.rowHeight - 34);
+  const inner = slot.width - 44 - chip - 20;
   return (
-    <div className="absolute" style={{ left: 96, right: 96, top: MISSES_TOP, zIndex: 36 }} data-testid="tv-misses">
-      <motion.div initial={live ? { opacity: 0, x: -30 } : false} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.25 }}>
+    <div className="absolute" style={{ left: slot.left, width: slot.width, top: slot.top, zIndex: 36 }} data-testid="tv-misses">
+      <motion.div style={{ height: slot.labelHeight }} initial={live ? { opacity: 0 } : false} animate={{ opacity: 1 }} transition={{ duration: 0.4, delay: live ? 0.5 : 0 }}>
         <Label>The rest of the room</Label>
       </motion.div>
-      <div className="grid grid-cols-3 mt-5" style={{ columnGap: 40, rowGap: 22 }}>
-        {misses.rows.map((r, i) => (
-          <motion.div
-            key={r.playerId}
-            className="relative flex items-center gap-5 tv-glass"
-            style={{ minHeight: 132, padding: "12px 22px", borderColor: r.nearest ? "rgba(251, 191, 36, 0.55)" : undefined }}
-            initial={live ? { y: 240, opacity: 0 } : false}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: live ? 0.15 + i * 0.12 : 0, type: "spring", stiffness: 380, damping: 24 }}
-            data-testid={`tv-miss-${r.playerId}`}
-          >
-            <GlassToken name={r.name} inkIndex={r.inkIndex} size={84} />
-            <span className="flex flex-col min-w-0 flex-1">
-              <span className="flex items-center justify-between gap-3">
-                <FitName text={r.name} max={52} floor={36} box={r.nearest ? 190 : 380} className="tv-name" />
-                {r.nearest ? (
-                  <motion.span
-                    className="tv-pill tv-pill--close flex-none"
-                    style={{ fontSize: 28, padding: "6px 14px" }}
-                    {...(live ? popIn({ delay: stampAt }) : { initial: false as const })}
-                  >
-                    Next closest
-                  </motion.span>
-                ) : null}
-              </span>
-              <FitName text={r.tag} max={34} floor={28} box={400} lineHeight={1.05} className="tv-display mt-2" style={{ color: "var(--glow)", fontWeight: 600, letterSpacing: 0 }} />
-            </span>
-          </motion.div>
-        ))}
+      <div className="flex flex-col" style={{ rowGap: slot.rowGap }}>
+        {rowsIn
+          ? misses.rows.map((r, i) => (
+              <motion.div
+                key={r.playerId}
+                className="relative flex items-center gap-5 tv-glass"
+                style={{ height: slot.rowHeight, padding: "0 22px", borderColor: r.nearest ? "rgba(251, 191, 36, 0.55)" : undefined }}
+                initial={live ? { x: 140, opacity: 0 } : false}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ delay: live ? 0.1 + i * 0.1 : 0, type: "spring", stiffness: 380, damping: 30 }}
+                data-testid={`tv-miss-${r.playerId}`}
+              >
+                <GlassToken name={r.name} inkIndex={r.inkIndex} size={chip} />
+                <span className="flex flex-col min-w-0 flex-1">
+                  <span className="flex items-center justify-between gap-3">
+                    <FitName text={r.name} max={48} floor={36} box={r.nearest ? inner - 202 : inner} className="tv-name" />
+                    {r.nearest ? (
+                      <motion.span
+                        className="tv-pill tv-pill--close flex-none"
+                        style={{ fontSize: 28, padding: "6px 14px" }}
+                        {...(live ? popIn({ delay: stampAt }) : { initial: false as const })}
+                      >
+                        Next closest
+                      </motion.span>
+                    ) : null}
+                  </span>
+                  <FitName text={r.tag} max={34} floor={28} box={inner} lineHeight={1.05} className="tv-display mt-1" style={{ color: "var(--glow)", fontWeight: 600, letterSpacing: 0 }} />
+                </span>
+              </motion.div>
+            ))
+          : null}
       </div>
-      {misses.more > 0 ? (
+      {rowsIn && misses.more > 0 ? (
         <span className="tv-label block mt-4" style={{ fontSize: 30 }}>
           +{misses.more} more
         </span>

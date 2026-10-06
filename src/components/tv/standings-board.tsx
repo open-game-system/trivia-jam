@@ -5,6 +5,7 @@ import { FitName } from "./fit-name";
 import { popIn } from "./motion-presets";
 import { BOARD, type BoardChips, type BoardRowFrame, boardFrame, boardTicks } from "./standings-choreo";
 import type { StandingRow } from "./tv-model";
+import { boardPrint, type PrintedRow } from "./board-print";
 
 /**
  * The standings beat: the board opens on the PREVIOUS order, totals and ranks; each "+N" chip pops beside
@@ -42,11 +43,11 @@ const MoveStamp = ({ delta, size, live }: { delta: number; size: number; live: b
   );
 };
 
-/** The rank numeral in a round glass well; amber for the leader. It re-stamps when the rank changes. */
-const RankStamp = ({ rank, size, leader, live }: { rank: number; size: number; leader: boolean; live: boolean }) => (
+/** The rank numeral in a round glass well; amber for the leader. It re-stamps when the rank changes. Empty on a level start. */
+const RankStamp = ({ rank, size, leader, live }: { rank: number | null; size: number; leader: boolean; live: boolean }) => (
   <span className="relative flex-none" style={{ width: size, height: size }} data-testid="standing-rank">
     <motion.span
-      key={rank}
+      key={rank ?? "open"}
       className="absolute inset-0 flex items-center justify-center tv-display"
       style={{
         borderRadius: 999,
@@ -58,7 +59,7 @@ const RankStamp = ({ rank, size, leader, live }: { rank: number; size: number; l
         lineHeight: 1,
       }}
       // The new rank lands with the reorder: a quick scale-down from bright (never an edge-on flip, which reads as a dash).
-      initial={live ? { transform: "scale(1.35)", opacity: 0 } : false}
+      initial={live && rank !== null ? { transform: "scale(1.35)", opacity: 0 } : false}
       animate={{ transform: "scale(1)", opacity: 1 }}
       transition={{ duration: 0.3, ease: EASE_OUT }}
     >
@@ -75,8 +76,11 @@ const BoardRow = ({
   chips,
   movesShown,
   leader,
+  printed,
 }: {
   row: BoardRowFrame;
+  /** What the row prints this frame (no zero-state on a level start). */
+  printed: PrintedRow;
   height: number;
   width: number;
   live: boolean;
@@ -104,7 +108,7 @@ const BoardRow = ({
       }}
       data-testid={`standing-${row.id}`}
     >
-      <RankStamp rank={row.shownRank} size={Math.round(height * (tight ? 0.62 : 0.66))} leader={leader} live={live} />
+      <RankStamp rank={printed.rank} size={Math.round(height * (tight ? 0.62 : 0.66))} leader={leader} live={live} />
       <span className="relative">
         <GlassToken name={row.name} inkIndex={row.inkIndex} size={Math.round(height * (tight ? 0.55 : 0.6))} />
       </span>
@@ -128,16 +132,18 @@ const BoardRow = ({
             +{row.gained}
           </motion.span>
         ) : null}
+        {printed.score === null ? null : (
         <motion.span
-          key={row.shownScore}
+          key={printed.score}
           className="tv-display text-right"
           style={{ fontSize: height * 0.56, lineHeight: 1, color: leader ? "var(--close)" : "var(--text)" }}
           initial={live && counting ? { y: -10, scale: 1.12 } : false}
           animate={{ y: 0, scale: 1 }}
           transition={{ duration: 0.16 }}
         >
-          {row.shownScore}
+          {printed.score}
         </motion.span>
+        )}
       </span>
     </div>
   );
@@ -183,6 +189,7 @@ export const TvStandingsBoard = ({
 }) => {
   const t = useBoardClock(live, rows);
   const frame = boardFrame(rows, t);
+  const printed = new Map(boardPrint(rows, frame, t).map((p) => [p.id, p]));
   const shown = frame.rows.filter((r) => r.slot < 10);
   const card = shown.length <= CARD_ROWS;
   const { columnWidth, height, at } = placeRows(shown.length, card ? SHEET.bottom - CARD_BAND : SHEET.bottom);
@@ -191,7 +198,7 @@ export const TvStandingsBoard = ({
   return (
     <div className="absolute inset-0">
       <div className="absolute flex items-end justify-between" style={{ left: 96, right: 96, top: 44 }}>
-        <div>
+        <motion.div initial={live ? { opacity: 0, y: 18 } : false} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.35, ease: EASE_OUT }}>
           <Label className="mb-3">
             After question {afterNumber}
             {total > 0 ? ` of ${total}` : ""}
@@ -199,7 +206,7 @@ export const TvStandingsBoard = ({
           <h2 className="tv-display lav-text" style={{ fontSize: 132, letterSpacing: "-0.04em", lineHeight: 1, paddingBottom: 10 }}>
             Standings
           </h2>
-        </div>
+        </motion.div>
         {card || !frame.upNext ? null : (
           <motion.div
             className="flex flex-col items-end pb-2"
@@ -229,7 +236,15 @@ export const TvStandingsBoard = ({
             animate={{ transform: `translate(${pos.left - SHEET.left}px, ${pos.top - SHEET.top}px)` }}
             transition={{ duration: BOARD.reorderMs / 1000, ease: EASE_OUT }}
           >
+            {/* The glass rows rise onto the bare aurora (the takeover has already gone). */}
+            <motion.div
+              className="h-full"
+              initial={live ? { opacity: 0, transform: "translateY(28px)" } : false}
+              animate={{ opacity: 1, transform: "translateY(0px)" }}
+              transition={{ duration: 0.3, delay: live ? Math.min(0.2, 0.05 + row.slot * 0.04) : 0, ease: EASE_OUT }}
+            >
             <BoardRow
+              printed={printed.get(row.id) ?? { id: row.id, rank: row.shownRank, score: row.shownScore }}
               row={row}
               height={height}
               width={columnWidth}
@@ -238,6 +253,7 @@ export const TvStandingsBoard = ({
               movesShown={frame.movesShown}
               leader={frame.leaderPulse && row.shownRank === 1}
             />
+            </motion.div>
           </motion.div>
         );
       })}

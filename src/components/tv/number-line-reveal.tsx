@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { Bloom, EASE_POP, GlassToken } from "./glass";
 import { RollingNumber } from "./standings";
+import type { Box } from "./flip";
 import { FLAG, type GuessGroup, type LineLayout, type LineSize, shortName } from "./number-line-layout";
 
 /** "+4 pts": a small solid lavender pill that pops in beside a chip once the points land. */
@@ -38,18 +39,24 @@ export const PointsStamp = ({
   </motion.span>
 );
 
-export const NumberLineAxis = ({ layout, axisY, live }: { layout: LineLayout; axisY: number; live: boolean }) => {
+/**
+ * The answer axis. When it is handed the question screen's placeholder axis (`from`), it starts as that
+ * faint line and slides, stretches and brightens into place; otherwise it draws in from the left.
+ */
+export const NumberLineAxis = ({ layout, axisY, live, from }: { layout: LineLayout; axisY: number; live: boolean; from?: Box }) => {
   const left = layout.axisLeft - 36;
   const right = layout.axisRight + 36;
+  const top = axisY - 3;
+  const handed = live && from !== undefined;
   const tabs = layout.groups.filter((g) => g.offScale !== null);
   return (
     <div aria-hidden="true">
       <motion.div
         className="absolute tv-axis"
-        style={{ left, width: right - left, top: axisY - 3, height: 6, transformOrigin: "left" }}
-        initial={live ? { scaleX: 0 } : false}
-        animate={{ scaleX: 1 }}
-        transition={{ duration: 0.75, ease: [0.6, 0, 0.2, 1] }}
+        style={{ left, width: right - left, top, height: 6, transformOrigin: "left" }}
+        initial={handed && from ? { x: from.x - left, y: from.y - top, scaleX: from.w / (right - left), opacity: 0.35 } : live ? { scaleX: 0 } : false}
+        animate={{ x: 0, y: 0, scaleX: 1, opacity: 1 }}
+        transition={{ duration: handed ? 0.6 : 0.75, ease: [0.6, 0, 0.2, 1] }}
       />
       {layout.ticks.map((t, i) => (
         <motion.div
@@ -58,7 +65,7 @@ export const NumberLineAxis = ({ layout, axisY, live }: { layout: LineLayout; ax
           style={{ left: t.x - 90, width: 180, top: axisY - 18 }}
           initial={live ? { opacity: 0, y: -14 } : false}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: live ? 0.2 + i * 0.06 : 0, duration: 0.3 }}
+          transition={{ delay: live ? (handed ? 0.45 : 0.2) + i * 0.06 : 0, duration: 0.3 }}
         >
           <span style={{ width: 4, height: 36, borderRadius: 4, background: "rgba(255, 255, 255, 0.28)" }} />
           <span className="tv-display mt-2" style={{ fontSize: 38, lineHeight: 1, fontWeight: 600, letterSpacing: 0, color: "var(--text-2)" }}>

@@ -1,7 +1,7 @@
-import { useReducedMotion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import type { Question, QuestionResult } from "~/game.types";
-import { SheetIn } from "./glass";
+import { EASE_OUT } from "./glass";
 import { TvReveal } from "./reveal";
 import { TvStandingsBoard } from "./standings-board";
 import { buildStandings, revealSchedule } from "./tv-model";
@@ -11,8 +11,11 @@ import { buildStandings, revealSchedule } from "./tv-model";
  * Short, so the board's reorder lands early: the host's Next unlocks at the reveal's `end`.
  */
 export const HOLD_MS = 1600;
-/** The board fades and rises in on an opaque layer over the reveal (never seen through); then the reveal is dropped. */
-export const WIPE_MS = 450;
+/**
+ * The takeover leaves before the board arrives: it blurs and fades fully to 0 over this long, ending
+ * exactly as the board's glass rows start to rise onto the bare aurora (never two translucent layers).
+ */
+export const LEAVE_MS = 400;
 
 /** When the standings board appears, ms after the results arrive (live): the board's BOARD beats count from here. */
 export const boardAt = (revealEnd: number) => revealEnd + HOLD_MS;
@@ -33,21 +36,26 @@ export const TvResultsBeat = ({
 }) => {
   const reduced = useReducedMotion() ?? false;
   const revealMs = live ? revealSchedule(result.answers.length, reduced).end : 0;
+  const [leaving, setLeaving] = useState(false);
   const [showBoard, setShowBoard] = useState(false);
-  const [boardOnly, setBoardOnly] = useState(false);
   useEffect(() => {
+    const leave = setTimeout(() => setLeaving(true), Math.max(0, boardAt(revealMs) - LEAVE_MS));
     const show = setTimeout(() => setShowBoard(true), boardAt(revealMs));
-    const drop = setTimeout(() => setBoardOnly(true), boardAt(revealMs) + WIPE_MS + 60);
     return () => {
+      clearTimeout(leave);
       clearTimeout(show);
-      clearTimeout(drop);
     };
   }, [revealMs]);
   const rows = useMemo(() => buildStandings(players, result.scores), [players, result.scores]);
   return (
     <>
-      {boardOnly ? null : (
-        <div className="absolute inset-0">
+      {showBoard ? null : (
+        <motion.div
+          className="absolute inset-0"
+          initial={false}
+          animate={leaving ? { opacity: 0, filter: "blur(18px)", scale: 0.97 } : { opacity: 1, filter: "blur(0px)", scale: 1 }}
+          transition={{ duration: LEAVE_MS / 1000, ease: EASE_OUT }}
+        >
           <TvReveal
             question={question}
             result={result}
@@ -56,13 +64,9 @@ export const TvResultsBeat = ({
             total={total}
             live={live}
           />
-        </div>
+        </motion.div>
       )}
-      {showBoard ? (
-        <SheetIn live={!boardOnly} duration={WIPE_MS / 1000} zIndex={80}>
-          <TvStandingsBoard rows={rows} afterNumber={result.questionNumber} total={total} live={live} />
-        </SheetIn>
-      ) : null}
+      {showBoard ? <TvStandingsBoard rows={rows} afterNumber={result.questionNumber} total={total} live={live} /> : null}
     </>
   );
 };
