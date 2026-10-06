@@ -1,0 +1,188 @@
+{
+  "checks": [
+    "PASS  tv-not-black (mean luma >= 20)",
+    "PASS  tv-not-blown (mean luma <= 245)",
+    "PASS  tv-text-readable (min font >= 28px on every TV shot)",
+    "PASS  phone-text-readable (min font >= 14px)",
+    "PASS  nothing-clipped (no text cut off by a screen edge)",
+    "PASS  tv-no-truncated-text (no ellipsis/cut-off text on the TV)",
+    "PASS  tv-audio-present (integrated loudness > -40 LUFS)  hasAudio=True lufs=-23.3",
+    "PASS  tv-audio-no-clipping (sample peak <= -0.5 dBFS)  peak=-1.26 dBFS",
+    "PASS  tv-audio-no-dead-air (no silence > 4 s under -50 dBFS)  longest=0.4 s",
+    "PASS  tv-frame-time (p95 <= 20 ms)  p95=16.7 max=100"
+  ],
+  "tvMeanLumaPerShot(0-255)": {
+    "01-lobby-empty-tv": 203.5,
+    "04-lobby-full-tv": 201.0,
+    "10a-before-q1-tv": 213.7,
+    "10b-q1-asked-tv": 214.7,
+    "10c-q1-kid-answered-tv": 212.9,
+    "10d-q1-results-tv": 224.0,
+    "10e-q1-reveal-settled-tv": 213.2,
+    "10f-q1-standings-tv": 205.7,
+    "11a-before-q2-tv": 206.2,
+    "11b-q2-asked-tv": 215.8,
+    "11c-q2-kid-answered-tv": 214.2,
+    "11d-q2-results-tv": 224.7,
+    "11e-q2-reveal-settled-tv": 211.0,
+    "11f-q2-standings-tv": 205.8,
+    "12a-before-q3-tv": 206.5,
+    "12b-q3-asked-tv": 214.0,
+    "12c-q3-kid-answered-tv": 212.4,
+    "12d-q3-results-tv": 222.7,
+    "12e-q3-reveal-settled-tv": 215.0,
+    "12f-q3-standings-tv": 205.6,
+    "13a-before-q4-tv": 206.0,
+    "13b-q4-asked-tv": 207.9,
+    "13c-q4-kid-answered-tv": 205.7,
+    "13d-q4-results-tv": 214.2,
+    "13e-q4-reveal-settled-tv": 211.6,
+    "13f-q4-standings-tv": 205.4,
+    "14a-before-q5-tv": 205.9,
+    "14b-q5-asked-tv": 215.2,
+    "14c-q5-kid-answered-tv": 213.6,
+    "14d-q5-results-tv": 223.2,
+    "14e-q5-reveal-settled-tv": 211.4,
+    "14f-q5-standings-tv": 205.1,
+    "20-game-over-tv": 206.4,
+    "21-game-over-settled-tv": 184.7
+  },
+  "audio": {
+    "hasAudio": true,
+    "ebur128": [
+      "I:         -23.3 LUFS",
+      "LRA:         7.8 LU"
+    ],
+    "integratedLufs": -23.3,
+    "peakDbfs": -1.26,
+    "longestSilenceS": 0.4
+  },
+  "perf": {
+    "frames": 9920,
+    "p50": 16.7,
+    "p95": 16.7,
+    "p99": 16.8,
+    "max": 100,
+    "lastKidPressAt": 1791260728378,
+    "kid": {
+      "frames": 9153,
+      "p50": 16.7,
+      "p95": 16.8,
+      "max": 850
+    }
+  },
+  "marks": [
+    {
+      "label": "lobby",
+      "t": 6.8
+    },
+    {
+      "label": "host imports questions",
+      "t": 11.1
+    },
+    {
+      "label": "questions ready",
+      "t": 13.7
+    },
+    {
+      "label": "kid joined",
+      "t": 16.2
+    },
+    {
+      "label": "everyone joined",
+      "t": 20.3
+    },
+    {
+      "label": "game started",
+      "t": 22.8
+    },
+    {
+      "label": "question 1",
+      "t": 25.2
+    },
+    {
+      "label": "kid answers q1",
+      "t": 32.1
+    },
+    {
+      "label": "results q1",
+      "t": 38.4
+    },
+    {
+      "label": "standings q1",
+      "t": 48.9
+    },
+    {
+      "label": "question 2",
+      "t": 51.9
+    },
+    {
+      "label": "kid answers q2",
+      "t": 59.8
+    },
+    {
+      "label": "results q2",
+      "t": 65.4
+    },
+    {
+      "label": "standings q2",
+      "t": 76
+    },
+    {
+      "label": "question 3",
+      "t": 78
+    },
+    {
+      "label": "kid answers q3",
+      "t": 85.5
+    },
+    {
+      "label": "results q3",
+      "t": 91
+    },
+    {
+      "label": "standings q3",
+      "t": 101.4
+    },
+    {
+      "label": "question 4",
+      "t": 103.3
+    },
+    {
+      "label": "kid answers q4",
+      "t": 109.6
+    },
+    {
+      "label": "results q4",
+      "t": 114.7
+    },
+    {
+      "label": "standings q4",
+      "t": 125.3
+    },
+    {
+      "label": "question 5",
+      "t": 127.7
+    },
+    {
+      "label": "kid answers q5",
+      "t": 135.9
+    },
+    {
+      "label": "results q5",
+      "t": 141.9
+    },
+    {
+      "label": "standings q5",
+      "t": 153
+    },
+    {
+      "label": "game over",
+      "t": 154.4
+    },
+    {
+      "label": "end",
+      "t": 172.8
+    }
+  ]
+}
