@@ -1,6 +1,6 @@
 const TILE_INKS = ["pink", "blue", "yellow", "teal"] as const;
 
-/** One full-width answer tile per option, in the four inks. */
+/** One full-width glass tile per option, each with a coloured letter disc. */
 export const ChoiceTiles = ({
   options,
   disabled,

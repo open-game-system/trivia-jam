@@ -85,7 +85,7 @@ export const HostView = ({ host }: { host: string }) => {
   if (userId !== hostId) {
     return (
       <PhoneShell className="flex items-center justify-center p-5">
-        <div className="sheet sheet-pink w-full max-w-md px-6 py-8 text-center">
+        <div className="pcard pcard-glow w-full max-w-md px-6 py-8 text-center">
           <h1 className="mb-3 text-3xl font-extrabold">Host Controls Not Available</h1>
           <p className="text-xl font-semibold">Only the host can access these controls.</p>
         </div>
@@ -96,8 +96,8 @@ export const HostView = ({ host }: { host: string }) => {
   if (!id) {
     return (
       <PhoneShell className="flex items-center justify-center p-5">
-        <div className="sheet w-full max-w-md px-6 py-8 text-center">
-          <h1 className="misreg mb-4 text-3xl font-extrabold">Creating Game...</h1>
+        <div className="pcard w-full max-w-md px-6 py-8 text-center">
+          <h1 className="lav-text mb-4 text-3xl font-extrabold">Creating Game...</h1>
           <Loader2 className="mx-auto h-12 w-12 animate-spin" role="status" />
         </div>
       </PhoneShell>
@@ -237,12 +237,12 @@ const PreviousQuestionResults = ({
       transition={{ ease: [0.2, 0.9, 0.2, 1.15], duration: 0.3 }}
       aria-labelledby="results-heading"
     >
-      <h1 className="h-head text-blue">{question.text}</h1>
+      <h1 className="h-head lav-text">{question.text}</h1>
       {!held && (
         <div className="hstatus-card mt-4">
           <div className="pslug">Answer</div>
           <div
-            className={`tabular ${shortAnswer ? "hstatus-figure" : "h-head"}`}
+            className={`tabular glow-text ${shortAnswer ? "hstatus-figure" : "h-head"}`}
             style={shortAnswer ? undefined : { marginTop: 4 }}
           >
             {question.correctAnswer}
@@ -307,21 +307,21 @@ const SettingsModal = ({
       <Drawer.Portal>
         <Drawer.Overlay
           className="fixed inset-0 z-[100]"
-          style={{ background: "rgba(30,27,26,0.55)" }}
+          style={{ background: "rgba(5,7,16,0.6)" }}
         />
         <Drawer.Content className="psheet-drawer">
           <div className="flex-1 overflow-y-auto px-5 pb-6 pt-4">
-            <div className="mx-auto mb-4 h-2 w-16 bg-ink" aria-hidden="true" />
+            <div className="psheet-grab" aria-hidden="true" />
             <div className="mx-auto max-w-xl">
               <Drawer.Title asChild>
-                <h2 className="misreg mb-5 text-4xl font-extrabold">Game Settings</h2>
+                <h2 className="lav-text mb-5 text-4xl font-extrabold">Game Settings</h2>
               </Drawer.Title>
               <Drawer.Description className="sr-only">
                 Time limit and player limit
               </Drawer.Description>
 
               <div className="space-y-4">
-                <div className="sheet p-4">
+                <div className="pcard p-4">
                   <div className="flex items-center justify-between gap-3">
                     <h3 className="text-2xl font-extrabold">Time Limit</h3>
                     <div className="flex items-center gap-2">
@@ -348,7 +348,7 @@ const SettingsModal = ({
                   <p className="mt-2 text-base font-semibold">Time to answer each question</p>
                 </div>
 
-                <div className="sheet p-4">
+                <div className="pcard p-4">
                   <div className="flex items-center justify-between gap-3">
                     <h3 className="text-2xl font-extrabold">Player Limit</h3>
                     <select
@@ -382,7 +382,7 @@ const SettingsModal = ({
                     onSave(settings);
                     onClose();
                   }}
-                  className="pbtn pbtn-pink pbtn-lg pbtn-block"
+                  className="pbtn pbtn-primary pbtn-lg pbtn-block"
                 >
                   Save Changes
                 </button>
@@ -417,14 +417,14 @@ const QuestionImportForm = ({
   <section className="mb-6">
     {parsingErrorMessage && (
       <div
-        className="mb-3 border-4 border-ink bg-yellow p-3 h-detail"
+        className="pnotice mb-3 h-detail"
         role="alert"
       >
         <strong>Could not parse questions:</strong> {parsingErrorMessage}
       </div>
     )}
     {isParsing ? (
-      <div className="sheet flex flex-col items-center justify-center px-4 py-10">
+      <div className="pcard flex flex-col items-center justify-center px-4 py-10">
         <Loader2
           className="mb-4 h-10 w-10 animate-spin"
           data-testid="parsing-spinner"
@@ -456,7 +456,7 @@ Correct answer: B`}
           type="button"
           onClick={onParseDocument}
           disabled={!documentContent.trim()}
-          className="pbtn pbtn-pink pbtn-lg pbtn-block"
+          className="pbtn pbtn-primary pbtn-lg pbtn-block"
         >
           Submit
         </button>
@@ -502,7 +502,7 @@ const QuestionListDisplay = ({
                 {question.options.map((option, optIndex) => (
                   <li
                     key={optIndex}
-                    className={option === question.correctAnswer ? "font-extrabold text-teal" : ""}
+                    className={option === question.correctAnswer ? "font-extrabold text-win" : ""}
                   >
                     {String.fromCharCode(97 + optIndex)}) {option}
                     {option === question.correctAnswer && " (correct)"}
@@ -562,7 +562,7 @@ const GameLinkSection = ({
         <button
           type="button"
           onClick={shareGameLink}
-          className="pbtn pbtn-yellow pbtn-lg pbtn-block mt-4"
+          className="pbtn pbtn-lg pbtn-block mt-4"
         >
           <Share2 size={26} strokeWidth={3} aria-hidden="true" />
           Share
@@ -582,7 +582,7 @@ const GameLinkSection = ({
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
                   exit={{ scale: 0 }}
-                  className="text-teal"
+                  className="text-win"
                   data-testid="copy-success-icon"
                 >
                   <Check size={24} strokeWidth={3} />
@@ -658,7 +658,7 @@ const StartGameSection = ({
         type="button"
         onClick={handleStartGame}
         disabled={!canStartGame || isStarting}
-        className="pbtn pbtn-pink pbtn-lg pbtn-block"
+        className="pbtn pbtn-primary pbtn-lg pbtn-block"
       >
         {isStarting ? (
           <>
@@ -748,7 +748,7 @@ const LobbyControls = ({
             </button>
           </Masthead>
           <hgroup className="mb-3">
-            <h1 className="misreg misreg-sm text-3xl font-extrabold">Game Setup</h1>
+            <h1 className="lav-text text-3xl font-extrabold">Game Setup</h1>
             {(!hasQuestions || isEditingQuestions) && (
               <h2 className="pslug mt-1" style={{ fontSize: 16 }}>
                 Import Questions
@@ -829,15 +829,15 @@ const LiveQuestionPanel = ({
       animate={{ opacity: 1, y: 0 }}
       transition={{ ease: [0.2, 0.9, 0.2, 1.15], duration: 0.3 }}
     >
-      <p className="h-head text-blue">{question?.text}</p>
+      <p className="h-head lav-text">{question?.text}</p>
 
       <div className="hstatus-card relative mt-4">
         <motion.div
-          className="tabular h-head absolute right-3 top-3 border-4 border-ink px-3 py-1"
+          className="ptimer-chip absolute right-3 top-3"
+          data-urgent={timeLeft <= 5}
           data-testid="question-timer"
           animate={{ scale: timeLeft <= 5 ? [1, 1.1, 1] : 1 }}
           transition={{ duration: 1, repeat: timeLeft <= 5 ? Infinity : 0 }}
-          style={{ background: timeLeft <= 5 ? "var(--pink)" : "var(--paper)" }}
         >
           {timeLeft}s
         </motion.div>
@@ -854,7 +854,7 @@ const LiveQuestionPanel = ({
           </h2>
           <ul className="flex flex-wrap gap-2">
             {missing.map((player) => (
-              <li key={player.id} className="prow" style={{ minHeight: 48, padding: "4px 12px 4px 6px" }}>
+              <li key={player.id} className="hchip">
                 <PlayerToken name={player.name} seat={Math.max(0, players.findIndex((p) => p.id === player.id))} />
                 <span className="h-detail">{player.name}</span>
               </li>
@@ -963,7 +963,7 @@ const QuestionControls = ({
                 </>
               )}
               {lastQuestionResult && isLastQuestion && (
-                <section className="sheet sheet-yellow mt-5 p-4 text-center">
+                <section className="pcard mt-5 p-4 text-center">
                   <p className="h-detail">That was the last question.</p>
                 </section>
               )}
@@ -1025,7 +1025,7 @@ const QuestionControls = ({
             <button
               type="button"
               onClick={endGame}
-              className="pbtn pbtn-pink pbtn-lg pbtn-block"
+              className="pbtn pbtn-primary pbtn-lg pbtn-block"
               data-testid="end-game-button"
             >
               End Game
@@ -1035,7 +1035,7 @@ const QuestionControls = ({
               type="button"
               onClick={handleNextQuestion}
               disabled={!nextQuestion}
-              className="pbtn pbtn-pink pbtn-lg pbtn-block"
+              className="pbtn pbtn-primary pbtn-lg pbtn-block"
             >
               {isFirst ? "Start First Question" : "Start Next Question"}
             </button>
@@ -1058,9 +1058,9 @@ const GameFinishedDisplay = ({ players }: { players: Person[] }) => {
       <div className="phost-scroll">
         <Page>
           <Masthead />
-          <h1 className="misreg mb-5 text-center text-5xl font-extrabold">Game Over!</h1>
+          <h1 className="lav-text mb-5 text-center text-5xl font-extrabold">Game Over!</h1>
           {winner && (
-            <div className="sheet sheet-pink mb-6 px-4 py-5">
+            <div className="pcard pcard-glow mb-6 px-4 py-5">
               <Winner winner={winner} />
             </div>
           )}
@@ -1075,7 +1075,7 @@ const GameFinishedDisplay = ({ players }: { players: Person[] }) => {
             startNewGame();
           }}
           data-testid="new-game-link"
-          className="pbtn pbtn-pink pbtn-lg pbtn-block"
+          className="pbtn pbtn-primary pbtn-lg pbtn-block"
           style={{ textDecoration: "none" }}
         >
           New game

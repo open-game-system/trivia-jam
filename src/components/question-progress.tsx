@@ -1,7 +1,7 @@
 import { motion } from "framer-motion";
 
 /**
- * "Question 2 of 5": a printed strip of ticks. In the page flow (never
+ * "Question 2 of 5": a strip of glowing ticks. In the page flow (never
  * fixed), so it can't overlap a heading or card.
  */
 export const QuestionProgress = ({
@@ -26,8 +26,12 @@ export const QuestionProgress = ({
         {Array.from({ length: ticks }, (_, i) => (
           <motion.span
             key={i}
-            className="h-3 flex-1 border-2 border-ink"
-            style={{ background: i < filled ? "var(--ink)" : "transparent" }}
+            className="h-1.5 flex-1 rounded-full"
+            style={
+              i < filled
+                ? { background: "linear-gradient(90deg,#6366f1,#a855f7)", boxShadow: "0 0 8px rgba(168,85,247,0.8)" }
+                : { background: "rgba(255,255,255,0.14)" }
+            }
             initial={false}
             animate={{ opacity: 1 }}
           />

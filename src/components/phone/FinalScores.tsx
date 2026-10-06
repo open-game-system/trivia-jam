@@ -9,13 +9,13 @@ export const byScore = (players: Person[]) =>
 export const Winner = ({ winner, large = false }: { winner: Person; large?: boolean }) => (
   <div data-testid="winner-announcement" className="text-center">
     <h2
-      className="font-display font-extrabold text-ink"
+      className="lav-text font-extrabold"
       style={{ fontSize: "clamp(26px, 5dvh, 44px)", lineHeight: 1.05, letterSpacing: "-0.02em" }}
     >
       {winner.name} Wins!
     </h2>
     {large ? (
-      <p className="mt-1 text-2xl font-extrabold">with {winner.score} points</p>
+      <p className="mt-1 text-2xl font-bold text-gray-200">with {winner.score} points</p>
     ) : (
       <p className="pslug mt-1" style={{ fontSize: 16 }}>
         with {winner.score} points
@@ -49,11 +49,11 @@ export const FinalScores = ({
           initial={{ opacity: 0, x: -24 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ delay: Math.min(index, 8) * 0.07, ease: [0.2, 0.9, 0.2, 1.15], duration: 0.3 }}
-          className={`prow ${player.id === highlightPlayerId ? "prow-me" : ""} ${index === 0 ? "prow-win" : ""}`}
+          className={`prow ${player.id === highlightPlayerId ? "prow-me" : ""} ${index === 0 ? "prow-lead" : ""}`}
         >
           <RankDisc rank={index + 1} />
           <PlayerToken name={player.name} seat={players.findIndex((p) => p.id === player.id)} />
-          <span className="min-w-0 flex-1 truncate text-xl font-extrabold">
+          <span className="min-w-0 flex-1 truncate text-xl font-bold">
             {player.name}
           </span>
           <span className="tabular text-2xl font-extrabold">{player.score}</span>

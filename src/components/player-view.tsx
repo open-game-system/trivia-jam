@@ -66,7 +66,7 @@ const WaitCard = ({
       </div>
       <div className="pwait-text">
         <span className="pslug">Trivia Jam</span>
-        <h1 className="misreg pwait-title">{title}</h1>
+        <h1 className="lav-text pwait-title">{title}</h1>
         {children}
         <div className="mt-5 flex justify-center">
           <WaitingDots />
@@ -346,11 +346,11 @@ const NameEntryForm = () => {
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ ease: [0.2, 0.9, 0.2, 1.15], duration: 0.35 }}
-            className="sheet w-full max-w-md px-6 py-8"
+            className="pcard w-full max-w-md px-6 py-8"
           >
             <span className="pslug">Trivia Jam</span>
             <h1
-              className="mb-6 mt-2 font-display font-extrabold misreg"
+              className="lav-text mb-6 mt-2 font-extrabold"
               style={{ fontSize: "clamp(40px, 9dvh, 64px)" }}
             >
               Join Game
@@ -381,7 +381,7 @@ const NameEntryForm = () => {
                     role="alert"
                     initial={{ opacity: 0, y: -8 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="mt-3 border-4 border-ink bg-yellow px-3 py-2 text-lg font-bold"
+                    className="pnotice mt-3"
                   >
                     {error}
                   </motion.p>
@@ -390,7 +390,7 @@ const NameEntryForm = () => {
               <button
                 data-testid="join-button"
                 type="submit"
-                className="pbtn pbtn-pink pbtn-lg pbtn-block"
+                className="pbtn pbtn-primary pbtn-lg pbtn-block"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? "Joining..." : "Join Game"}

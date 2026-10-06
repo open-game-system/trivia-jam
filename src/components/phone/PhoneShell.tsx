@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-/** A printed page for phones and iPads: paper, ink, grain. */
+/** A page for phones and iPads: the aurora backdrop, Inter, glass on top. */
 export const PhoneShell = ({
   children,
   fill = false,
@@ -11,7 +11,7 @@ export const PhoneShell = ({
   fill?: boolean;
   className?: string;
 }) => (
-  <div className={`phone-shell riso ${fill ? "phone-fill" : ""} ${className}`}>
+  <div className={`phone-shell aurora ${fill ? "phone-fill" : ""} ${className}`}>
     {children}
   </div>
 );

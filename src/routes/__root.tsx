@@ -139,16 +139,16 @@ function RootDocument({ children }: { children: ReactNode }) {
   );
 }
 
-/** A render error anywhere: report it (type/message only) and show a calm printed card. */
+/** A render error anywhere: report it (type/message only) and show a calm glass card. */
 function RootError({ error }: { error: Error }) {
   // Reporting is a side effect on an external system, once per error.
   useEffect(() => reportError(error, { boundary: "root" }), [error]);
   return (
-    <div className="riso flex min-h-screen items-center justify-center p-8 text-center">
-      <div className="sheet max-w-md px-8 py-10">
-        <h1 className="misreg mb-4 text-4xl font-extrabold">Oops</h1>
-        <p className="mb-6 text-lg">Something went wrong. Reload to jump back in.</p>
-        <button type="button" className="pbtn pbtn-pink pbtn-lg" onClick={() => window.location.reload()}>
+    <div className="aurora flex min-h-screen items-center justify-center p-8 text-center">
+      <div className="pcard max-w-md px-8 py-10">
+        <h1 className="lav-text mb-4 text-4xl font-extrabold">Oops</h1>
+        <p className="mb-6 text-lg text-gray-200">Something went wrong. Reload to jump back in.</p>
+        <button type="button" className="pbtn pbtn-primary pbtn-lg" onClick={() => window.location.reload()}>
           Reload
         </button>
       </div>

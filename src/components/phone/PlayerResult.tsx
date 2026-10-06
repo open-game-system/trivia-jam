@@ -10,10 +10,10 @@ import { useCountUp } from "./useCountUp";
 type Person = { id: string; name: string; score: number };
 
 const TONE: Record<Outcome, string> = {
-  exact: "bg-teal text-paper",
-  close: "bg-yellow text-ink",
-  miss: "bg-paper-2 text-ink",
-  none: "bg-paper-2 text-ink",
+  exact: "pres-stamp-win",
+  close: "pres-stamp-close",
+  miss: "pres-stamp-miss",
+  none: "pres-stamp-miss",
 };
 
 /** The player's own result: the competitive facts first, then the numbers. */
@@ -33,7 +33,7 @@ const MyOutcome = ({
   const outcome = describeOutcome(question, myAnswer?.value);
   const earned = myScore?.points ?? 0;
   const headline = resultHeadline(outcome, earned, question.questionType);
-  const tone = earned > 0 && outcome === "miss" ? "bg-yellow text-ink" : TONE[outcome];
+  const tone = earned > 0 && outcome === "miss" ? "pres-stamp-close" : TONE[outcome];
   const points = useCountUp(earned);
   const total = useCountUp(me.score);
   const numeric = question.questionType === "numeric";
@@ -46,15 +46,15 @@ const MyOutcome = ({
   return (
     <motion.section
       data-testid="my-result"
-      className="sheet pres p-4"
-      initial={{ y: 24, opacity: 0, rotate: -1.5 }}
-      animate={{ y: 0, opacity: 1, rotate: 0 }}
-      transition={{ type: "spring", stiffness: 380, damping: 22 }}
+      className="pcard pres p-4"
+      initial={{ y: 18, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{ duration: 0.4, ease: [0.2, 0.8, 0.2, 1] }}
     >
       <motion.div
-        className={`${tone} pres-stamp font-display font-extrabold`}
-        initial={{ scale: 1.8, rotate: -14, opacity: 0 }}
-        animate={{ scale: [1.8, 0.94, 1], rotate: -4, opacity: 1 }}
+        className={`${tone} pres-stamp font-extrabold`}
+        initial={{ scale: 1.5, opacity: 0 }}
+        animate={{ scale: [1.5, 0.96, 1], rotate: -2, opacity: 1 }}
         transition={{ duration: 0.38, times: [0, 0.7, 1], ease: "easeOut", delay: 0.15 }}
       >
         {headline}
@@ -62,7 +62,7 @@ const MyOutcome = ({
 
       <div className="pres-fact">
         {fact && (
-          <div className="pres-fact-big font-display font-extrabold" data-testid="my-off-by">
+          <div className="pres-fact-big glow-text" data-testid="my-off-by">
             {fact}
           </div>
         )}
@@ -72,14 +72,14 @@ const MyOutcome = ({
       <div className="pres-stats">
         <div className="pres-stat" data-testid="my-question-place">
           <span className="pslug">This question</span>
-          <span className="pres-stat-fig tabular">
+          <span className="pres-stat-fig glow-text tabular">
             {here ? ordinal(here.place) : "-"}
             {here && <small> of {here.of}</small>}
           </span>
         </div>
         <div className="pres-stat">
           <span className="pslug">Points</span>
-          <span className="pres-stat-fig tabular" data-testid="my-points" aria-label={`${earned} points`}>
+          <span className="pres-stat-fig glow-text tabular" data-testid="my-points" aria-label={`${earned} points`}>
             +{points}
           </span>
         </div>
@@ -88,7 +88,7 @@ const MyOutcome = ({
             Overall {ordinal(overallRank)}
           </span>
           <span
-            className="pres-stat-fig tabular"
+            className="pres-stat-fig glow-text tabular"
             data-testid="my-total"
             aria-label={`${me.score} points in total`}
           >
@@ -101,7 +101,7 @@ const MyOutcome = ({
         <div>
           <div className="pslug">You</div>
           <div
-            className="tabular font-display font-extrabold leading-none misreg misreg-sm"
+            className="tabular glow-text font-extrabold leading-none"
             style={{ fontSize: numeric ? "clamp(32px, 6dvh, 56px)" : "clamp(22px, 3.4dvh, 32px)" }}
             data-testid="my-answer"
           >
@@ -111,7 +111,7 @@ const MyOutcome = ({
         <div>
           <div className="pslug">Answer</div>
           <div
-            className="tabular font-display font-extrabold leading-none text-blue"
+            className="tabular glow-text font-extrabold leading-none text-blue"
             style={{ fontSize: numeric ? "clamp(32px, 6dvh, 56px)" : "clamp(22px, 3.4dvh, 32px)" }}
             data-testid="correct-answer"
           >
@@ -134,7 +134,7 @@ const sortByRank = (scores: QuestionResult["scores"]) =>
     b.points !== a.points ? b.points - a.points : a.timeTaken - b.timeTaken,
   );
 
-/** Short list below: everyone's guess, one printed row each. */
+/** Short list below: everyone's guess, one glass row each. */
 const Everyone = ({
   result,
   question,
@@ -146,7 +146,7 @@ const Everyone = ({
   players: Person[];
   meId: string;
 }) => (
-  <section aria-label="Everyone's answers" >
+  <section aria-label="Everyone's answers">
     <h2 className="pslug mb-2" style={{ fontSize: 16 }}>
       Everyone, this question
     </h2>
@@ -221,7 +221,7 @@ export const PlayerResult = ({
   return (
     <div className="px-4 pb-8 pt-2 mx-auto w-full max-w-5xl">
       <h1
-        className="mb-3 text-center font-display font-extrabold text-blue"
+        className="lav-text mb-3 text-center font-display font-extrabold text-blue"
         style={{ fontSize: "clamp(20px, 3.2dvh, 28px)", lineHeight: 1.1, letterSpacing: "-0.02em" }}
       >
         {question.text}

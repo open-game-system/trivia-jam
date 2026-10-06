@@ -6,7 +6,7 @@ import { PlayerToken } from "./ink";
 
 type Person = { id: string; name: string; score: number };
 
-/** The host's players list: quiet rows, remove is a small secondary action. */
+/** The host's players list: glass rows, remove is a small secondary action. */
 export const PlayerLedger = ({
   players,
   hostId,
@@ -55,8 +55,12 @@ export const PlayerLedger = ({
               {isHost && <span className="pchip pchip-ink">Host</span>}
               {answeredIds && (
                 <span
-                  className="inline-block h-5 w-5 flex-none rounded-full border-4 border-ink"
-                  style={{ background: answered ? "var(--teal)" : "transparent" }}
+                  className="inline-block h-5 w-5 flex-none rounded-full border-2 border-white/40"
+                  style={
+                    answered
+                      ? { background: "var(--win)", borderColor: "var(--win)", boxShadow: "0 0 12px rgba(74,222,128,0.7)" }
+                      : { background: "transparent" }
+                  }
                   role="img"
                   aria-label={answered ? "Answered" : "Not answered yet"}
                 />
@@ -117,7 +121,7 @@ export const LiveAnswer = ({
 
 /** The question as the screen's headline. */
 export const QuestionHeadline = ({ question }: { question: Question }) => (
-  <p className="h-head text-blue">{question.text}</p>
+  <p className="h-head lav-text">{question.text}</p>
 );
 
 /** Host-eyes extras for a question: the answer and, for multiple choice, the options. */
@@ -125,15 +129,17 @@ export const QuestionExtras = ({ question }: { question: Question }) => (
   <>
     <div className="flex items-baseline gap-3">
       <span className="pslug">Answer</span>
-      <span className="tabular h-head">{question.correctAnswer}</span>
+      <span className="tabular h-head glow-text">{question.correctAnswer}</span>
     </div>
     {question.questionType === "multiple-choice" && question.options && (
       <div className="grid grid-cols-2 gap-2">
         {question.options.map((option, index) => (
           <div
             key={`${index}-${option}`}
-            className={`border-4 border-ink px-3 py-2 h-detail ${
-              option === question.correctAnswer ? "bg-teal text-paper" : "bg-paper"
+            className={`rounded-2xl border px-3 py-2 h-detail ${
+              option === question.correctAnswer
+                ? "border-win bg-win text-win-ink"
+                : "border-white/20 bg-white/10 text-white"
             }`}
           >
             {String.fromCharCode(65 + index)}) {option}
@@ -161,7 +167,7 @@ export const Details = ({
     <summary className="hdetails-summary">
       <span>{summary}</span>
       <svg className="hdetails-caret" width="22" height="22" viewBox="0 0 22 22" aria-hidden="true">
-        <path d="M4 7.5 11 15l7-7.5" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="square" />
+        <path d="M4 7.5 11 15l7-7.5" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
       </svg>
     </summary>
     <div className="hdetails-body">{children}</div>
@@ -183,7 +189,7 @@ export const BigStatus = ({
 }) => (
   <div className={`hstatus ${tone === "teal" ? "hstatus-teal" : ""}`}>
     <div className="hstatus-figure">
-      <span className="tabular">{figure}</span>
+      <span className="tabular glow-text">{figure}</span>
       {of !== undefined && <span className="hstatus-of">of {of}</span>}
     </div>
     <div className="hstatus-label">{label}</div>
@@ -215,7 +221,7 @@ export const EndGameControl = ({
       <div
         role="alertdialog"
         aria-label="End the game?"
-        className="border-4 border-ink bg-yellow p-4 psheet-in"
+        className="pcard pcard-glow p-4 psheet-in"
       >
         <p className="mb-3 text-xl font-extrabold">End the game for everyone?</p>
         <div className="flex gap-3">
@@ -226,7 +232,7 @@ export const EndGameControl = ({
           >
             Keep playing
           </button>
-          <button type="button" className="pbtn pbtn-ink pbtn-block" onClick={onEnd}>
+          <button type="button" className="pbtn pbtn-primary pbtn-block" onClick={onEnd}>
             End game now
           </button>
         </div>

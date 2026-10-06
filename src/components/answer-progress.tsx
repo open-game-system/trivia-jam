@@ -22,7 +22,7 @@ export const AnswerProgress = ({
         Answers Submitted: {answersCount} / {playersCount}
       </h3>
       <div className="hstatus-figure" aria-hidden="true">
-        <span className="tabular">{answersCount}</span>
+        <span className="tabular glow-text">{answersCount}</span>
         <span className="hstatus-of">of {playersCount}</span>
       </div>
       <div className="hstatus-label" aria-hidden="true">
@@ -31,7 +31,7 @@ export const AnswerProgress = ({
       <div className="ptimer-track mt-3" aria-hidden="true">
         <div
           className="ptimer-fill"
-          style={{ transform: `scaleX(${fraction})`, background: "var(--teal)" }}
+          style={{ transform: `scaleX(${fraction})`, background: "linear-gradient(90deg,#22c55e,#4ade80)", boxShadow: "0 0 14px rgba(74,222,128,0.7)" }}
         />
       </div>
       <AnimatePresence>

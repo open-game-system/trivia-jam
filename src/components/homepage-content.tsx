@@ -9,20 +9,10 @@ export type HomePageContentProps = {
   $showHelp: ReturnType<typeof atom<boolean>>;
 };
 
-/** The home page is a poster: the name, one big button, a way to learn. */
+/** The home page: the name on the aurora, one big button, a way to learn. */
 export function HomePageContent({ newGameId, $showHelp }: HomePageContentProps) {
   return (
     <PhoneShell className="relative flex items-center justify-center overflow-hidden px-5 py-8">
-      <div
-        className="pdots-field halftone-blue right-0 top-0 h-[70vmin] w-[70vmin]"
-        aria-hidden="true"
-      />
-      <div
-        className="pdots-field halftone-pink bottom-0 left-0 h-[45vmin] w-[45vmin]"
-        aria-hidden="true"
-        style={{ transform: "rotate(180deg)" }}
-      />
-
       <motion.main
         initial={{ opacity: 0, y: 18 }}
         animate={{ opacity: 1, y: 0 }}
@@ -30,15 +20,15 @@ export function HomePageContent({ newGameId, $showHelp }: HomePageContentProps) 
         className="relative z-10 w-full max-w-xl"
       >
         <p className="pslug mb-3">A numbers game for the whole room</p>
-        <h1 className="pposter-title">Trivia Jam</h1>
-        <p className="mt-5 text-2xl font-bold leading-tight">
+        <h1 className="pposter-title lav-text">Trivia Jam</h1>
+        <p className="mt-5 text-2xl font-semibold leading-tight text-gray-200">
           Guess the number. Closest wins.
         </p>
 
         <div className="mt-8 flex flex-col gap-4">
           <a
             href={`/games/${newGameId}`}
-            className="pbtn pbtn-pink pbtn-lg pbtn-block"
+            className="pbtn pbtn-primary pbtn-lg pbtn-block"
             style={{ textDecoration: "none" }}
           >
             Create New Game

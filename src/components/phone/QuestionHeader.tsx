@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 
-/** Timer (number + draining pink bar) and the question. */
+/** Timer (glass chip + draining glow bar) and the question. */
 export const QuestionHeader = ({
   text,
   timeLeft,
@@ -16,10 +16,10 @@ export const QuestionHeader = ({
   return (
     <div className="pqh px-4 pt-2">
       <motion.div
-        className="pqh-timer tabular font-display font-extrabold text-ink leading-none"
-        style={{ fontSize: "clamp(32px, 6dvh, 56px)", minWidth: "2.4ch" }}
+        className="pqh-timer ptimer-chip"
+        data-urgent={urgent}
         data-testid="question-timer"
-        animate={{ scale: urgent ? [1, 1.12, 1] : 1 }}
+        animate={{ scale: urgent ? [1, 1.08, 1] : 1 }}
         transition={{ duration: 1, repeat: urgent ? Infinity : 0 }}
       >
         {timeLeft}s
@@ -28,7 +28,7 @@ export const QuestionHeader = ({
         <div className="ptimer-fill" style={{ transform: `scaleX(${fraction})` }} />
       </div>
       <h1
-        className="pqh-title min-w-0 font-display font-extrabold text-blue"
+        className="pqh-title lav-text min-w-0 font-extrabold"
         style={{ fontSize: "clamp(24px, min(5.6dvh, 8vw), 40px)", lineHeight: 1.08, letterSpacing: "-0.02em", overflowWrap: "anywhere" }}
       >
         {text}

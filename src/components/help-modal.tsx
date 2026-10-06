@@ -11,11 +11,11 @@ const Step = ({ n, children }: { n: number; children: React.ReactNode }) => (
     <span className="prank" aria-hidden="true">
       {n}
     </span>
-    <span className="pt-2 text-lg font-semibold leading-snug">{children}</span>
+    <span className="pt-2 text-lg font-medium leading-snug text-gray-100">{children}</span>
   </li>
 );
 
-/** "How to Play" as a printed sheet that slides up from the bottom. */
+/** "How to Play" as a glass sheet that slides up from the bottom. */
 export function HelpModal({ $showHelp }: HelpModalProps) {
   const showHelp = useStore($showHelp);
 
@@ -24,16 +24,16 @@ export function HelpModal({ $showHelp }: HelpModalProps) {
       <Drawer.Portal>
         <Drawer.Overlay
           className="fixed inset-0 z-50"
-          style={{ background: "rgba(30,27,26,0.55)" }}
+          style={{ background: "rgba(5,7,16,0.6)" }}
         />
         <Drawer.Content
           className="psheet-drawer"
         >
           <div className="flex-1 overflow-y-auto px-5 pb-6 pt-4">
-            <div className="mx-auto mb-4 h-2 w-16 bg-ink" aria-hidden="true" />
+            <div className="psheet-grab" aria-hidden="true" />
             <div className="mx-auto max-w-xl">
               <Drawer.Title asChild>
-                <h2 className="misreg mb-4 text-4xl font-extrabold">How to Play</h2>
+                <h2 className="lav-text mb-4 text-4xl font-extrabold">How to Play</h2>
               </Drawer.Title>
               <Drawer.Description className="sr-only">
                 How answering and scoring work
@@ -56,14 +56,14 @@ export function HelpModal({ $showHelp }: HelpModalProps) {
                 <Step n={2}>Right answers score 4, 3, 2, then 1 point, fastest first.</Step>
               </ol>
 
-              <p className="mb-5 border-4 border-ink bg-yellow px-4 py-3 text-lg font-bold">
+              <p className="pnotice mb-5 text-lg">
                 Close counts: the three closest guesses score 4, 3 and 2.
               </p>
 
               <button
                 type="button"
                 onClick={() => $showHelp.set(false)}
-                className="pbtn pbtn-pink pbtn-lg pbtn-block"
+                className="pbtn pbtn-primary pbtn-lg pbtn-block"
               >
                 Got it!
               </button>

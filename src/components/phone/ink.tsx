@@ -1,6 +1,6 @@
 const TOKEN_INKS = ["blue", "pink", "teal", "yellow"] as const;
 
-/** One ink per player, by seat, then repeats. */
+/** One tint per player, by seat, then repeats. */
 export const PlayerToken = ({
   name,
   seat,
@@ -18,7 +18,7 @@ export const PlayerToken = ({
   </span>
 );
 
-/** Printed rank disc: a number in a circle (replaces medal emoji). */
+/** Rank disc: a number in a circle (replaces medal emoji). */
 export const RankDisc = ({ rank }: { rank: number }) => (
   <span
     className={`prank ${rank <= 3 ? `prank-${rank}` : ""}`}
@@ -36,7 +36,7 @@ export const Slug = ({
   className?: string;
 }) => <span className={`pslug ${className}`}>{children}</span>;
 
-/** Three printed dots that bob: waiting for the others. */
+/** Three glowing dots that bob: waiting for the others. */
 export const WaitingDots = () => (
   <span className="pdots" aria-hidden="true">
     <span />

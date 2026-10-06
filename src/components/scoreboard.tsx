@@ -5,7 +5,7 @@ import { FinalScores, byScore } from "./phone/FinalScores";
 import { PhoneShell } from "./phone/PhoneShell";
 import { ordinal } from "./phone/outcome";
 
-/** Standings, printed: your place up top, the full table below. */
+/** Standings: your place up top, the full table below. */
 export function Scoreboard() {
   const players = GameContext.useSelector((state) => state.public.players);
   const userId = SessionContext.useSelector((state) => state.public.userId);
@@ -17,16 +17,16 @@ export function Scoreboard() {
   return (
     <PhoneShell className="px-4 pb-10 pt-6">
       <div className="mx-auto w-full max-w-xl">
-        <h1 className="misreg mb-6 text-5xl font-extrabold">Leaderboard</h1>
+        <h1 className="lav-text mb-6 text-5xl font-extrabold">Leaderboard</h1>
 
         {currentPlayer && (
           <motion.div
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            className="sheet sheet-pink mb-6 px-4 py-4 text-center"
+            className="pcard pcard-glow mb-6 px-4 py-4 text-center"
           >
             <p className="pslug">Your Position</p>
-            <div className="tabular text-5xl font-extrabold leading-none">
+            <div className="tabular glow-text text-6xl font-black leading-none">
               {ordinal(currentPlayerRank)}
             </div>
             <p className="pslug mt-2">

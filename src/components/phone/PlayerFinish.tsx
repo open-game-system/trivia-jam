@@ -7,7 +7,7 @@ import { PhoneShell } from "./PhoneShell";
 
 type Person = { id: string; name: string; score: number };
 
-/** Game over, from a player's seat: their place, printed, then the table. */
+/** Game over, from a player's seat: their place in glow, then the table. */
 export const PlayerFinish = ({
   me,
   players,
@@ -28,23 +28,22 @@ export const PlayerFinish = ({
         <div className="grid grid-cols-1 gap-6">
           <div className="flex flex-col items-center gap-3">
             <h1
-              className="font-display font-extrabold leading-none"
+              className="lav-text font-extrabold leading-none"
               style={{ fontSize: "clamp(32px, 6dvh, 56px)", letterSpacing: "-0.02em" }}
             >
               Game Over!
             </h1>
             <motion.div
               className="flex flex-col items-center"
-              initial={{ scale: 1.5, rotate: -10, opacity: 0 }}
-              animate={{ scale: [1.5, 0.96, 1], rotate: -3, opacity: 1 }}
+              initial={{ scale: 1.4, opacity: 0 }}
+              animate={{ scale: [1.4, 0.97, 1], opacity: 1 }}
               transition={{
                 scale: { duration: 0.5, times: [0, 0.7, 1], ease: "easeOut" },
-                rotate: { duration: 0.5, ease: "easeOut" },
                 opacity: { duration: 0.1 },
               }}
             >
               <span
-                className="tabular font-display font-extrabold leading-none misreg"
+                className="tabular glow-text font-extrabold leading-none"
                 style={{ fontSize: "clamp(88px, min(22dvh, 34vw), 200px)", letterSpacing: "-0.04em" }}
                 data-testid="my-place"
                 aria-label={`You finished ${ordinal(place)}`}
@@ -53,14 +52,13 @@ export const PlayerFinish = ({
               </span>
             </motion.div>
             <motion.div
-              className="pstat bg-pink text-ink"
+              className="pstat"
               style={{ fontSize: "clamp(24px, 4.4dvh, 36px)", minWidth: 0, padding: "0.1em 0.45em", whiteSpace: "nowrap" }}
-              initial={{ scale: 2, rotate: 12, opacity: 0 }}
-              animate={{ scale: [2, 0.92, 1], rotate: 3, opacity: 1 }}
+              initial={{ scale: 1.6, opacity: 0 }}
+              animate={{ scale: [1.6, 0.96, 1], opacity: 1 }}
               transition={{
                 delay: 0.45,
                 scale: { duration: 0.4, times: [0, 0.7, 1], ease: "easeOut" },
-                rotate: { duration: 0.4, ease: "easeOut" },
                 opacity: { duration: 0.1 },
               }}
               data-testid="finish-stamp"
@@ -73,15 +71,15 @@ export const PlayerFinish = ({
               data-testid="my-final-points"
             >
               <span
-                className="tabular font-display font-extrabold leading-none"
+                className="tabular glow-text font-extrabold leading-none"
                 style={{ fontSize: "clamp(56px, 13dvh, 120px)" }}
               >
                 {me.score}
               </span>
-              <span className="font-display text-2xl font-extrabold uppercase">points</span>
+              <span className="label-caps text-xl">points</span>
             </div>
             {margin && (
-              <p className="text-xl font-extrabold" data-testid="finish-margin">
+              <p className="text-xl font-bold text-gray-200" data-testid="finish-margin">
                 {margin}
               </p>
             )}

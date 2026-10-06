@@ -35,7 +35,7 @@ const PadKey = ({
       disabled={disabled}
       className={`pkey ${className}`}
       onPointerDown={() => {
-        // Instant ink flash, independent of when the click lands.
+        // Instant press flash, independent of when the click lands.
         setPressed(true);
         if (timer.current) clearTimeout(timer.current);
         timer.current = setTimeout(() => setPressed(false), 140);
@@ -73,7 +73,7 @@ export const NumberPad = ({
     <>
       <div className="pdisplay-wrap">
         <div
-          className={`pdisplay ${value === "" ? "pdisplay-empty" : ""}`}
+          className={`pdisplay glow-text ${value === "" ? "pdisplay-empty" : ""}`}
           data-len={value.length}
           data-testid="answer-display"
           aria-live="polite"

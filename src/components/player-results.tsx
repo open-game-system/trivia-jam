@@ -21,7 +21,7 @@ export function PlayerResults() {
       particleCount: 60,
       spread: 70,
       origin: { y: 0.7 },
-      colors: ["#FF48B0", "#3255A4", "#FFE800", "#00838A"],
+      colors: ["#818CF8", "#C084FC", "#EC4899", "#4ADE80"],
     });
   }, [isWinner]);
 
@@ -35,9 +35,9 @@ export function PlayerResults() {
         <button
           type="button"
           onClick={() => sendGameEvent({ type: "START_GAME" })}
-          className="pbtn pbtn-pink pbtn-lg"
+          className="pbtn pbtn-primary pbtn-lg"
         >
-          <RotateCcw size={24} strokeWidth={3} aria-hidden="true" />
+          <RotateCcw size={24} strokeWidth={2.5} aria-hidden="true" />
           Play Again
         </button>
       }

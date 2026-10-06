@@ -43,9 +43,9 @@ export function PlayerJoin() {
             key="join-form"
             initial={{ opacity: 0, y: 18 }}
             animate={{ opacity: 1, y: 0 }}
-            className="sheet px-6 py-8"
+            className="pcard px-6 py-8"
           >
-            <h1 className="misreg mb-6 text-5xl font-extrabold">Join Game</h1>
+            <h1 className="lav-text mb-6 text-5xl font-extrabold">Join Game</h1>
 
             <form onSubmit={handleJoin} className="space-y-5">
               <div>
@@ -80,7 +80,7 @@ export function PlayerJoin() {
               </div>
 
               {error && (
-                <div role="alert" className="border-4 border-ink bg-yellow px-3 py-2 text-lg font-bold">
+                <div role="alert" className="pnotice">
                   {error}
                 </div>
               )}
@@ -88,12 +88,12 @@ export function PlayerJoin() {
               <button
                 type="submit"
                 disabled={isJoining}
-                className="pbtn pbtn-pink pbtn-lg pbtn-block"
+                className="pbtn pbtn-primary pbtn-lg pbtn-block"
               >
                 {isJoining ? "Joining..." : "Join Game"}
               </button>
 
-              <p className="pslug text-center" style={{ fontSize: 15 }}>
+              <p className="pslug text-center" style={{ fontSize: 14 }}>
                 {players.length}/{maxPlayers} Players
               </p>
             </form>
@@ -103,10 +103,10 @@ export function PlayerJoin() {
             key="joined"
             initial={{ opacity: 0, scale: 0.92 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="sheet sheet-pink px-6 py-8 text-center"
+            className="pcard pcard-glow px-6 py-8 text-center"
           >
-            <h2 className="misreg mb-3 text-5xl font-extrabold">You're In!</h2>
-            <p className="mb-6 text-xl font-semibold">Waiting for the host to start the game...</p>
+            <h2 className="lav-text mb-3 text-5xl font-extrabold">You're In!</h2>
+            <p className="mb-6 text-xl font-semibold text-gray-200">Waiting for the host to start the game...</p>
             <div className="flex justify-center">
               <WaitingDots />
             </div>
