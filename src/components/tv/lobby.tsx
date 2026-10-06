@@ -67,7 +67,7 @@ const Seat = ({ player, index }: { player: LobbyPlayer | undefined; index: numbe
       <motion.div
         key={player.id}
         initial={{ scale: 0.6, opacity: 0, y: 20 }}
-        animate={{ scale: [0.6, 1.08, 1], opacity: 1, y: 0 }}
+        animate={{ scale: [0.6, 1.08, 1], opacity: [0, 1, 1], y: [20, 0, 0] }}
         transition={{ duration: 0.5, times: [0, 0.6, 1], ease: EASE_OUT }}
       >
         <GlassToken name={player.name} inkIndex={index} size={120} />

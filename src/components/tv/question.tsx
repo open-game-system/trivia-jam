@@ -88,7 +88,7 @@ export const OptionTiles = ({
               className="tv-pill tv-pill--win absolute"
               style={{ left: height - 60, bottom: -30, fontSize: 44, padding: "10px 26px", zIndex: 2 }}
               initial={{ scale: 0.4, opacity: 0, rotate: -2 }}
-              animate={{ scale: [0.4, 1.12, 1], opacity: 1, rotate: -2 }}
+              animate={{ scale: [0.4, 1.12, 1], opacity: [0, 1, 1], rotate: [-2, -2, -2] }}
               transition={{ duration: 0.42, times: [0, 0.6, 1], ease: EASE_POP }}
             >
               Right!

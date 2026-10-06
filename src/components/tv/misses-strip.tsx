@@ -1,7 +1,8 @@
+import { popIn } from "./motion-presets";
 import { motion } from "framer-motion";
 import { FitName } from "./fit-name";
 import type { Misses } from "./misses";
-import { EASE_POP, GlassToken, Label } from "./glass";
+import { GlassToken, Label } from "./glass";
 
 /** Where the strip sits: under the winners and the answer, once they have stepped up out of the way. */
 export const MISSES_TOP = 664;
@@ -37,9 +38,7 @@ export const MissesStrip = ({ misses, live }: { misses: Misses; live: boolean })
                   <motion.span
                     className="tv-pill tv-pill--close flex-none"
                     style={{ fontSize: 28, padding: "6px 14px" }}
-                    initial={live ? { scale: 0.3, opacity: 0 } : false}
-                    animate={{ scale: [0.3, 1.12, 1], opacity: 1 }}
-                    transition={{ delay: live ? stampAt : 0, duration: 0.4, times: [0, 0.6, 1], ease: EASE_POP }}
+                    {...(live ? popIn({ delay: stampAt }) : { initial: false as const })}
                   >
                     Next closest
                   </motion.span>
