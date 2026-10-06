@@ -1,3 +1,68 @@
+# Morning report (2026-10-06)
+
+**Status: committed only.** Nothing pushed, deployed, or checked on a real device (iPad, phone, Chromecast).
+- trivia-jam: 153 local commits on `feat/aaa-hillclimb-ogs`.
+- OGS catalogue + art kit: 4 commits on `feat/trivia-jam-catalogue` in `~/src/ogs-trivia-jam`.
+- SRE split: 4 commits on `sre-agent-setup` in `~/src/trivia-jam-sre`.
+
+## What changed overnight
+- **Look:** Aurora Glass is in, the look you picked: dark indigo with a soft aurora, frosted glass, lavender gradient type and a glowing answer. On the TV, Unbounded is the display face for big numbers and headings. The riso look is retired.
+- **Brand device:** the glowing number line is now the game's motif, on the lobby wordmark, the question screen and the reveal stage.
+- **TV reveal:**
+  - the question moves into the results header instead of cutting to black;
+  - guesses drop onto a lit number line and a "?" pin searches along it;
+  - the answer slams in and the winners take over the screen;
+  - then a "rest of the room" beat, and standings that roll, reorder and hold.
+- **Multiple choice:** a column reveal where the wrong options drop away.
+- **Finale:** a title card, a podium with 1st kept as "?", the winner's name full screen, then an AWARDS column.
+- **Adult re-scope:**
+  - players answer on a compact phone keypad;
+  - results are competitive and honest ("Dead on.", "So close.", "Way off.", "Beat you: Priya");
+  - the host phone is one glance and one action, with "Ready: 5 questions" and labelled Host tools.
+- **Audio:** music beds sit under the big moments. Results land on a suspense drone, and each answer hits with a held chord. The last question has a bigger build. The finale holds back, then the fanfare lands on the winner reveal. One short Trivia Jam motif is shared by the question bell and the fanfare.
+- **OGS art kit:** icon, cover, logo, clean hero and `tv.jpg`, all in Aurora Glass and rendered from HTML/CSS (`scripts/art-kit/`), not generated images. Installed in `~/src/ogs-trivia-jam` and committed there.
+- **E2E sweep:** finished. Flows 1–14 are covered: 22 Playwright tests plus 5 in the e2e framework, all passing on the final build. Bugs it found and fixed tonight:
+  - after a TV reveal, a multiple-choice question could show twice on the TV;
+  - the "Final scores" banner overflowed its card;
+  - a player's colour on the TV didn't match their colour on the phones;
+  - an empty frame appeared between the winner reveal and the standings;
+  - the timer numeral touched its ring.
+
+## Scores (critic minimum; full rows in critic/aaa/SCORECARD.md)
+
+| Round | Min | Notes |
+|---|---|---|
+| 00–04 | 1 → 3 → 4 → 5 → 5 | riso look, graded against the kid-on-iPad persona |
+| 05 | 5 | adult re-baseline in Aurora Glass |
+| 06 | 5 | standings choreography, MC columns, host polish |
+| 07 | 5 | pivot round: brand axis, Unbounded, continuity, audio escalation |
+
+In round 07 every row scored 6–7 except Content, which stayed at 5. Content can't move under the paste-only rule, so the climb stopped by its rule: the minimum stayed flat through the pivot round.
+
+The rows that can still move need your decisions (below), or the critic's remaining notes:
+- the winner reveal is weighted to the left of the screen;
+- the last question's escalation isn't audible yet;
+- the whole mix sits around -27 LUFS, quiet for a TV.
+
+**Latest video:** `critic/rounds/final/session.mp4` (final build; all 10 automatic checks pass). Round videos are in `critic/rounds/NN/`.
+
+## Decisions waiting on you
+1. **Questions:** stay paste-only (Content stays at 5), add an AI question drafter (needs a working Gemini key; the local one is rejected), or allow built-in packs.
+2. **Rematch with the same players:** needs the game's final "finished" state to accept a rematch. That changes an existing test that pins it as final.
+3. **Locking the host's Next during the TV reveal:** e2e flow 7 wants Next straight away, while a story written tonight (`HostHoldsTheRevealUntilTheTvLands`) wants it held. One of the two tests has to change; the story currently fails.
+4. **"GOOD GUESS!" copy:** it's pinned by flow 7 and a story, so a scoring guess 20–50% off still says it. The honest bands are in `src/components/phone/honesty.ts`.
+5. **SRE:** push `sre-agent-setup` (`~/src/trivia-jam-sre`) and open its PR? Then I'd run `gh workflow run sre-agent -f dry=true`.
+6. **qa-agent:** the QA copy's Cloudflare resources need your yes. arch-agent is now a local routine; nothing to install here.
+7. **Kid speaker button:** resolved. The read-aloud button was removed in the adult re-scope.
+8. **Deploy:** when ready, deploy triviajam.tv and the OGS API/launcher (separately), then cast to the Chromecast and run `/verify-on-device`.
+
+## Known issues
+- Two Storybook failures: `Views/PlayerView/ActiveQuestion` (an older timer story) and `HostHoldsTheRevealUntilTheTvLands` (decision 3).
+- Two class names, `font-display` and `text-blue`, stay in `PlayerResult` only because a story asserts them; they render as Inter.
+- `tv-model.ts`'s `inkForIndex` is unused, but a test still asserts it.
+- `standings-beat.ts` and `standings-frame.ts` are unused, but tests still import them.
+
+---
 # STATUS (resumable)
 
 Branch `feat/aaa-hillclimb-ogs` (local only: no push, no deploy without Jon).
