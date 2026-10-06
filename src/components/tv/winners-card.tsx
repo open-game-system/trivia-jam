@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { InkToken, RisoType } from "./print";
 import { RollingNumber } from "./standings";
 import { Sunburst } from "./sunburst";
+import { winnerCardRects } from "./badge-place";
 import { layoutWinners } from "./winners-layout";
 
 export type WinnersKind = "exact" | "closest" | "right" | "nobody";
@@ -92,6 +93,7 @@ export const WinnersCard = ({
   const nameTop = layout.chipTop + layout.chip + 18;
   const totalTop = nameTop + layout.name * 1.05 + 14;
   const big = kind === "exact";
+  const badges = winnerCardRects(winners, layout, (big ? 70 : 110) + (big ? 200 : 150));
   return (
     <div className="absolute inset-0" style={{ zIndex: 30 }} data-testid="tv-highlight">
       {big ? (
@@ -145,9 +147,6 @@ export const WinnersCard = ({
         if (!w) return null;
         const from = w.from;
         const centreY = layout.chipTop + layout.chip / 2;
-        // Where the travelling "+N" lands: the middle of the total, under the name.
-        const travelX = -layout.chip * 0.22 - 85;
-        const travelY = totalTop - layout.chipTop + 20;
         return (
           <div key={spot.id}>
             <motion.div
@@ -174,24 +173,6 @@ export const WinnersCard = ({
             </motion.span>
             {scoring && w.points > 0 ? (
               <>
-                {/* The "+N" stamps onto the chip, then travels down INTO the total and is gone: no chip is left behind. */}
-                {live ? (
-                  <motion.span
-                    aria-hidden="true"
-                    className="absolute tv-display tabular"
-                    style={{ left: spot.x + layout.chip * 0.22, top: layout.chipTop - 20, fontSize: 84, lineHeight: 1, background: "var(--pink)", border: "6px solid var(--ink)", padding: "2px 16px", zIndex: 5 }}
-                    initial={{ scale: 0, rotate: -20, x: 0, y: 0 }}
-                    animate={{
-                      scale: [0, 1.25, 1, 1, 0.7, 0],
-                      rotate: [-20, -6, -6, -6, 0, 0],
-                      x: [0, 0, 0, 0, travelX, travelX],
-                      y: [0, 0, 0, 0, travelY, travelY + 10],
-                    }}
-                    transition={{ duration: 1.05, times: [0, 0.2, 0.3, 0.62, 0.92, 1], delay: i * 0.12 }}
-                  >
-                    +{w.points}
-                  </motion.span>
-                ) : null}
                 <motion.span
                   className="absolute flex items-center justify-center gap-5"
                   style={{ left: spot.x - 300, width: 600, top: totalTop, zIndex: 3 }}
@@ -204,9 +185,9 @@ export const WinnersCard = ({
                     style={{ fontSize: layout.total, lineHeight: 1, color: "var(--blue)" }}
                     initial={false}
                     animate={live ? { scale: [1, 1, 1.3, 1] } : { scale: 1 }}
-                    transition={{ duration: 0.45, times: [0, 0.6, 0.8, 1], delay: 0.85 + i * 0.12 }}
+                    transition={{ duration: 0.45, times: [0, 0.6, 0.8, 1], delay: 0.3 + i * 0.12 }}
                   >
-                    <ArrivingTotal from={w.prevScore} to={w.prevScore + w.points} afterMs={1000 + i * 120} live={live} />
+                    <ArrivingTotal from={w.prevScore} to={w.prevScore + w.points} afterMs={450 + i * 120} live={live} />
                   </motion.span>
                   <span className="slug" style={{ fontSize: 30, lineHeight: 1, writingMode: "vertical-rl", rotate: "180deg" }}>
                     total
@@ -217,6 +198,26 @@ export const WinnersCard = ({
           </div>
         );
       })}
+      {/* The "+N" badges ride their own layer, parked top-right of each token where they cover no name, total or token. */}
+      {scoring
+        ? badges.map((b, i) => {
+            const w = byId.get(b.id);
+            return w && w.points > 0 ? (
+              <motion.span
+                key={`badge-${b.id}`}
+                aria-hidden="true"
+                className="absolute tv-display tabular flex items-center justify-center"
+                style={{ left: b.badge.x, top: b.badge.y, width: b.badge.w, height: b.badge.h, fontSize: b.font, lineHeight: 1, background: "var(--pink)", border: "6px solid var(--ink)", zIndex: 6 }}
+                initial={live ? { scale: 0, rotate: -20 } : false}
+                animate={{ scale: [0, 1.25, 1], rotate: -6 }}
+                transition={{ duration: 0.3, delay: live ? i * 0.12 : 0 }}
+                data-testid={`tv-winner-badge-${b.id}`}
+              >
+                +{w.points}
+              </motion.span>
+            ) : null;
+          })
+        : null}
       {layout.more > 0 ? (
         <span className="absolute slug" style={{ left: (layout.spots.at(-1)?.x ?? 960) + layout.chip / 2 + 40, top: layout.chipTop + layout.chip / 2 - 20, fontSize: 44 }}>
           +{layout.more}

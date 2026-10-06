@@ -15,6 +15,8 @@ import { ChoiceTiles } from "./phone/ChoiceTiles";
 import { PlayerFinish } from "./phone/PlayerFinish";
 import { PlayerResult } from "./phone/PlayerResult";
 import { useResultArrival } from "./phone/useResultArrival";
+import { formatNumber } from "./phone/competitive";
+import { ordinal } from "./phone/outcome";
 import { LockedIn } from "./phone/LockedIn";
 import { NumberPad } from "./phone/NumberPad";
 import { PhoneShell } from "./phone/PhoneShell";
@@ -108,19 +110,25 @@ const WaitingDisplay = ({ player, seat }: { player: Player; seat: number }) => {
   const resultsCount = GameContext.useSelector(
     (state) => state.public.questionResults.length,
   );
+  const everyone = GameContext.useSelector((state) => state.public.players);
   const isFirst = resultsCount === 0;
+  const place = [...everyone].sort((a, b) => b.score - a.score).findIndex((p) => p.id === player.id) + 1;
   return (
     <WithHelp
       render={(help) => (
         <WaitCard
           title={
-            isFirst ? "Waiting for first question..." : "Waiting for next question..."
+            isFirst ? "First question coming up" : "Next question coming up"
           }
           seat={seat}
           name={player.name}
           footer={help}
         >
-          <p className="pwait-sub">Get ready, {player.name}!</p>
+          <p className="pwait-sub">
+            {isFirst || place < 1
+              ? "Everyone starts at zero."
+              : `You're ${ordinal(place)} with ${player.score} ${player.score === 1 ? "point" : "points"}.`}
+          </p>
         </WaitCard>
       )}
     />
@@ -167,7 +175,7 @@ const ActiveQuestionDisplay = ({
       />
       {hasAnswered && myAnswer ? (
         <LockedIn
-          value={myAnswer.value}
+          value={isMultipleChoice ? myAnswer.value : formatNumber(myAnswer.value)}
           letter={
             isMultipleChoice && myLetterIndex >= 0
               ? String.fromCharCode(65 + myLetterIndex)

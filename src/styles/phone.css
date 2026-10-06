@@ -674,20 +674,45 @@ textarea.pfield { padding: 14px 16px; font-size: 18px; line-height: 1.35; font-f
 }
 .pres-stamp {
   padding: 0.22em 0.5em 0.28em;
-  border: 8px solid var(--ink);
-  border-radius: 12px;
-  box-shadow: 6px 6px 0 var(--pink);
-  font-size: clamp(30px, 6.2dvh, 64px);
+  border: 6px solid var(--ink);
+  border-radius: 10px;
+  box-shadow: 4px 4px 0 var(--pink);
+  font-size: clamp(24px, 3.8dvh, 36px);
   line-height: 1;
   letter-spacing: 0.01em;
   text-align: center;
   text-wrap: balance;
   max-width: 100%;
 }
-.pres-place, .pres-coin { display: flex; justify-content: center; }
-.pres-answers, .pres-total { width: 100%; }
-.pres-coin .pstat { border-radius: 999px; aspect-ratio: 1; min-width: 0; padding: 0.25em; }
-.pres-total { border-top: 4px solid var(--ink); }
+.pres-answers, .pres-stats, .pres-fact { width: 100%; }
+.pres-fact { text-align: center; }
+.pres-fact-big {
+  font-size: clamp(40px, 7dvh, 64px);
+  line-height: 1;
+  letter-spacing: -0.03em;
+  text-shadow: 3px 3px 0 var(--pink);
+}
+.pres-quip { margin-top: 6px; font-size: 18px; font-weight: 700; line-height: 1.25; }
+.pres-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  padding: 10px 0;
+  border-top: 4px solid var(--ink);
+  border-bottom: 4px solid var(--ink);
+}
+.pres-stat { display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 0; }
+.pres-stat .pslug { font-size: 12px; text-align: center; }
+.pres-stat-fig {
+  font-family: "Bricolage Grotesque Variable", system-ui, sans-serif;
+  font-weight: 800;
+  font-size: clamp(30px, 5.2dvh, 44px);
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+.pres-stat-fig { white-space: nowrap; }
+.pres-stat-fig small { font-size: 0.45em; letter-spacing: 0; }
+.pres-beaten { width: 100%; font-size: 18px; font-weight: 800; text-align: center; }
 
 /* ---------- Waiting screens: the player's own token and name ---------- */
 .pwait {

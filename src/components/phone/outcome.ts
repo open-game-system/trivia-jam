@@ -34,10 +34,10 @@ export const resultHeadline = (
   return "GOOD GUESS!";
 };
 
-/** The printed stamp on the kid's game-over screen: a celebration for every place. */
+/** The printed stamp on the game-over screen. */
 export const finishStamp = (place: number): string => {
-  if (place === 1) return "CHAMPION!";
-  if (place === 2) return "SILVER!";
-  if (place === 3) return "BRONZE!";
-  return "GREAT GAME!";
+  if (place === 1) return "CHAMPION";
+  if (place === 2) return "RUNNER-UP";
+  if (place === 3) return "PODIUM";
+  return "REMATCH?";
 };

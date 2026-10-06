@@ -1,9 +1,9 @@
 import { motion, useReducedMotion } from "framer-motion";
 import type { Question, QuestionResult } from "~/game.types";
-import type { ReactNode } from "react";
 import { PlayerToken } from "./ink";
 import { LookAtTv } from "./LookAtTv";
 import { useSpoilerGate } from "./useSpoilerGate";
+import { beatenBy, formatNumber, offBy, placeOnQuestion, quip, standingFact } from "./competitive";
 import { describeOutcome, ordinal, resultHeadline, type Outcome } from "./outcome";
 import { useCountUp } from "./useCountUp";
 
@@ -16,37 +16,7 @@ const TONE: Record<Outcome, string> = {
   none: "bg-paper-2 text-ink",
 };
 
-/** A big printed number on a coloured block: points, place, total. */
-const Stat = ({
-  tone,
-  children,
-  label,
-  testId,
-  tilt,
-}: {
-  tone: string;
-  children: ReactNode;
-  label: string;
-  testId?: string;
-  tilt: number;
-}) => (
-  <motion.div
-    data-testid={testId}
-    aria-label={label}
-    className={`pstat ${tone}`}
-    initial={{ scale: 1.6, rotate: tilt * 3, opacity: 0 }}
-    animate={{ scale: [1.6, 0.95, 1], rotate: tilt, opacity: 1 }}
-    transition={{
-      scale: { duration: 0.4, times: [0, 0.7, 1], ease: "easeOut" },
-      rotate: { duration: 0.4, ease: "easeOut" },
-      opacity: { duration: 0.1 },
-    }}
-  >
-    {children}
-  </motion.div>
-);
-
-/** The player's own result: big, short, and happy about it. */
+/** The player's own result: the competitive facts first, then the numbers. */
 const MyOutcome = ({
   question,
   result,
@@ -67,11 +37,16 @@ const MyOutcome = ({
   const points = useCountUp(earned);
   const total = useCountUp(me.score);
   const numeric = question.questionType === "numeric";
+  const here = placeOnQuestion(result.scores, me.id);
+  const beaten = beatenBy(result.scores, me.id);
+  const fact = standingFact(outcome, offBy(question, myAnswer?.value), question.questionType);
+  const line = quip({ outcome, points: earned, place: here?.place ?? null, beatenBy: beaten });
+  const show = (value: string | number) => (numeric ? formatNumber(value) : String(value));
 
   return (
     <motion.section
       data-testid="my-result"
-      className="sheet pres p-4 sm:p-5"
+      className="sheet pres p-4"
       initial={{ y: 24, opacity: 0, rotate: -1.5 }}
       animate={{ y: 0, opacity: 1, rotate: 0 }}
       transition={{ type: "spring", stiffness: 380, damping: 22 }}
@@ -85,10 +60,41 @@ const MyOutcome = ({
         {headline}
       </motion.div>
 
-      <div className="pres-coin">
-        <Stat tone="bg-pink text-ink" label={`${earned} points`} tilt={-4} testId="my-points">
-          +{points}
-        </Stat>
+      <div className="pres-fact">
+        {fact && (
+          <div className="pres-fact-big font-display font-extrabold" data-testid="my-off-by">
+            {fact}
+          </div>
+        )}
+        <p className="pres-quip">{line}</p>
+      </div>
+
+      <div className="pres-stats">
+        <div className="pres-stat" data-testid="my-question-place">
+          <span className="pslug">This question</span>
+          <span className="pres-stat-fig tabular">
+            {here ? ordinal(here.place) : "-"}
+            {here && <small> of {here.of}</small>}
+          </span>
+        </div>
+        <div className="pres-stat">
+          <span className="pslug">Points</span>
+          <span className="pres-stat-fig tabular" data-testid="my-points" aria-label={`${earned} points`}>
+            +{points}
+          </span>
+        </div>
+        <div className="pres-stat">
+          <span className="pslug" data-testid="my-overall" aria-label={`Place ${overallRank}`}>
+            Overall {ordinal(overallRank)}
+          </span>
+          <span
+            className="pres-stat-fig tabular"
+            data-testid="my-total"
+            aria-label={`${me.score} points in total`}
+          >
+            {total}
+          </span>
+        </div>
       </div>
 
       <div className="pres-answers grid grid-cols-2 gap-3 text-center">
@@ -96,40 +102,29 @@ const MyOutcome = ({
           <div className="pslug">You</div>
           <div
             className="tabular font-display font-extrabold leading-none misreg misreg-sm"
-            style={{ fontSize: numeric ? "clamp(40px, 9dvh, 84px)" : "clamp(24px, 4.4dvh, 40px)" }}
+            style={{ fontSize: numeric ? "clamp(32px, 6dvh, 56px)" : "clamp(22px, 3.4dvh, 32px)" }}
             data-testid="my-answer"
           >
-            {myAnswer ? myAnswer.value : "-"}
+            {myAnswer ? show(myAnswer.value) : "-"}
           </div>
         </div>
         <div>
           <div className="pslug">Answer</div>
           <div
             className="tabular font-display font-extrabold leading-none text-blue"
-            style={{ fontSize: numeric ? "clamp(40px, 9dvh, 84px)" : "clamp(24px, 4.4dvh, 40px)" }}
+            style={{ fontSize: numeric ? "clamp(32px, 6dvh, 56px)" : "clamp(22px, 3.4dvh, 32px)" }}
             data-testid="correct-answer"
           >
-            {question.correctAnswer}
+            {show(question.correctAnswer)}
           </div>
         </div>
       </div>
 
-      <div
-        className="pres-total flex items-baseline justify-center gap-3 border-t-4 border-ink pt-3"
-        aria-label={`${me.score} points in total`}
-      >
-        <span className="pslug">Total</span>
-        <span
-          className="tabular font-display font-extrabold leading-none misreg"
-          style={{ fontSize: "clamp(48px, 10dvh, 96px)" }}
-          data-testid="my-total"
-        >
-          {total}
-        </span>
-        <span className="pslug pres-overall" data-testid="my-overall" aria-label={`Place ${overallRank}`}>
-          {ordinal(overallRank)} overall
-        </span>
-      </div>
+      {beaten.length > 0 && (
+        <p className="pres-beaten" data-testid="beaten-by">
+          <span className="pslug">Beat you</span> {beaten.join(", ")}
+        </p>
+      )}
     </motion.section>
   );
 };
@@ -142,19 +137,21 @@ const sortByRank = (scores: QuestionResult["scores"]) =>
 /** Short list below: everyone's guess, one printed row each. */
 const Everyone = ({
   result,
+  question,
   players,
   meId,
 }: {
   result: QuestionResult;
+  question: Question;
   players: Person[];
   meId: string;
 }) => (
   <section aria-label="Everyone's answers" >
     <h2 className="pslug mb-2" style={{ fontSize: 16 }}>
-      Everyone
+      Everyone, this question
     </h2>
     <div className="flex flex-col gap-2">
-      {sortByRank(result.scores).map((score) => {
+      {sortByRank(result.scores).map((score, index) => {
         const answer = result.answers.find((a) => a.playerId === score.playerId);
         if (!answer) return null;
         const seat = Math.max(0, players.findIndex((p) => p.id === answer.playerId));
@@ -164,13 +161,17 @@ const Everyone = ({
             data-testid={`player-result-${answer.playerId}`}
             className={`prow ${answer.playerId === meId ? "prow-me" : ""}`}
           >
+            <span className="prank" aria-hidden="true">
+              {index + 1}
+            </span>
             <PlayerToken name={answer.playerName} seat={seat} />
             <div className="min-w-0 flex-1">
               <div className="truncate text-xl font-extrabold leading-tight">
                 {answer.playerName}
               </div>
               <div className="pslug truncate">
-                {answer.value} - {score.timeTaken.toFixed(1)}s
+                {question.questionType === "numeric" ? formatNumber(answer.value) : answer.value} -{" "}
+                {score.timeTaken.toFixed(1)}s
               </div>
             </div>
             {score.points > 0 ? (
@@ -186,6 +187,9 @@ const Everyone = ({
     </div>
   </section>
 );
+
+const heldValue = (question: Question, value: string | number | undefined) =>
+  value !== undefined && question.questionType === "numeric" ? formatNumber(value) : value;
 
 export const PlayerResult = ({
   question,
@@ -207,7 +211,7 @@ export const PlayerResult = ({
     return (
       <LookAtTv
         questionText={question.text}
-        myValue={result.answers.find((a) => a.playerId === me.id)?.value}
+        myValue={heldValue(question, result.answers.find((a) => a.playerId === me.id)?.value)}
       />
     );
   }
@@ -218,7 +222,7 @@ export const PlayerResult = ({
     <div className="px-4 pb-8 pt-2 mx-auto w-full max-w-5xl">
       <h1
         className="mb-3 text-center font-display font-extrabold text-blue"
-        style={{ fontSize: "clamp(24px, 4.6dvh, 48px)", lineHeight: 1.05, letterSpacing: "-0.02em" }}
+        style={{ fontSize: "clamp(20px, 3.2dvh, 28px)", lineHeight: 1.1, letterSpacing: "-0.02em" }}
       >
         {question.text}
       </h1>
@@ -229,7 +233,7 @@ export const PlayerResult = ({
           me={me}
           overallRank={overallRank}
         />
-        <Everyone result={result} players={players} meId={me.id} />
+        <Everyone result={result} question={question} players={players} meId={me.id} />
       </div>
     </div>
   );

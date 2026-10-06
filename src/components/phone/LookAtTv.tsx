@@ -27,7 +27,7 @@ export const LookAtTv = ({
     >
       <span
         className="font-display font-extrabold leading-none misreg"
-        style={{ fontSize: "clamp(40px, 11dvh, 96px)", letterSpacing: "-0.02em" }}
+        style={{ fontSize: "clamp(34px, 7dvh, 64px)", letterSpacing: "-0.02em" }}
       >
         LOOK AT THE TV
       </span>
@@ -38,7 +38,7 @@ export const LookAtTv = ({
         <span className="pslug">You locked in</span>
         <span
           className="tabular font-display font-extrabold leading-none misreg"
-          style={{ fontSize: "clamp(72px, 24dvh, 220px)" }}
+          style={{ fontSize: "clamp(48px, 12dvh, 96px)" }}
         >
           {myValue}
         </span>

@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import type { ReactNode } from "react";
+import { finishMargin } from "./competitive";
 import { FinalScores, Winner, byScore } from "./FinalScores";
 import { finishStamp, ordinal } from "./outcome";
 import { PhoneShell } from "./PhoneShell";
@@ -19,6 +20,7 @@ export const PlayerFinish = ({
   const ranked = byScore(players);
   const place = Math.max(1, ranked.findIndex((p) => p.id === me.id) + 1);
   const winner = ranked[0];
+  const margin = finishMargin(ranked, me.id);
 
   return (
     <PhoneShell className="pb-8">
@@ -43,7 +45,7 @@ export const PlayerFinish = ({
             >
               <span
                 className="tabular font-display font-extrabold leading-none misreg"
-                style={{ fontSize: "clamp(100px, min(30dvh, 34vw), 260px)", letterSpacing: "-0.04em" }}
+                style={{ fontSize: "clamp(88px, min(22dvh, 34vw), 200px)", letterSpacing: "-0.04em" }}
                 data-testid="my-place"
                 aria-label={`You finished ${ordinal(place)}`}
               >
@@ -52,7 +54,7 @@ export const PlayerFinish = ({
             </motion.div>
             <motion.div
               className="pstat bg-pink text-ink"
-              style={{ fontSize: "clamp(30px, 6.4dvh, 56px)", minWidth: 0, padding: "0.1em 0.45em" }}
+              style={{ fontSize: "clamp(24px, 4.4dvh, 36px)", minWidth: 0, padding: "0.1em 0.45em", whiteSpace: "nowrap" }}
               initial={{ scale: 2, rotate: 12, opacity: 0 }}
               animate={{ scale: [2, 0.92, 1], rotate: 3, opacity: 1 }}
               transition={{
@@ -78,6 +80,11 @@ export const PlayerFinish = ({
               </span>
               <span className="font-display text-2xl font-extrabold uppercase">points</span>
             </div>
+            {margin && (
+              <p className="text-xl font-extrabold" data-testid="finish-margin">
+                {margin}
+              </p>
+            )}
             {winner && <Winner winner={winner} large />}
             {action}
           </div>
