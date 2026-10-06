@@ -2,11 +2,12 @@ import { motion, useReducedMotion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import type { Question, QuestionResult } from "~/game.types";
 import { type Award, computeAwards } from "./awards";
-import { PODIUM_LAYOUT, podiumHeights } from "./finale-layout";
+import { awardsColumn, FINALE_FINAL, landsAt, PODIUM_LAYOUT, podiumHeights, steppedPodium } from "./finale-layout";
 import { FINALE_AT as AT } from "./finale-timeline";
 import { FitName } from "./fit-name";
-import { AuroraGlow, Bloom, EASE_OUT, EASE_POP, GlassToken, Label } from "./glass";
+import { AuroraGlow, Bloom, EASE_OUT, GlassToken, Label } from "./glass";
 import { RollingNumber } from "./standings";
+import { popIn } from "./motion-presets";
 import { joinNames } from "./tv-model";
 
 type FinalPlayer = { id: string; name: string; score: number };
@@ -65,10 +66,10 @@ const GlowConfetti = ({ count, start }: { count: number; start: number }) => {
 const { block: BLOCK, gap: GAP, width: PODIUM_WIDTH, left: PODIUM_LEFT, floor: FLOOR } = PODIUM_LAYOUT;
 /** The headline is centred on the frame, over the podium. */
 const HEADLINE_BOX = PODIUM_WIDTH - 20;
-/** When the awards come in, the podium steps back (scaled from this point) to make room for their strip. */
-const STEP_BACK = { scale: 0.74, originY: 300 } as const;
+/** When the awards come in, the podium steps back and slides left; the awards stack in the right third. */
+const STEP_BACK = FINALE_FINAL;
 const steppedY = (y: number) => STEP_BACK.originY + (y - STEP_BACK.originY) * STEP_BACK.scale;
-const AWARDS_TOP = 872;
+const STEPPED = steppedPodium();
 
 /** The share of the takeover spent at full strength before it fades away. */
 const TAKEOVER_HOLD = 0.86;
@@ -177,7 +178,8 @@ const PodiumStep = ({
               style={{ letterSpacing: "-0.03em", color: "var(--text)" }}
             />
             <span className={`relative tv-display ${first ? "glow-text" : ""}`} style={{ fontSize: first ? 96 : 68, lineHeight: 1, color: first ? undefined : "var(--glow)" }} aria-hidden="true">
-              {first ? <CountUp to={player.score} atSeconds={0.2} live /> : <CountUp to={player.score} atSeconds={AT.count * speed} live />}
+              {/* 1st counts as they are revealed; 2nd and 3rd count the moment their block settles. */}
+              {first ? <CountUp to={player.score} atSeconds={0.2} live /> : <CountUp to={player.score} atSeconds={landsAt(step.at, false, speed)} live />}
             </span>
           </motion.span>
         ) : (
@@ -197,10 +199,10 @@ const PodiumStep = ({
 /** One award at a time along the bottom strip: the glass card rises in, then its pill pops on. */
 const AwardCard = ({ award, index, at, box }: { award: Award; index: number; at: number; box: number }) => (
   <motion.div
-    className="relative flex flex-col justify-center flex-1 min-w-0 tv-glass"
-    style={{ height: 176, padding: "16px 28px", borderRadius: 28 }}
-    initial={{ y: 30, opacity: 0 }}
-    animate={{ y: 0, opacity: 1 }}
+    className="relative flex flex-col justify-center min-w-0 tv-glass"
+    style={{ height: FINALE_FINAL.cardHeight, padding: "16px 28px", borderRadius: 28 }}
+    initial={{ x: 60, opacity: 0 }}
+    animate={{ x: 0, opacity: 1 }}
     transition={{ delay: at, duration: 0.45, ease: EASE_OUT }}
     data-testid={`tv-award-${award.id}`}
   >
@@ -211,9 +213,7 @@ const AwardCard = ({ award, index, at, box }: { award: Award; index: number; at:
       <motion.span
         className={`tv-pill ${index % 2 === 0 ? "tv-pill--lav" : "tv-pill--close"} flex-none`}
         style={{ fontSize: 32, padding: "6px 16px" }}
-        initial={{ scale: 0.3, opacity: 0 }}
-        animate={{ scale: [0.3, 1.12, 1], opacity: 1 }}
-        transition={{ delay: at + 0.55, duration: 0.42, times: [0, 0.6, 1], ease: EASE_POP }}
+        {...popIn({ delay: at + 0.55 })}
       >
         {award.detail}
       </motion.span>
@@ -281,13 +281,19 @@ export const TvFinale = ({
   const stepBack = hasAwards && beat !== "podium";
   const winnerLine = winner ? `${winner.name} Wins!` : "Game Over!";
   const takeoverSize = winner ? (winner.name.length <= 5 ? 440 : winner.name.length <= 9 ? 290 : 220) : 200;
-  const awardBox = (1728 - 2 * 30) / Math.max(1, awards.length) - 64;
+  const awardBox = FINALE_FINAL.awardsWidth - 56;
+  const column = awardsColumn(awards.length);
   return (
     <motion.div key="finale" className="absolute inset-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
       <Bloom x={960} y={700} r={820} color="rgba(139, 92, 246, 0.22)" live />
-      <div className="absolute flex items-center justify-between" style={{ left: 96, right: 96, top: 48, zIndex: 50 }} data-testid="game-over-title">
-        <span className="tv-glass-pill inline-flex items-center" style={{ padding: "12px 26px" }}>
-          <Label className="!text-[color:var(--text-2)]">Game over</Label>
+      <div className="absolute flex items-center justify-between" style={{ left: 96, right: 96, top: 56, zIndex: 50 }} data-testid="game-over-title">
+        <span className="flex items-center gap-6">
+          <span className="tv-glass-pill inline-flex items-center" style={{ padding: "12px 26px" }}>
+            <Label className="!text-[color:var(--text-2)]">Game over</Label>
+          </span>
+          <Label className="whitespace-nowrap lav-text" testId="final-scores-heading">
+            Final scores
+          </Label>
         </span>
         <motion.span
           className="tv-display lav-text"
@@ -322,8 +328,8 @@ export const TvFinale = ({
         className="absolute inset-0"
         style={{ transformOrigin: `960px ${STEP_BACK.originY}px` }}
         initial={false}
-        animate={{ scale: stepBack ? STEP_BACK.scale : 1 }}
-        transition={{ type: "spring", stiffness: 200, damping: 26 }}
+        animate={{ transform: stepBack ? `translateX(${STEPPED.dx}px) scale(${STEP_BACK.scale})` : "translateX(0px) scale(1)" }}
+        transition={{ duration: 0.7, ease: EASE_OUT }}
       >
         {PODIUM.map((step) => {
           const player = ranked[step.place - 1];
@@ -331,33 +337,35 @@ export const TvFinale = ({
             <PodiumStep key={step.place} step={step} player={player} inkIndex={inkIndex.get(player.id) ?? 0} height={heights[step.place - 1] ?? PODIUM_LAYOUT.baseHeight} speed={speed} />
           ) : null;
         })}
-        <div className="absolute tv-axis" style={{ left: PODIUM_LEFT - 120, width: PODIUM_WIDTH + 240, top: FLOOR, height: 6, zIndex: 20 }} />
+        <div className="absolute tv-axis" style={{ left: PODIUM_LEFT - 60, width: PODIUM_WIDTH + 120, top: FLOOR, height: 6, zIndex: 20 }} />
       </motion.div>
 
-      {/* The rest of the table sits under the floor at full size, and follows it when the podium steps back. */}
-      <motion.div
-        className="absolute flex items-center gap-8"
-        style={{ left: 96, right: 96, top: FLOOR + 30 }}
-        initial={false}
-        animate={{ y: stepBack ? steppedY(FLOOR) - FLOOR - 8 : 0 }}
-        transition={{ type: "spring", stiffness: 200, damping: 26 }}
-      >
-        <Label className="whitespace-nowrap" testId="final-scores-heading">
-          Final scores
-        </Label>
-        {rest.slice(0, 4).map((p, i) => (
-          <span key={p.id} className="flex items-center gap-3" data-testid={`player-score-${p.id}`}>
-            <span className="tv-display text-[32px]" style={{ color: "var(--text-3)" }}>{i + 4}</span>
-            <GlassToken name={p.name} inkIndex={inkIndex.get(p.id) ?? 0} size={56} />
-            <FitName text={p.name} max={40} floor={36} box={240} className="tv-name" />
-            <span className="tv-display text-[40px]" style={{ color: "var(--glow)" }}>{p.score}</span>
-          </span>
-        ))}
-        {rest.length > 4 ? <Label size={30} className="whitespace-nowrap">+{rest.length - 4} more</Label> : null}
-      </motion.div>
+      {/* The rest of the table sits under the floor, and follows the podium when it steps back. */}
+      {rest.length > 0 ? (
+        <motion.div
+          className="absolute flex flex-wrap items-center gap-x-10 gap-y-3"
+          style={hasAwards ? { left: 960 - (STEPPED.right - STEPPED.left) / 2, width: STEPPED.right - STEPPED.left, top: FLOOR + 30 } : { left: 96, right: 96, top: FLOOR + 30 }}
+          initial={false}
+          animate={{ transform: stepBack ? `translate(${STEPPED.dx}px, ${steppedY(FLOOR) - FLOOR - 6}px)` : "translate(0px, 0px)" }}
+          transition={{ duration: 0.7, ease: EASE_OUT }}
+        >
+          {rest.slice(0, 4).map((p, i) => (
+            <span key={p.id} className="flex items-center gap-3" data-testid={`player-score-${p.id}`}>
+              <span className="tv-display text-[32px]" style={{ color: "var(--text-3)" }}>{i + 4}</span>
+              <GlassToken name={p.name} inkIndex={inkIndex.get(p.id) ?? 0} size={56} />
+              <FitName text={p.name} max={40} floor={36} box={240} className="tv-name" />
+              <span className="tv-display text-[40px]" style={{ color: "var(--glow)" }}>{p.score}</span>
+            </span>
+          ))}
+          {rest.length > 4 ? <Label size={30} className="whitespace-nowrap">+{rest.length - 4} more</Label> : null}
+        </motion.div>
+      ) : null}
 
       {hasAwards && beat !== "podium" ? (
-        <div className="absolute flex items-stretch" style={{ left: 96, right: 96, top: AWARDS_TOP, gap: 30, zIndex: 30 }} data-testid="tv-awards">
+        <div className="absolute flex flex-col" style={{ left: column.left, width: column.right - column.left, top: column.top, gap: FINALE_FINAL.cardGap, zIndex: 30 }} data-testid="tv-awards">
+          <motion.span initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.15 * speed, duration: 0.4, ease: EASE_OUT }} style={{ height: FINALE_FINAL.heading - FINALE_FINAL.cardGap }} className="flex items-end">
+            <Label className="lav-text">Awards</Label>
+          </motion.span>
           {awards.map((a, i) => (
             <AwardCard key={a.id} award={a} index={i} at={(0.35 + i * AT.awardGap) * speed} box={awardBox} />
           ))}
