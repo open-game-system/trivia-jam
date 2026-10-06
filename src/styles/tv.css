@@ -1,3 +1,4 @@
+@import "@fontsource-variable/unbounded/index.css";
 /* TV (spectate page) styles: Aurora Glass (docs/art-style.md). The shared kit lives in src/styles.css. */
 
 /* The stage: a fixed 1920x1080 frame scaled to whatever screen it is cast to. */
@@ -50,6 +51,16 @@
   font-weight: 800;
   letter-spacing: -0.03em;
   line-height: 0.92;
+  font-variant-numeric: tabular-nums;
+}
+/*
+ * The hero face: Unbounded for the big numerals and headlines (the answer, the timer, podium totals,
+ * "Standings", the wordmark). Wide and rounded, it reads from the couch; Inter stays for all UI.
+ */
+.tv-display.tv-hero,
+.tv-hero {
+  font-family: "Unbounded Variable", "Inter Variable", "Inter", system-ui, sans-serif;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 .tv-name {

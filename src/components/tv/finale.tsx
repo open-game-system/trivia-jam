@@ -177,7 +177,7 @@ const PodiumStep = ({
               className="tv-display text-center mt-3"
               style={{ letterSpacing: "-0.03em", color: "var(--text)" }}
             />
-            <span className={`relative tv-display ${first ? "glow-text" : ""}`} style={{ fontSize: first ? 96 : 68, lineHeight: 1, color: first ? undefined : "var(--glow)" }} aria-hidden="true">
+            <span className={`relative tv-display tv-hero ${first ? "glow-text" : ""}`} style={{ fontSize: first ? 96 : 68, lineHeight: 1, color: first ? undefined : "var(--glow)" }} aria-hidden="true">
               {/* 1st counts as they are revealed; 2nd and 3rd count the moment their block settles. */}
               {first ? <CountUp to={player.score} atSeconds={0.2} live /> : <CountUp to={player.score} atSeconds={landsAt(step.at, false, speed)} live />}
             </span>
@@ -235,7 +235,7 @@ const Opener = ({ speed }: { speed: number }) => (
     <AuroraGlow />
     <Bloom x={960} y={500} r={700} color="rgba(139, 92, 246, 0.3)" live />
     <motion.span
-      className="tv-display glow-text relative"
+      className="tv-display tv-hero glow-text relative"
       style={{ fontSize: 210, lineHeight: 1, letterSpacing: "-0.045em", paddingBottom: 12 }}
       initial={{ scale: 1.3, opacity: 0 }}
       animate={{ scale: 1, opacity: 1 }}
@@ -319,7 +319,7 @@ export const TvFinale = ({
           }}
           data-testid="winner-announcement"
         >
-          <FitName text={winnerLine} max={156} floor={84} box={HEADLINE_BOX} lineHeight={1.08} className="tv-display glow-text" style={{ letterSpacing: "-0.04em", paddingBottom: "0.06em" }} />
+          <FitName text={winnerLine} max={156} floor={84} box={HEADLINE_BOX} lineHeight={1.08} className="tv-display tv-hero glow-text" style={{ letterSpacing: "-0.04em", paddingBottom: "0.06em" }} />
           <span className="tv-sr">with {winner.score} points</span>
         </motion.div>
       ) : null}

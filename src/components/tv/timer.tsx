@@ -54,7 +54,7 @@ export const GlassTimer = ({ remaining, total, size = 260 }: { remaining: number
           initial={{ scale: 1.18, opacity: 0.6 }}
           animate={{ scale: 1, opacity: 1 }}
           transition={{ duration: 0.3, ease: [0.2, 0.8, 0.2, 1] }}
-          className="tv-display"
+          className="tv-display tv-hero"
           style={{ fontSize: 118, color: "var(--text)", lineHeight: 1 }}
           data-testid="question-timer"
         >

@@ -19,7 +19,7 @@ export const TvAnticipation = ({
     <Bloom x={960} y={520} r={640} color="rgba(139, 92, 246, 0.34)" live />
     <div className="absolute flex flex-col items-center" style={{ left: 0, right: 0, top: 96 }}>
       <Label className="mb-4">{total > 0 ? `${nextNumber} of ${total} · Phones ready` : "Phones ready"}</Label>
-      <h1 data-testid="waiting-for-question" className="tv-display flex flex-col items-center" style={{ lineHeight: 0.84 }}>
+      <h1 data-testid="waiting-for-question" className="tv-display tv-hero flex flex-col items-center" style={{ lineHeight: 0.84 }}>
         <motion.span
           className="lav-text"
           initial={{ y: 24, opacity: 0 }}

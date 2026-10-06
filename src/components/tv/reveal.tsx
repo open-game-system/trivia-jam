@@ -98,7 +98,7 @@ const AnswerNumeral = ({ value, x, live, hero }: { value: string; x: number; liv
     >
       <motion.div>
         <motion.div
-          className="tv-display"
+          className="tv-display tv-hero"
           style={{ fontSize: ANSWER_PX, lineHeight: 0.8, letterSpacing: "-0.045em", transformOrigin: "50% 0" }}
           initial={live ? { scale: 1.4, opacity: 0 } : false}
           animate={{ scale: 1, opacity: 1 }}
@@ -135,7 +135,7 @@ const ChoiceAnswerLine = ({ letter, text, live, take }: { letter: string; text: 
         animate={{ scale: 1, opacity: 1 }}
         transition={{ duration: 0.5, ease: EASE_OUT }}
       >
-        <FitName text={full} max={size} floor={72} box={box} lineHeight={1.02} className="tv-display text-center glow-text" style={{ letterSpacing: "-0.035em", paddingBottom: "0.06em" }}>
+        <FitName text={full} max={size} floor={72} box={box} lineHeight={1.02} className="tv-display tv-hero text-center glow-text" style={{ letterSpacing: "-0.035em", paddingBottom: "0.06em" }}>
           {letter}
           <span style={{ margin: "0 0.28em" }}>{"\u00b7"}</span>
           {text}

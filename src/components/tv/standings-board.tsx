@@ -135,7 +135,7 @@ const BoardRow = ({
         {printed.score === null ? null : (
         <motion.span
           key={printed.score}
-          className="tv-display text-right"
+          className="tv-display tv-hero text-right"
           style={{ fontSize: height * 0.56, lineHeight: 1, color: leader ? "var(--close)" : "var(--text)" }}
           initial={live && counting ? { y: -10, scale: 1.12 } : false}
           animate={{ y: 0, scale: 1 }}
@@ -203,7 +203,7 @@ export const TvStandingsBoard = ({
             After question {afterNumber}
             {total > 0 ? ` of ${total}` : ""}
           </Label>
-          <h2 className="tv-display lav-text" style={{ fontSize: 132, letterSpacing: "-0.04em", lineHeight: 1, paddingBottom: 10 }}>
+          <h2 className="tv-display tv-hero lav-text" style={{ fontSize: 132, letterSpacing: "-0.04em", lineHeight: 1, paddingBottom: 10 }}>
             Standings
           </h2>
         </motion.div>
@@ -287,7 +287,7 @@ const UpNextCard = ({ top, bottom, next, total, isLast, live }: { top: number; b
       <span className="tv-label" style={{ fontSize: 40, color: "var(--glow)", lineHeight: 1 }}>
         {isLast ? "That was the last question" : "Up next"}
       </span>
-      <span className="tv-display flex-1 glow-text" style={{ fontSize: Math.min(140, height * 0.62), lineHeight: 1.05, letterSpacing: "-0.04em", paddingBottom: 8 }}>
+      <span className="tv-display tv-hero flex-1 glow-text" style={{ fontSize: Math.min(140, height * 0.62), lineHeight: 1.05, letterSpacing: "-0.04em", paddingBottom: 8 }}>
         {isLast ? "Final scores" : `Question ${next}`}
       </span>
       {!isLast && total > 0 ? (

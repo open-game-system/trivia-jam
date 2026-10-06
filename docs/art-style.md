@@ -30,8 +30,13 @@ full strength, never competing with the focal point.
 
 ## Type
 
-- **Inter** (variable, self-hosted via `@fontsource-variable/inter`) for everything. Display 800-900 with
-  -0.02 to -0.04em tracking; UI 500-700. `font-variant-numeric: tabular-nums` for every number that counts.
+- **Unbounded** (variable, `@fontsource-variable/unbounded`, imported by `src/styles/tv.css`) is the TV's hero
+  face: the answer numeral, the timer, standings and podium totals, the "Question N" cards, "Standings", the
+  finale headline and the lobby wordmark (class `tv-hero`, weight 700). Wide and rounded, its digits are
+  tabular by default. Chosen over Inter on a side-by-side shoot (lobby, reveal, standings, finale) in round 07.
+- **Inter** (variable, self-hosted via `@fontsource-variable/inter`) for everything else: question text, names,
+  labels, stamps, UI. Display 800-900 with -0.02 to -0.04em tracking; UI 500-700.
+  `font-variant-numeric: tabular-nums` for every number that counts.
 - Question text uses the lavender gradient (`--lav-1` → `--lav-2`, `background-clip: text`).
 - The answer numeral: 800-900, white → `--glow` vertical gradient with a soft lavender drop-shadow glow.
 - Labels: Inter 600, uppercase, +0.12em tracking, `--text-3`.

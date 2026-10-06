@@ -13,10 +13,10 @@ type LobbyPlayer = { id: string; name: string };
 const BASELINE_LIFT = 10;
 
 const Wordmark = () => (
-  <h2 className="tv-display relative" aria-label="Trivia Jam" style={{ letterSpacing: "-0.045em" }}>
+  <h2 className="tv-display tv-hero relative" aria-label="Trivia Jam" style={{ letterSpacing: "-0.045em" }}>
     <motion.span
       className="block lav-text"
-      style={{ fontSize: 230, lineHeight: 0.92, paddingBottom: 8 }}
+      style={{ fontSize: 184, lineHeight: 0.98, paddingBottom: 8 }}
       initial={{ opacity: 0, y: 24 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: EASE_OUT }}
@@ -26,7 +26,7 @@ const Wordmark = () => (
     <span className="flex items-end">
       <motion.span
         className="block glow-text"
-        style={{ fontSize: 330, lineHeight: 0.88, marginLeft: 8, paddingBottom: 12 }}
+        style={{ fontSize: 262, lineHeight: 0.92, marginLeft: 4, paddingBottom: 12 }}
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.55, delay: 0.12, ease: EASE_OUT }}
@@ -35,7 +35,7 @@ const Wordmark = () => (
       </motion.span>
       {/* The signature: the line runs on from the wordmark's baseline and its pin seeks, then settles. */}
       <span className="block" style={{ marginLeft: 28, marginBottom: BASELINE_LIFT }}>
-        <BrandAxis width={400} pin={0.7} seek />
+        <BrandAxis width={330} pin={0.7} seek ticks={6} />
       </span>
     </span>
   </h2>
