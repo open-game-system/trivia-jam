@@ -24,6 +24,7 @@ import { QuestionHeader } from "./phone/QuestionHeader";
 import { PlayerToken, WaitingDots } from "./phone/ink";
 import { toAnswerNumber } from "./phone/keypad";
 import { draftFor, type Draft } from "./phone/draft";
+import { playerSeat } from "~/player-tint";
 
 type Player = {
   id: string;
@@ -273,7 +274,7 @@ const ActiveStateContent = ({
   };
 
   if (!currentQuestion && questionResults.length === 0) {
-    return <WaitingDisplay player={player} seat={Math.max(0, players.findIndex((p) => p.id === player.id))} />;
+    return <WaitingDisplay player={player} seat={playerSeat(players, player.id)} />;
   }
 
   return (
@@ -447,7 +448,7 @@ export const PlayerView = () => {
   return (
     <>
       {isLobby && (
-        <LobbyDisplay player={player} seat={Math.max(0, players.findIndex((p) => p.id === player.id))} />
+        <LobbyDisplay player={player} seat={playerSeat(players, player.id)} />
       )}
       {isActive && (
         <ActiveStateContent

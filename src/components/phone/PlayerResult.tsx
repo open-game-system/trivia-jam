@@ -7,6 +7,7 @@ import { beatenBy, formatNumber, offBy, placeOnQuestion, standingFact } from "./
 import { describeOutcome, ordinal, type Outcome } from "./outcome";
 import { honestHeadline, honestQuip, relativeError } from "./honesty";
 import { useCountUp } from "./useCountUp";
+import { playerSeat } from "~/player-tint";
 
 type Person = { id: string; name: string; score: number };
 
@@ -162,7 +163,7 @@ const Everyone = ({
       {sortByRank(result.scores).map((score, index) => {
         const answer = result.answers.find((a) => a.playerId === score.playerId);
         if (!answer) return null;
-        const seat = Math.max(0, players.findIndex((p) => p.id === answer.playerId));
+        const seat = playerSeat(players, answer.playerId);
         return (
           <div
             key={answer.playerId}

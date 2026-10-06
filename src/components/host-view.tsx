@@ -28,6 +28,7 @@ import { useResultArrival } from "./phone/useResultArrival";
 import { useRevealPhase } from "./phone/useRevealPhase";
 import { PhoneShell } from "./phone/PhoneShell";
 import { QuestionProgress } from "./question-progress";
+import { playerSeat } from "~/player-tint";
 
 type GameSettings = {
   maxPlayers: number;
@@ -274,7 +275,7 @@ const PreviousQuestionResults = ({
               answer={answer}
               score={lastQuestionResult.scores.find((s) => s.playerId === answer.playerId)}
               question={question}
-              seat={Math.max(0, players.findIndex((p) => p.id === answer.playerId))}
+              seat={playerSeat(players, answer.playerId)}
             />
           ))}
         </div>
@@ -859,7 +860,7 @@ const LiveQuestionPanel = ({
           <ul className="flex flex-wrap gap-2">
             {missing.map((player) => (
               <li key={player.id} className="hchip">
-                <PlayerToken name={player.name} seat={Math.max(0, players.findIndex((p) => p.id === player.id))} />
+                <PlayerToken name={player.name} seat={playerSeat(players, player.id)} />
                 <span className="h-detail">{player.name}</span>
               </li>
             ))}

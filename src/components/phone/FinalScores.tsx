@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { PlayerToken, RankDisc } from "./ink";
+import { playerSeat } from "~/player-tint";
 
 type Person = { id: string; name: string; score: number };
 
@@ -52,7 +53,7 @@ export const FinalScores = ({
           className={`prow ${player.id === highlightPlayerId ? "prow-me" : ""} ${index === 0 ? "prow-lead" : ""}`}
         >
           <RankDisc rank={index + 1} />
-          <PlayerToken name={player.name} seat={players.findIndex((p) => p.id === player.id)} />
+          <PlayerToken name={player.name} seat={playerSeat(players, player.id)} />
           <span className="min-w-0 flex-1 truncate text-xl font-bold">
             {player.name}
           </span>

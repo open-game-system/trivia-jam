@@ -1,4 +1,7 @@
-const TOKEN_INKS = ["blue", "pink", "teal", "yellow"] as const;
+import { playerTint } from "~/player-tint";
+
+/** The token's colour class: the player's hue by seat, the same one their chip wears on the TV. */
+export const tokenTintClass = (seat: number): string => `ptoken-${playerTint(seat)}`;
 
 /** One tint per player, by seat, then repeats. */
 export const PlayerToken = ({
@@ -11,7 +14,7 @@ export const PlayerToken = ({
   className?: string;
 }) => (
   <span
-    className={`ptoken ptoken-${TOKEN_INKS[seat % TOKEN_INKS.length]} ${className}`}
+    className={`ptoken ${tokenTintClass(seat)} ${className}`}
     aria-hidden="true"
   >
     {name.trim().charAt(0).toUpperCase() || "?"}

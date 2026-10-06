@@ -161,10 +161,11 @@ body:has(.phone-shell) {
   color: #fff;
   border: 1px solid var(--phone-glass-edge);
 }
-.ptoken-blue { background: linear-gradient(145deg, #4f46e5, #6366f1); }
+/* The player's hue by seat (src/player-tint.ts), the same as their chip on the TV. */
+.ptoken-indigo { background: linear-gradient(145deg, #4f46e5, #6366f1); }
+.ptoken-purple { background: linear-gradient(145deg, #7c3aed, #a855f7); }
 .ptoken-pink { background: linear-gradient(145deg, #be185d, #ec4899); }
-.ptoken-teal { background: linear-gradient(145deg, #7c3aed, #a855f7); }
-.ptoken-yellow { background: linear-gradient(145deg, #4338ca, #a855f7); }
+.ptoken-lavender { background: linear-gradient(145deg, #6d5dd3, #a78bfa); }
 
 /* A frosted glass row. */
 .prow {
