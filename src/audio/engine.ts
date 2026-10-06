@@ -10,7 +10,8 @@ const BED_URLS: Record<Bed, string> = {
   think: "/audio/music/think.m4a",
   finale: "/audio/music/finale.m4a",
 };
-const BED_LEVEL: Record<Bed, number> = { lobby: 0.55, think: 0.46, finale: 0.95 };
+// Beds sit well under the moments: thinking ~4 dB under the lobby, so the reveal hit lands ~8 LU over it.
+const BED_LEVEL: Record<Bed, number> = { lobby: 0.45, think: 0.28, finale: 0.95 };
 // The thinking bed steps key each question (whole-tone up, down, up a third…) so no two questions sound the same.
 const THINK_RATES = [1, 1.1225, 0.8909, 1.2599, 0.9439];
 const XFADE = 1.6; // seconds of overlap at each loop seam
