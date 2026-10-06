@@ -1,22 +1,17 @@
 import { motion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
-import { EASE_OUT, EASE_POP, GlassToken, Label } from "./glass";
+import { EASE_OUT, GlassToken, Label } from "./glass";
 import { FitName } from "./fit-name";
-import { type BeatRow, standingsBeat } from "./standings-beat";
-import { countTicks } from "./standings-frame";
+import { popIn } from "./motion-presets";
+import { BOARD, type BoardChips, type BoardRowFrame, boardFrame, boardTicks } from "./standings-choreo";
 import type { StandingRow } from "./tv-model";
 
 /**
- * The standings beat (~3.5 s, then a settled hold): the board fades in showing the PREVIOUS order and
- * totals (after question 1: everyone on 0 in join order, no rank numerals); each "+N" chip is stamped on its
- * row, then drops into the total as the totals roll (rows held still); then the rows reorder ONCE with a
- * slide and the true ranks land; then the up/down pills pop in. Every frame comes from `standingsBeat`.
+ * The standings beat: the board opens on the PREVIOUS order, totals and ranks; each "+N" chip pops beside
+ * its total, then flies into it as the totals roll (rows held still); then the rows reorder ONCE (a 450 ms
+ * slide) with the new ranks; then the move pills land, the leader pulses, and the settled board holds
+ * >= 2 s before "Up next". Every frame comes from `boardFrame` (standings-choreo.ts).
  */
-const CHIPS_AT = 500;
-const COUNT_AT = 1100;
-const COUNT_MS = 1200;
-const SETTLE_AT = 2700;
-const MOVES_AT = 3300;
 
 const SHEET = { left: 96, right: 1824, top: 236, bottom: 1040 };
 /** Up to this many rows, the lower band is the "Up next" card instead of empty space. */
@@ -35,9 +30,7 @@ const MoveStamp = ({ delta, size, live }: { delta: number; size: number; live: b
       style={{ padding: "8px 18px 8px 14px", fontSize: size * 0.72 }}
       aria-label={up ? `up ${delta}` : `down ${-delta}`}
       data-testid="standing-move"
-      initial={live ? { scale: 0.3, opacity: 0 } : false}
-      animate={{ scale: [0.3, 1.12, 1], opacity: 1 }}
-      transition={{ duration: 0.4, times: [0, 0.6, 1], ease: EASE_POP }}
+      {...(live ? popIn({ delay: 0 }) : { initial: false as const })}
     >
       <svg width={size * 0.5} height={size * 0.45} viewBox="0 0 40 36" aria-hidden="true">
         <polygon points={up ? "20,2 38,34 2,34" : "2,2 38,2 20,34"} fill="currentColor" />
@@ -49,11 +42,11 @@ const MoveStamp = ({ delta, size, live }: { delta: number; size: number; live: b
   );
 };
 
-/** The rank numeral in a round glass well; amber for the leader. It flips when the rank changes. */
-const RankStamp = ({ rank, size, leader, live }: { rank: number | null; size: number; leader: boolean; live: boolean }) => (
+/** The rank numeral in a round glass well; amber for the leader. It re-stamps when the rank changes. */
+const RankStamp = ({ rank, size, leader, live }: { rank: number; size: number; leader: boolean; live: boolean }) => (
   <span className="relative flex-none" style={{ width: size, height: size }} data-testid="standing-rank">
     <motion.span
-      key={rank ?? "level"}
+      key={rank}
       className="absolute inset-0 flex items-center justify-center tv-display"
       style={{
         borderRadius: 999,
@@ -64,11 +57,12 @@ const RankStamp = ({ rank, size, leader, live }: { rank: number | null; size: nu
         fontSize: size * 0.56,
         lineHeight: 1,
       }}
-      initial={live ? { rotateX: 90, scale: 1.2 } : false}
-      animate={{ rotateX: 0, scale: 1 }}
+      // The new rank lands with the reorder: a quick scale-down from bright (never an edge-on flip, which reads as a dash).
+      initial={live ? { transform: "scale(1.35)", opacity: 0 } : false}
+      animate={{ transform: "scale(1)", opacity: 1 }}
       transition={{ duration: 0.3, ease: EASE_OUT }}
     >
-      {rank ?? "\u2013"}
+      {rank}
     </motion.span>
   </span>
 );
@@ -79,18 +73,19 @@ const BoardRow = ({
   width,
   live,
   chips,
-  counting,
   movesShown,
+  leader,
 }: {
-  row: BeatRow;
+  row: BoardRowFrame;
   height: number;
   width: number;
   live: boolean;
-  chips: boolean;
-  counting: boolean;
+  chips: BoardChips;
   movesShown: boolean;
+  /** The settled leader: amber, with a slow pulse while the board holds. */
+  leader: boolean;
 }) => {
-  const leader = movesShown && row.shownRank === 1 && row.shownScore > 0;
+  const counting = chips === "flying";
   const tight = height < 170;
   const nameSize = Math.max(56, Math.round(height * (tight ? 0.38 : 0.42)));
   // What is left for the name once the rank, token, move and score columns have their room.
@@ -98,7 +93,7 @@ const BoardRow = ({
   const nameBox = Math.max(160, width - 68 - height * (tight ? 0.62 + 0.55 + 0.7 + 0.8 : 0.66 + 0.6 + 0.9 + 1.25) - gap * 4);
   return (
     <div
-      className="relative flex items-center px-7 h-full tv-glass"
+      className={`relative flex items-center px-7 h-full tv-glass${leader ? " tv-leader-pulse" : ""}`}
       style={{
         gap,
         borderRadius: Math.min(32, height * 0.22),
@@ -120,15 +115,15 @@ const BoardRow = ({
         {movesShown ? <MoveStamp delta={row.move} size={Math.round(height * 0.4)} live={live} /> : null}
       </span>
       <span className="relative flex items-center justify-end" style={{ minWidth: height * (tight ? 0.8 : 1.25) }}>
-        {row.gained > 0 && live && chips ? (
-          // The "+N" pops in beside the total, then drops into it and is gone (scale to 0, never a fade).
+        {row.gained > 0 && live && chips !== "none" ? (
+          // The "+N" pops in beside the total, then flies into it and is gone (scale to 0, never a fade).
           <motion.span
             aria-hidden="true"
             className="absolute tv-pill tv-pill--lav"
             style={{ right: "100%", marginRight: 16, fontSize: height * 0.3, padding: "6px 16px" }}
-            initial={{ scale: 0 }}
-            animate={counting ? { x: 110, scale: 0 } : { scale: [0, 1.15, 1] }}
-            transition={counting ? { duration: 0.3, ease: "easeIn" } : { duration: 0.4, ease: EASE_POP }}
+            {...(counting
+              ? { animate: { transform: "translateX(130px) scale(0)", opacity: 1 }, transition: { duration: 0.32, ease: [0.5, 0, 0.9, 0.4] } }
+              : popIn({ delay: 0 }))}
           >
             +{row.gained}
           </motion.span>
@@ -162,7 +157,19 @@ const placeRows = (count: number, bottom: number) => {
   return { columnWidth, height, at };
 };
 
-/** Between questions: the full-screen standings beat. Points count into the totals while the rows re-sort. */
+/** The board's clock: ms since it appeared, stepped at the moments the frame changes. A late TV starts settled. */
+const useBoardClock = (live: boolean, rows: ReadonlyArray<StandingRow>) => {
+  const ticks = useMemo(() => boardTicks(rows), [rows]);
+  const [t, setT] = useState<number>(live ? 0 : Number.POSITIVE_INFINITY);
+  useEffect(() => {
+    if (!live) return;
+    const timers = ticks.map((at) => setTimeout(() => setT(at), at));
+    return () => timers.forEach(clearTimeout);
+  }, [live, ticks]);
+  return t;
+};
+
+/** Between questions: the full-screen standings beat. Points fly into the totals, then the rows re-sort once. */
 export const TvStandingsBoard = ({
   rows,
   afterNumber,
@@ -174,29 +181,13 @@ export const TvStandingsBoard = ({
   total: number;
   live: boolean;
 }) => {
-  const ticks = useMemo(() => countTicks(rows), [rows]);
-  const [progress, setProgress] = useState<number>(live ? 0 : 1);
-  const [chips, setChips] = useState(!live);
-  const [counting, setCounting] = useState(!live);
-  const [settled, setSettled] = useState(!live);
-  const [movesShown, setMovesShown] = useState(!live);
-  useEffect(() => {
-    if (!live) return;
-    const timers = [
-      setTimeout(() => setChips(true), CHIPS_AT),
-      setTimeout(() => setCounting(true), COUNT_AT),
-      // Ticks come quickly, then slow into the final totals.
-      ...ticks.map((p, i) => setTimeout(() => setProgress(p), COUNT_AT + 120 + COUNT_MS * Math.pow((i + 1) / ticks.length, 1.5))),
-      setTimeout(() => setSettled(true), SETTLE_AT),
-      setTimeout(() => setMovesShown(true), MOVES_AT),
-    ];
-    return () => timers.forEach(clearTimeout);
-  }, [live, ticks]);
-  const frame = standingsBeat(rows, { progress, settled }).slice(0, 10);
-  const card = frame.length <= CARD_ROWS;
-  const { columnWidth, height, at } = placeRows(frame.length, card ? SHEET.bottom - CARD_BAND : SHEET.bottom);
+  const t = useBoardClock(live, rows);
+  const frame = boardFrame(rows, t);
+  const shown = frame.rows.filter((r) => r.slot < 10);
+  const card = shown.length <= CARD_ROWS;
+  const { columnWidth, height, at } = placeRows(shown.length, card ? SHEET.bottom - CARD_BAND : SHEET.bottom);
   const isLast = total > 0 && afterNumber >= total;
-  const cardTop = SHEET.top + frame.length * height + (frame.length - 1) * ROW_GAP + 44;
+  const cardTop = SHEET.top + shown.length * height + (shown.length - 1) * ROW_GAP + 44;
   return (
     <div className="absolute inset-0">
       <div className="absolute flex items-end justify-between" style={{ left: 96, right: 96, top: 44 }}>
@@ -209,33 +200,48 @@ export const TvStandingsBoard = ({
             Standings
           </h2>
         </div>
-        {card ? null : (
-          <div className="flex flex-col items-end pb-2">
+        {card || !frame.upNext ? null : (
+          <motion.div
+            className="flex flex-col items-end pb-2"
+            initial={live ? { opacity: 0, transform: "translateY(20px)" } : false}
+            animate={{ opacity: 1, transform: "translateY(0px)" }}
+            transition={{ duration: 0.45, ease: EASE_OUT }}
+          >
             <Label className="mb-3">{isLast ? "That was the last question" : "Up next"}</Label>
             {isLast ? null : (
               <span className="tv-display" style={{ fontSize: 88, lineHeight: 1, color: "var(--text)" }}>
                 Question {afterNumber + 1}
               </span>
             )}
-          </div>
+          </motion.div>
         )}
       </div>
-      {frame.map((row) => {
+      {shown.map((row) => {
         const pos = at(row.slot);
         return (
+          // Every row sits at the sheet's origin and slides by one transform: the reorder is a single
+          // 450 ms tween run by the compositor, never a spring a busy frame can skip.
           <motion.div
             key={row.id}
             className="absolute"
-            style={{ width: columnWidth, height, zIndex: 20 - row.slot }}
+            style={{ left: SHEET.left, top: SHEET.top, width: columnWidth, height, zIndex: 20 - row.slot }}
             initial={false}
-            animate={{ left: pos.left, top: pos.top }}
-            transition={{ type: "spring", stiffness: 260, damping: 20, mass: 0.9 }}
+            animate={{ transform: `translate(${pos.left - SHEET.left}px, ${pos.top - SHEET.top}px)` }}
+            transition={{ duration: BOARD.reorderMs / 1000, ease: EASE_OUT }}
           >
-            <BoardRow row={row} height={height} width={columnWidth} live={live} chips={chips} counting={counting} movesShown={movesShown} />
+            <BoardRow
+              row={row}
+              height={height}
+              width={columnWidth}
+              live={live}
+              chips={frame.chips}
+              movesShown={frame.movesShown}
+              leader={frame.leaderPulse && row.shownRank === 1}
+            />
           </motion.div>
         );
       })}
-      {card ? <UpNextCard top={cardTop} bottom={SHEET.bottom} next={afterNumber + 1} total={total} isLast={isLast} live={live} /> : null}
+      {card && frame.upNext ? <UpNextCard top={cardTop} bottom={SHEET.bottom} next={afterNumber + 1} total={total} isLast={isLast} live={live} /> : null}
     </div>
   );
 };
@@ -259,7 +265,7 @@ const UpNextCard = ({ top, bottom, next, total, isLast, live }: { top: number; b
       }}
       initial={live ? { opacity: 0, y: 30 } : false}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: live ? (MOVES_AT + 500) / 1000 : 0, duration: 0.5, ease: EASE_OUT }}
+      transition={{ duration: 0.5, ease: EASE_OUT }}
       data-testid="tv-up-next"
     >
       <span className="tv-label" style={{ fontSize: 40, color: "var(--glow)", lineHeight: 1 }}>

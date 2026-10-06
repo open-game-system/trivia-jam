@@ -6,10 +6,16 @@ import { TvReveal } from "./reveal";
 import { TvStandingsBoard } from "./standings-board";
 import { buildStandings, revealSchedule } from "./tv-model";
 
-/** How long the settled reveal holds before the standings board takes over. */
-const HOLD_MS = 2400;
+/**
+ * How long the settled reveal (with the misses strip) holds before the standings board takes over.
+ * Short, so the board's reorder lands early: the host's Next unlocks at the reveal's `end`.
+ */
+export const HOLD_MS = 1600;
 /** The board fades and rises in on an opaque layer over the reveal (never seen through); then the reveal is dropped. */
-const WIPE_MS = 450;
+export const WIPE_MS = 450;
+
+/** When the standings board appears, ms after the results arrive (live): the board's BOARD beats count from here. */
+export const boardAt = (revealEnd: number) => revealEnd + HOLD_MS;
 
 /** After a question: the staged reveal, then the big standings board until the next question. */
 export const TvResultsBeat = ({
@@ -30,8 +36,8 @@ export const TvResultsBeat = ({
   const [showBoard, setShowBoard] = useState(false);
   const [boardOnly, setBoardOnly] = useState(false);
   useEffect(() => {
-    const show = setTimeout(() => setShowBoard(true), revealMs + HOLD_MS);
-    const drop = setTimeout(() => setBoardOnly(true), revealMs + HOLD_MS + WIPE_MS + 60);
+    const show = setTimeout(() => setShowBoard(true), boardAt(revealMs));
+    const drop = setTimeout(() => setBoardOnly(true), boardAt(revealMs) + WIPE_MS + 60);
     return () => {
       clearTimeout(show);
       clearTimeout(drop);

@@ -183,3 +183,29 @@
   border-radius: 9999px;
   pointer-events: none;
 }
+
+/* The settled leader on the standings board: a slow amber breath (opacity only, compositor-cheap). */
+.tv-leader-pulse::after {
+  content: "";
+  position: absolute;
+  inset: -2px;
+  border-radius: inherit;
+  box-shadow: 0 0 70px 6px rgba(251, 191, 36, 0.4);
+  opacity: 0;
+  pointer-events: none;
+  animation: tv-leader-pulse 1.8s ease-in-out infinite;
+}
+@keyframes tv-leader-pulse {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .tv-leader-pulse::after {
+    animation-duration: 3.6s;
+  }
+}
