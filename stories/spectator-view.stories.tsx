@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { expect } from "@storybook/test";
+import { expect, waitFor, within } from "@storybook/test";
 import { withActorKit } from "actor-kit/storybook";
 import { createActorKitMockClient } from "actor-kit/test";
 import React from "react";
@@ -1133,4 +1133,46 @@ export const TvRevealEveryoneExactLive: Story = {
     ]),
     { "p-sam": 0, "p-mom": 0, "p-grandpa": 0, "p-lou": 0 },
   ),
+};
+
+/**
+ * Bug pass: after the last question the standings' card read "Final scores" in the hero face, wrapped
+ * to two lines and spilled out of its pill and off the frame. It sets on one line inside the card.
+ */
+export const TvStandingsFinalScoresFits: Story = {
+  play: async ({ mount, canvasElement, ...ctx }) => {
+    const Q5_RESULT = resultFor("q5", 5, [
+      ["p-mom", "Mom", 206, 4],
+      ["p-sam", "Sam", 200, 3],
+      ["p-grandpa", "Grandpa", 150, 1],
+    ]);
+    await mountFamily(
+      familySnapshot(
+        { players: withScores({ "p-mom": 20, "p-sam": 13, "p-grandpa": 10 }).slice(0, 3), questionNumber: 5, questionResults: [Q5_RESULT] },
+        { active: "questionPrep" },
+      ),
+    )?.({ ...ctx, mount, canvasElement });
+    const card = await waitFor(
+      () => {
+        const el = canvasElement.querySelector("[data-testid=tv-up-next]");
+        expect(el).not.toBeNull();
+        return el;
+      },
+      { timeout: 6000 },
+    );
+    const headline = within(canvasElement).getByText("Final scores");
+    await waitFor(() => {
+      const c = card?.getBoundingClientRect();
+      const h = headline.getBoundingClientRect();
+      const size = parseFloat(getComputedStyle(headline).fontSize);
+      const scale = h.height / headline.offsetHeight;
+      expect(c).toBeDefined();
+      if (!c) return;
+      expect(h.right).toBeLessThanOrEqual(c.right + 0.5);
+      expect(h.top).toBeGreaterThanOrEqual(c.top - 0.5);
+      expect(h.bottom).toBeLessThanOrEqual(c.bottom + 0.5);
+      // One line: the box is no taller than one line of the face.
+      expect(h.height / scale).toBeLessThan(size * 1.5);
+    });
+  },
 };

@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { EASE_OUT, GlassToken, Label } from "./glass";
 import { FitName } from "./fit-name";
 import { popIn } from "./motion-presets";
@@ -265,6 +265,10 @@ export const TvStandingsBoard = ({
 /** The lower band between questions: a bright glass card announcing what comes next. */
 const UpNextCard = ({ top, bottom, next, total, isLast, live }: { top: number; bottom: number; next: number; total: number; isLast: boolean; live: boolean }) => {
   const height = Math.min(260, bottom - top);
+  const slot = useRef<HTMLSpanElement>(null);
+  const [slotWidth, setSlotWidth] = useState(0);
+  // The slot's layout width is in stage px (offsetWidth ignores the stage's scale).
+  useLayoutEffect(() => setSlotWidth(slot.current?.offsetWidth ?? 0), [isLast, next, total]);
   return (
     <motion.div
       className="absolute flex items-center gap-12 tv-glass"
@@ -287,8 +291,17 @@ const UpNextCard = ({ top, bottom, next, total, isLast, live }: { top: number; b
       <span className="tv-label" style={{ fontSize: 40, color: "var(--glow)", lineHeight: 1 }}>
         {isLast ? "That was the last question" : "Up next"}
       </span>
-      <span className="tv-display tv-hero flex-1 glow-text" style={{ fontSize: Math.min(140, height * 0.62), lineHeight: 1.05, letterSpacing: "-0.04em", paddingBottom: 8 }}>
-        {isLast ? "Final scores" : `Question ${next}`}
+      {/* The headline takes the room the label leaves, on one line: shrunk to fit, never wrapped out of the card. */}
+      <span ref={slot} className="flex-1 min-w-0">
+        <FitName
+          text={isLast ? "Final scores" : `Question ${next}`}
+          max={Math.min(140, height * 0.62)}
+          floor={1}
+          box={slotWidth}
+          lineHeight={1.05}
+          className="tv-display tv-hero glow-text"
+          style={{ letterSpacing: "-0.04em", paddingBottom: 8 }}
+        />
       </span>
       {!isLast && total > 0 ? (
         <span className="tv-label" style={{ fontSize: 40, lineHeight: 1, color: "var(--text-2)" }}>
