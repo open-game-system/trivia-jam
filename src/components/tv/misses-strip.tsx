@@ -23,7 +23,7 @@ export const MissesStrip = ({ misses, live }: { misses: Misses; live: boolean })
           <motion.div
             key={r.playerId}
             className="relative flex items-center gap-5"
-            style={{ height: 132, padding: "0 20px", background: "var(--paper-2)", border: "5px solid var(--ink)" }}
+            style={{ minHeight: 132, padding: "12px 20px", background: "var(--paper-2)", border: "5px solid var(--ink)" }}
             initial={live ? { y: 240, opacity: 0 } : false}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: live ? 0.15 + i * 0.12 : 0, type: "spring", stiffness: 380, damping: 24 }}
@@ -45,9 +45,7 @@ export const MissesStrip = ({ misses, live }: { misses: Misses; live: boolean })
                   </motion.span>
                 ) : null}
               </span>
-              <span className="slug tabular whitespace-nowrap mt-2" style={{ fontSize: 34, lineHeight: 1, color: "var(--blue)" }}>
-                {r.tag}
-              </span>
+              <FitName text={r.tag} max={34} floor={28} box={400} lineHeight={1.05} className="slug tabular mt-2" style={{ color: "var(--blue)" }} />
             </span>
           </motion.div>
         ))}

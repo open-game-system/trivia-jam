@@ -54,7 +54,7 @@ const ArrivingTotal = ({ from, to, afterMs, live }: { from: number; to: number; 
   return <RollingNumber from={from} to={arrived ? to : from} run={live && arrived} duration={0.5} />;
 };
 
-/** "Nobody got it": a gentle comic beat, the type sags like a deflating balloon. */
+/** "Nobody got it": a dry comic beat, the type sags and the room is stamped "stumped". */
 const NobodyBeat = ({ live }: { live: boolean }) => (
   <div className="absolute flex flex-col items-center" style={{ left: 0, right: 0, top: 250 }}>
     <motion.span
@@ -75,7 +75,7 @@ const NobodyBeat = ({ live }: { live: boolean }) => (
       animate={{ scale: [2.2, 0.9, 1], opacity: 1, rotate: 7 }}
       transition={{ duration: 0.4, times: [0, 0.6, 1], delay: live ? 1.1 : 0 }}
     >
-      Next one!
+      Stumped the room
     </motion.span>
   </div>
 );
