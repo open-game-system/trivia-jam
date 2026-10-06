@@ -3,7 +3,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { type ReactNode, useEffect, useMemo, useRef } from "react";
 import type { Question, QuestionResult } from "~/game.types";
 import { FitName } from "./fit-name";
-import { InkToken, RisoType, Roller, Slug, WIPE } from "./print";
+import { EASE_OUT, EASE_POP, GlassToken, Label } from "./glass";
 import { OptionTiles, QuestionSlug } from "./question";
 import { type LineGuess, layoutNumberLine, memberChipCentres, REVEAL_FRAME, sweepStops } from "./number-line-layout";
 import { GuessGroupView, Leaders, NumberLineAxis } from "./number-line-reveal";
@@ -29,22 +29,22 @@ const AXIS_Y = REVEAL_FRAME.axisY;
 
 const PointsBadge = ({ points, live, compact = false }: { points: number; live: boolean; compact?: boolean }) => (
   <motion.span
-    className="tv-display tabular inline-flex items-baseline gap-1"
-    style={{ fontSize: compact ? 34 : 40, background: "var(--pink)", color: "var(--ink)", padding: compact ? "2px 8px" : "2px 12px", border: "4px solid var(--ink)", lineHeight: 1 }}
-    initial={live ? { scale: 0, rotate: -20 } : false}
-    animate={{ scale: [0, 1.25, 1], rotate: -6 }}
-    transition={{ duration: 0.4 }}
+    className="tv-pill tv-pill--lav inline-flex items-baseline gap-1"
+    style={{ fontSize: compact ? 34 : 40, padding: compact ? "4px 12px" : "5px 14px" }}
+    initial={live ? { scale: 0, opacity: 0 } : false}
+    animate={{ scale: [0, 1.15, 1], opacity: 1 }}
+    transition={{ duration: 0.4, ease: EASE_POP }}
   >
     +<RollingNumber from={0} to={points} run={live} duration={0.6} />
     {compact ? null : (
-      <span className="slug" style={{ fontSize: 28 }}>
+      <span style={{ fontSize: 28, fontWeight: 700 }}>
         {" "}pts
       </span>
     )}
   </motion.span>
 );
 
-/** Exact answers shake the poster for two or three frames as the answer lands. Nothing else does. */
+/** Exact answers give the stage a short jolt as the answer lands. Nothing else does. */
 const Shake = ({ on, children }: { on: boolean; children: ReactNode }) => (
   <motion.div className="absolute inset-0" animate={on ? { x: [0, -14, 11, -6, 0], y: [0, 6, -5, 2, 0] } : { x: 0, y: 0 }} transition={{ duration: 0.11, delay: on ? 0.16 : 0 }}>
     {children}
@@ -52,21 +52,18 @@ const Shake = ({ on, children }: { on: boolean; children: ReactNode }) => (
 );
 
 /**
- * When the winners break forward, the roller wipes the line (or the tiles) off the sheet, left to right:
- * no translucent ghost of it stays under the takeover. A TV that loads late starts wiped.
+ * When the winners break forward, the line (or the tiles) fades back and sinks away: no translucent
+ * ghost of it stays under the takeover. A TV that loads late starts cleared.
  */
 const LineLayer = ({ back, live, children }: { back: boolean; live: boolean; children: ReactNode }) => (
-  <>
-    <motion.div
-      className="absolute inset-0"
-      initial={false}
-      animate={{ clipPath: back ? WIPE.gone : WIPE.shown }}
-      transition={{ duration: back && live ? 0.4 : 0, ease: WIPE.ease }}
-    >
-      {children}
-    </motion.div>
-    {back && live ? <Roller duration={0.4} zIndex={28} /> : null}
-  </>
+  <motion.div
+    className="absolute inset-0"
+    initial={false}
+    animate={back ? { opacity: 0, y: 24, scale: 0.98 } : { opacity: 1, y: 0, scale: 1 }}
+    transition={{ duration: back && live ? 0.4 : 0, ease: EASE_OUT }}
+  >
+    {children}
+  </motion.div>
 );
 
 /** Where the answer steps up to for the misses beat: between the shrunken winners and the misses strip. */
@@ -74,13 +71,13 @@ const STEPPED_ANSWER = { top: 498, scale: 0.6 } as const;
 
 const answerCenter = (x: number) => Math.min(REVEAL_FRAME.right - 260, Math.max(REVEAL_FRAME.left + 240, x));
 
-/** The pin where the answer lands on the line: a pink stem and diamond. */
+/** The pin where the answer lands on the line: a glowing white-to-lavender stem and a bright point of light. */
 const AnswerPin = ({ x, live }: { x: number; live: boolean }) => (
   <>
     <motion.div
       aria-hidden="true"
-      className="absolute overprint"
-      style={{ left: x - 5, width: 10, top: AXIS_Y - 40, height: 40, background: "var(--pink)", transformOrigin: "bottom", zIndex: 3 }}
+      className="absolute"
+      style={{ left: x - 4, width: 8, top: AXIS_Y - 64, height: 64, borderRadius: 8, background: "linear-gradient(180deg, rgba(255,255,255,0), #ffffff 40%, var(--glow))", boxShadow: "0 0 18px rgba(196, 181, 253, 0.9)", transformOrigin: "bottom", zIndex: 3 }}
       initial={live ? { scaleY: 0 } : false}
       animate={{ scaleY: 1 }}
       transition={{ duration: 0.22, ease: "easeIn" }}
@@ -88,44 +85,40 @@ const AnswerPin = ({ x, live }: { x: number; live: boolean }) => (
     <motion.div
       aria-hidden="true"
       className="absolute"
-      style={{ left: x - 26, top: AXIS_Y - 26, width: 52, height: 52, background: "var(--pink)", border: "6px solid var(--ink)", rotate: 45, zIndex: 5 }}
+      style={{ left: x - 22, top: AXIS_Y - 22, width: 44, height: 44, borderRadius: 999, background: "radial-gradient(circle, #ffffff 30%, var(--glow) 60%, rgba(196,181,253,0) 72%)", boxShadow: "0 0 40px 10px rgba(196, 181, 253, 0.55)", zIndex: 5 }}
       initial={live ? { scale: 0 } : false}
       animate={{ scale: 1 }}
-      transition={{ delay: 0.2, type: "spring", stiffness: 500, damping: 14 }}
+      transition={{ delay: 0.2, duration: 0.4, ease: EASE_POP }}
     />
   </>
 );
 
-/** The answer, huge, under the line: it stays printed while everything else steps back. */
+/** The answer, huge and glowing, under the line: it stays put while everything else steps back. */
 const AnswerNumeral = ({ value, x, live, compact }: { value: string; x: number; live: boolean; compact: boolean }) => {
   const center = answerCenter(x);
   return (
     <motion.div
-      className="absolute tv-display tabular"
-      style={{ top: AXIS_Y + 78, fontSize: 200, lineHeight: 0.86, x: "-50%", zIndex: 35, transformOrigin: "50% 0" }}
-      initial={live ? { scale: 2.4, opacity: 0, y: -120, left: center } : false}
-      animate={compact ? { scale: STEPPED_ANSWER.scale, opacity: 1, y: STEPPED_ANSWER.top - (AXIS_Y + 78), left: center } : { scale: [2.4, 0.9, 1.03, 1], opacity: 1, y: 0, left: center }}
+      className="absolute tv-display"
+      style={{ top: AXIS_Y + 58, fontSize: 252, lineHeight: 0.8, letterSpacing: "-0.045em", x: "-50%", zIndex: 35, transformOrigin: "50% 0" }}
+      initial={live ? { scale: 1.4, opacity: 0, left: center } : false}
+      animate={compact ? { scale: STEPPED_ANSWER.scale, opacity: 1, y: STEPPED_ANSWER.top - (AXIS_Y + 58), left: center } : { scale: 1, opacity: 1, y: 0, left: center }}
       transition={
         compact
           ? { type: "spring", stiffness: 260, damping: 26 }
-          : { duration: 0.5, times: [0, 0.55, 0.8, 1], delay: 0.12, left: { type: "spring", stiffness: 200, damping: 22 } }
+          : { duration: 0.5, delay: 0.12, ease: EASE_OUT, left: { type: "spring", stiffness: 200, damping: 22 } }
       }
       data-testid="correct-answer"
     >
-      <span className="tv-riso-type">
-        <motion.span
-          aria-hidden="true"
-          className="tv-riso-under tv-rough"
-          style={{ color: "var(--pink)" }}
-          initial={live ? { x: 0, y: 0 } : false}
-          animate={{ x: [0, 22, -10, 14, 9], y: [0, -12, 16, 6, 9] }}
-          transition={{ duration: 0.5, delay: 0.42 }}
-        >
-          {value}
-        </motion.span>
-        <span className="tv-riso-top tv-rough" style={{ color: "var(--blue)" }}>
-          {value}
-        </span>
+      <motion.span
+        aria-hidden="true"
+        className="tv-bloom"
+        style={{ left: "50%", top: "50%", width: 760, height: 520, marginLeft: -380, marginTop: -260, background: "radial-gradient(closest-side, rgba(196, 181, 253, 0.4), transparent)", zIndex: -1 }}
+        initial={live ? { scale: 0.2, opacity: 0 } : false}
+        animate={{ scale: [0.2, 1.25, 1], opacity: [0, 1, 0.75] }}
+        transition={{ duration: 0.9, delay: 0.25, ease: EASE_OUT }}
+      />
+      <span className="glow-text relative" style={{ paddingInline: "0.06em" }}>
+        {value}
       </span>
     </motion.div>
   );
@@ -138,17 +131,15 @@ const ChoiceAnswerLine = ({ letter, text, live, compact }: { letter: string; tex
     <motion.div
       className="absolute flex items-end justify-center gap-10"
       style={{ left: 96, right: 96, top: 850, zIndex: 35, transformOrigin: "50% 0" }}
-      initial={live ? { scale: 1.8, opacity: 0, y: -80 } : false}
-      animate={compact ? { scale: STEPPED_ANSWER.scale, opacity: 1, y: STEPPED_ANSWER.top - 850 } : { scale: [1.8, 0.94, 1], opacity: 1, y: 0 }}
-      transition={compact ? { type: "spring", stiffness: 260, damping: 26 } : { duration: 0.5, times: [0, 0.65, 1] }}
+      initial={live ? { scale: 1.4, opacity: 0 } : false}
+      animate={compact ? { scale: STEPPED_ANSWER.scale, opacity: 1, y: STEPPED_ANSWER.top - 850 } : { scale: 1, opacity: 1, y: 0 }}
+      transition={compact ? { type: "spring", stiffness: 260, damping: 26 } : { duration: 0.5, ease: EASE_OUT }}
       data-testid="correct-answer"
     >
-      <FitName text={full} max={size} floor={72} box={1728} lineHeight={1} className="tv-display text-center">
-        <RisoType top="var(--blue)" under="var(--pink)" offset={10} rough>
-          {letter}
-          <span style={{ margin: "0 0.28em", color: "var(--ink)" }}>{"\u00b7"}</span>
-          {text}
-        </RisoType>
+      <FitName text={full} max={size} floor={72} box={1728} lineHeight={1.02} className="tv-display text-center glow-text" style={{ letterSpacing: "-0.035em", paddingBottom: "0.06em" }}>
+        {letter}
+        <span style={{ margin: "0 0.28em" }}>{"\u00b7"}</span>
+        {text}
       </FitName>
     </motion.div>
   );
@@ -172,12 +163,12 @@ const SuspenseMarker = ({ stops, seconds }: { stops: number[]; seconds: number }
       transition={{ x: { duration: seconds, ease: "easeInOut" }, scale: { type: "spring", stiffness: 500, damping: 15 } }}
       data-testid="tv-suspense-puck"
     >
-      <svg className="absolute" style={{ left: size / 2 - 14, top: 0 }} width={28} height={26} viewBox="0 0 28 26">
-        <polygon points="14,0 28,24 0,24" fill="var(--ink)" />
+      <svg className="absolute" style={{ left: size / 2 - 12, top: 2 }} width={24} height={20} viewBox="0 0 24 20">
+        <polygon points="12,0 24,18 0,18" fill="var(--glow)" style={{ filter: "drop-shadow(0 0 6px rgba(196,181,253,.9))" }} />
       </svg>
       <span
-        className="tv-display absolute flex items-center justify-center"
-        style={{ left: 0, top: 22, width: size, height: size, borderRadius: 999, background: "var(--pink)", fontSize: 58, border: "6px solid var(--ink)" }}
+        className="tv-display tv-glass-pill absolute flex items-center justify-center"
+        style={{ left: 0, top: 22, width: size, height: size, fontSize: 54, color: "var(--glow)", borderColor: "var(--glow)", background: "rgba(30, 27, 75, 0.7)", boxShadow: "0 0 36px rgba(196, 181, 253, 0.5)" }}
       >
         ?
       </span>
@@ -208,12 +199,12 @@ const TopBand = ({
       <motion.div className="absolute flex items-center gap-6" style={{ left: 96, top: 56, zIndex: 40 }} animate={{ opacity: clear ? 0 : 1 }} transition={{ duration: 0 }}>
         <QuestionSlug number={number} total={total} />
         <motion.span key={caption} initial={live ? { opacity: 0, x: -20 } : false} animate={{ opacity: 1, x: 0 }}>
-          <Slug className="text-blue">{caption}</Slug>
+          <Label className="lav-text">{caption}</Label>
         </motion.span>
       </motion.div>
       <motion.h2
-        className="absolute tv-display text-ink"
-        style={{ left: 96, top: 136, maxWidth: 1728, fontSize: qSize, lineHeight: 1.04, letterSpacing: "-0.02em" }}
+        className="absolute tv-display lav-text"
+        style={{ left: 96, top: 136, maxWidth: 1728, fontSize: qSize, lineHeight: 1.08, letterSpacing: "-0.025em", paddingBottom: "0.08em" }}
         animate={{ opacity: clear ? 0 : 1 }}
         transition={{ duration: 0 }}
       >
@@ -225,7 +216,7 @@ const TopBand = ({
 
 const NoGuessNote = ({ names }: { names: string[] }) =>
   names.length > 0 ? (
-    <div className="absolute slug text-[28px] text-ink" style={{ right: 96, top: 72 }} data-testid="tv-no-guess">
+    <div className="absolute tv-label" style={{ right: 96, top: 72, fontSize: 28 }} data-testid="tv-no-guess">
       No guess: {names.length > 3 ? `${names.length} players` : names.join(", ")}
     </div>
   ) : null;
@@ -298,10 +289,10 @@ export const TvReveal = ({
               className="relative inline-flex flex-col items-center"
               data-testid={`player-result-${t.playerId}`}
               initial={live ? { y: -360, opacity: 0 } : false}
-              animate={dropped ? { y: 420, opacity: 0, rotate: k % 2 === 0 ? 28 : -24 } : { y: 0, opacity: 1 }}
+              animate={dropped ? { y: 60, opacity: 0, scale: 0.7 } : { y: 0, opacity: 1 }}
               transition={
                 dropped
-                  ? { duration: live ? 0.6 : 0, delay: live ? 0.18 + k * 0.06 : 0, ease: [0.5, 0, 0.9, 0.6] }
+                  ? { duration: live ? 0.45 : 0, delay: live ? 0.18 + k * 0.06 : 0, ease: EASE_OUT }
                   : { y: { delay: live ? firstDrop + t.order * stagger : 0, type: "spring", stiffness: 420, damping: 17 }, opacity: { delay: live ? firstDrop + t.order * stagger : 0 } }
               }
             >
@@ -310,7 +301,7 @@ export const TvReveal = ({
                 animate={phase >= PHASE.spotlight && winnerIds.has(t.playerId) ? { scale: 1.3, y: -8 } : phase === PHASE.suspense ? { rotate: [0, -6, 6, -4, 4, 0] } : { scale: 1, rotate: 0 }}
                 transition={phase === PHASE.suspense ? { duration: 0.45, repeat: Infinity } : { type: "spring", stiffness: 400, damping: 12 }}
               >
-                <InkToken name={t.name} inkIndex={t.inkIndex} size={72} />
+                <GlassToken name={t.name} inkIndex={t.inkIndex} size={72} win={phase >= PHASE.answer && winnerIds.has(t.playerId)} />
               </motion.span>
               <span className="tv-sr">{t.name}</span>
               {phase >= PHASE.points && (pointsOf.get(t.playerId) ?? 0) > 0 ? (

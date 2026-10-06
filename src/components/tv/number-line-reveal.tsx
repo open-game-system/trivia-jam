@@ -1,9 +1,9 @@
 import { motion } from "framer-motion";
-import { InkToken } from "./print";
+import { Bloom, EASE_POP, GlassToken } from "./glass";
 import { RollingNumber } from "./standings";
 import { FLAG, type GuessGroup, type LineLayout, type LineSize, shortName } from "./number-line-layout";
 
-/** "+4 pts" stamped beside a chip once the points land. */
+/** "+4 pts": a small solid lavender pill that pops in beside a chip once the points land. */
 export const PointsStamp = ({
   points,
   live,
@@ -18,49 +18,25 @@ export const PointsStamp = ({
   fastest?: boolean;
 }) => (
   <motion.span
-    className="tv-display tabular inline-flex items-baseline gap-1 whitespace-nowrap"
-    style={{ fontSize: size, background: "var(--pink)", color: "var(--ink)", padding: bare ? "1px 8px" : "2px 10px", border: "4px solid var(--ink)", lineHeight: 1 }}
-    initial={live ? { scale: 0, rotate: -20 } : false}
-    animate={{ scale: [0, 1.25, 1], rotate: -4 }}
-    transition={{ duration: 0.4 }}
+    className="tv-pill tv-pill--lav inline-flex items-baseline gap-1"
+    style={{ fontSize: size, padding: bare ? "4px 12px" : "5px 14px" }}
+    initial={live ? { scale: 0, opacity: 0 } : false}
+    animate={{ scale: [0, 1.15, 1], opacity: 1 }}
+    transition={{ duration: 0.4, ease: EASE_POP }}
   >
     +<RollingNumber from={0} to={points} run={live} duration={0.6} />
     {bare ? <span className="tv-sr"> pts</span> : (
-      <span className="slug" style={{ fontSize: 28 }}>
+      <span style={{ fontSize: 28, fontWeight: 700 }}>
         {" "}pts
       </span>
     )}
     {fastest ? (
-      <span className="slug" style={{ fontSize: Math.max(28, Math.round(size * 0.74)) }}>
+      <span style={{ fontSize: Math.max(28, Math.round(size * 0.74)), fontWeight: 700 }}>
         {" "}· fastest
       </span>
     ) : null}
   </motion.span>
 );
-
-/** A printed starburst in halftone yellow: the spotlight behind whoever nailed it. */
-const Burst = ({ cx, cy, r, live }: { cx: number; cy: number; r: number; live: boolean }) => {
-  const points = 18;
-  const d = Array.from({ length: points * 2 }, (_, i) => {
-    const a = (i / (points * 2)) * Math.PI * 2 - Math.PI / 2;
-    const rr = i % 2 === 0 ? r : r * 0.8;
-    return `${(r + Math.cos(a) * rr).toFixed(1)},${(r + Math.sin(a) * rr).toFixed(1)}`;
-  }).join(" ");
-  return (
-    <motion.svg
-      aria-hidden="true"
-      className="absolute pointer-events-none"
-      width={r * 2}
-      height={r * 2}
-      style={{ left: cx - r, top: cy - r, mixBlendMode: "multiply", zIndex: 1 }}
-      initial={live ? { scale: 0, rotate: -30 } : false}
-      animate={{ scale: 1, rotate: 0 }}
-      transition={{ type: "spring", stiffness: 260, damping: 15 }}
-    >
-      <polygon points={d} fill="url(#tv-dots-yellow)" />
-    </motion.svg>
-  );
-};
 
 export const NumberLineAxis = ({ layout, axisY, live }: { layout: LineLayout; axisY: number; live: boolean }) => {
   const left = layout.axisLeft - 36;
@@ -69,8 +45,8 @@ export const NumberLineAxis = ({ layout, axisY, live }: { layout: LineLayout; ax
   return (
     <div aria-hidden="true">
       <motion.div
-        className="absolute"
-        style={{ left, width: right - left, top: axisY - 4, height: 8, background: "var(--ink)", transformOrigin: "left" }}
+        className="absolute tv-axis"
+        style={{ left, width: right - left, top: axisY - 3, height: 6, transformOrigin: "left" }}
         initial={live ? { scaleX: 0 } : false}
         animate={{ scaleX: 1 }}
         transition={{ duration: 0.75, ease: [0.6, 0, 0.2, 1] }}
@@ -84,8 +60,8 @@ export const NumberLineAxis = ({ layout, axisY, live }: { layout: LineLayout; ax
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: live ? 0.2 + i * 0.06 : 0, duration: 0.3 }}
         >
-          <span style={{ width: 6, height: 36, background: "var(--ink)" }} />
-          <span className="slug mt-2 text-blue" style={{ fontSize: 38, lineHeight: 1 }}>
+          <span style={{ width: 4, height: 36, borderRadius: 4, background: "rgba(255, 255, 255, 0.28)" }} />
+          <span className="tv-display mt-2" style={{ fontSize: 38, lineHeight: 1, fontWeight: 600, letterSpacing: 0, color: "var(--text-3)" }}>
             {t.label}
           </span>
         </motion.div>
@@ -98,22 +74,20 @@ export const NumberLineAxis = ({ layout, axisY, live }: { layout: LineLayout; ax
         return (
           <div key={g.key}>
             <svg className="absolute" style={{ left: Math.min(from, to), top: axisY - 20, overflow: "visible" }} width={Math.abs(to - from)} height={40}>
-              <line x1={0} y1={20} x2={Math.abs(to - from)} y2={20} stroke="var(--ink)" strokeWidth={6} strokeDasharray="8 10" />
+              <line x1={0} y1={20} x2={Math.abs(to - from)} y2={20} stroke="rgba(196, 181, 253, 0.55)" strokeWidth={4} strokeLinecap="round" strokeDasharray="2 14" />
             </svg>
             {/* The edge flag: the off-scale value, with an arrow pointing off the end of the line. */}
             <span
-              className="absolute tv-display tabular flex items-center justify-center whitespace-nowrap"
+              className="absolute tv-display tv-pill tv-pill--glass flex items-center justify-center whitespace-nowrap"
               style={{
                 left: flagLeft,
                 width: FLAG.width,
                 top: axisY - FLAG.height / 2,
                 height: FLAG.height,
-                fontSize: 46,
-                background: "var(--ink)",
-                color: "var(--paper)",
-                clipPath: towardsRight ? "polygon(0 0, 84% 0, 100% 50%, 84% 100%, 0 100%)" : "polygon(16% 0, 100% 0, 100% 100%, 16% 100%, 0 50%)",
-                paddingLeft: towardsRight ? 0 : 26,
-                paddingRight: towardsRight ? 26 : 0,
+                fontSize: 42,
+                background: "rgba(30, 27, 75, 0.85)",
+                borderColor: "var(--glow)",
+                boxShadow: "0 0 24px rgba(196, 181, 253, 0.35)",
               }}
               data-testid={`tv-flag-${g.key}`}
             >
@@ -139,9 +113,9 @@ export const Leaders = ({ groups, axisY, delays, live }: { groups: GuessGroup[];
           transition={{ delay: live ? (delays.get(g.key) ?? 0) + 0.3 : 0, duration: 0.2 }}
         >
           {onFlag ? null : (
-            <line x1={g.x} y1={g.bottom + 2} x2={g.axisX} y2={g.offScale === null ? axisY - 12 : axisY - FLAG.height / 2} stroke="var(--ink)" strokeWidth={5} />
+            <line x1={g.x} y1={g.bottom + 2} x2={g.axisX} y2={g.offScale === null ? axisY - 12 : axisY - FLAG.height / 2} stroke="rgba(255, 255, 255, 0.32)" strokeWidth={3} strokeLinecap="round" />
           )}
-          {g.offScale === null ? <circle cx={g.axisX} cy={axisY} r={13} fill="var(--ink)" /> : null}
+          {g.offScale === null ? <circle cx={g.axisX} cy={axisY} r={10} fill="#ffffff" stroke="var(--aurora-purple)" strokeWidth={4} style={{ filter: "drop-shadow(0 0 6px rgba(196,181,253,.9))" }} /> : null}
         </motion.g>
       );
     })}
@@ -172,7 +146,7 @@ export const GuessGroupView = ({
   const fade = { opacity: dim ? 0.42 : 1, transition: "opacity .3s" };
   return (
     <>
-      {lit ? <Burst cx={group.x} cy={group.bottom - group.height / 2} r={Math.min(200, Math.max(group.width, group.height) / 2 + 40)} live={live} /> : null}
+      {lit ? <Bloom x={group.x} y={group.bottom - group.height / 2} r={Math.min(260, Math.max(group.width, group.height) / 2 + 80)} color="rgba(74, 222, 128, 0.26)" live={live} /> : null}
       <motion.div
         className="absolute flex flex-col items-center justify-end"
         style={{ left: group.x - group.width / 2, width: group.width, top: group.bottom - group.height, height: group.height, zIndex: lit ? 6 : 4 }}
@@ -192,12 +166,12 @@ export const GuessGroupView = ({
                 <motion.span
                   className="inline-flex"
                   style={fade}
-                  animate={lit ? { scale: 1.16 } : shiver ? { rotate: [0, -7, 6, -5, 4, 0], y: [0, -3, 0, -2, 0] } : { scale: 1, rotate: 0, y: 0 }}
+                  animate={lit ? { scale: 1.16, y: -10 } : shiver ? { rotate: [0, -7, 6, -5, 4, 0], y: [0, -3, 0, -2, 0] } : { scale: 1, rotate: 0, y: 0 }}
                   transition={shiver ? { duration: 0.42, repeat: Infinity } : { type: "spring", stiffness: 420, damping: 11 }}
                 >
-                  <InkToken name={m.name} inkIndex={m.inkIndex} size={size.chip} />
+                  <GlassToken name={m.name} inkIndex={m.inkIndex} size={size.chip} win={lit} />
                 </motion.span>
-                <span className="tv-display mt-1" style={{ ...fade, fontSize: size.name, lineHeight: 1.04, letterSpacing: "-0.01em", whiteSpace: "nowrap" }}>
+                <span className="tv-name mt-1" style={{ ...fade, fontSize: size.name, lineHeight: 1.04, whiteSpace: "nowrap", color: lit ? "var(--text)" : "var(--text-2)" }}>
                   {shortName(m.name, size.maxName)}
                 </span>
                 <span className="tv-sr">{m.name}</span>
@@ -215,13 +189,13 @@ export const GuessGroupView = ({
             );
           })}
           {more > 0 ? (
-            <span className="slug self-center" style={{ ...fade, fontSize: 30, lineHeight: 1 }}>
+            <span className="tv-label self-center" style={{ ...fade, fontSize: 30, lineHeight: 1 }}>
               +{more}
             </span>
           ) : null}
         </span>
         {group.offScale === null ? (
-          <span className="tv-display tabular mt-2" style={{ ...fade, fontSize: size.value, lineHeight: 0.95 }}>
+          <span className="tv-display mt-2" style={{ ...fade, fontSize: size.value, lineHeight: 0.95, color: lit ? "var(--win)" : "var(--text)" }}>
             {group.label}
           </span>
         ) : null}

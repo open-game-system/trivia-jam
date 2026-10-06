@@ -1,8 +1,7 @@
 import { motion } from "framer-motion";
 import { type ReactNode, useEffect, useState } from "react";
-import { InkToken, RisoType } from "./print";
+import { Bloom, EASE_OUT, EASE_POP, GlassToken, Label } from "./glass";
 import { RollingNumber } from "./standings";
-import { Sunburst } from "./sunburst";
 import { winnerCardRects } from "./badge-place";
 import { layoutWinners } from "./winners-layout";
 
@@ -20,9 +19,9 @@ export type Winner = {
 };
 
 const STAMP = {
-  exact: { label: "Exact!", bg: "var(--teal)", fg: "var(--paper)", size: 150, rotate: -6 },
-  closest: { label: "Closest!", bg: "var(--yellow)", fg: "var(--ink)", size: 84, rotate: -4 },
-  right: { label: "Got it!", bg: "var(--teal)", fg: "var(--paper)", size: 110, rotate: -5 },
+  exact: { label: "Exact!", tone: "tv-pill--win", size: 140, rotate: -2 },
+  closest: { label: "Closest!", tone: "tv-pill--close", size: 84, rotate: -2 },
+  right: { label: "Got it!", tone: "tv-pill--win", size: 104, rotate: -2 },
 } as const;
 
 /** How far the card shrinks for the misses beat (from the top centre of the frame). */
@@ -40,7 +39,7 @@ const StepUp = ({ compact, children }: { compact: boolean; children: ReactNode }
   </motion.div>
 );
 
-/** The lowest point of the angled stamp (row top + height + its tilt). */
+/** The lowest point of the stamp (row top + height + its slight tilt). */
 const STAMP_ROW_BOTTOM = 284;
 
 /** A total that holds its old value until the "+N" badge has stamped, then ticks over. */
@@ -54,26 +53,24 @@ const ArrivingTotal = ({ from, to, afterMs, live }: { from: number; to: number; 
   return <RollingNumber from={from} to={arrived ? to : from} run={live && arrived} duration={0.5} />;
 };
 
-/** "Nobody got it": a dry comic beat, the type sags and the room is stamped "stumped". */
+/** "Nobody got it": a dry beat, the line sags a little and the room is stamped "stumped". */
 const NobodyBeat = ({ live }: { live: boolean }) => (
   <div className="absolute flex flex-col items-center" style={{ left: 0, right: 0, top: 250 }}>
     <motion.span
-      className="tv-display whitespace-nowrap"
-      style={{ fontSize: 170, lineHeight: 0.9, transformOrigin: "20% 100%" }}
-      initial={live ? { scale: 1.6, opacity: 0, rotate: 0, y: 0 } : false}
-      animate={{ scale: 1, opacity: 1, rotate: 3.5, y: 18 }}
-      transition={{ scale: { duration: 0.4 }, opacity: { duration: 0.2 }, rotate: { delay: 0.6, duration: 1.6, ease: "easeInOut" }, y: { delay: 0.6, duration: 1.6, ease: "easeInOut" } }}
+      className="tv-display lav-text whitespace-nowrap"
+      style={{ fontSize: 170, lineHeight: 1, letterSpacing: "-0.04em", transformOrigin: "20% 100%", paddingBottom: 12 }}
+      initial={live ? { scale: 1.3, opacity: 0, rotate: 0, y: 0 } : false}
+      animate={{ scale: 1, opacity: 1, rotate: 2.5, y: 18 }}
+      transition={{ scale: { duration: 0.45, ease: EASE_OUT }, opacity: { duration: 0.3 }, rotate: { delay: 0.6, duration: 1.6, ease: "easeInOut" }, y: { delay: 0.6, duration: 1.6, ease: "easeInOut" } }}
     >
-      <RisoType top="var(--ink)" under="var(--pink)" offset={6}>
-        Nobody got it
-      </RisoType>
+      Nobody got it
     </motion.span>
     <motion.span
-      className="tv-stamp mt-28"
-      style={{ fontSize: 56, color: "var(--ink)", background: "var(--pink)", borderColor: "var(--ink)" }}
-      initial={live ? { scale: 2.2, opacity: 0, rotate: 14 } : false}
-      animate={{ scale: [2.2, 0.9, 1], opacity: 1, rotate: 7 }}
-      transition={{ duration: 0.4, times: [0, 0.6, 1], delay: live ? 1.1 : 0 }}
+      className="tv-pill tv-pill--lav mt-28"
+      style={{ fontSize: 56, padding: "16px 40px" }}
+      initial={live ? { scale: 0.3, opacity: 0, rotate: 0 } : false}
+      animate={{ scale: [0.3, 1.1, 1], opacity: 1, rotate: 3 }}
+      transition={{ duration: 0.45, times: [0, 0.6, 1], delay: live ? 1.1 : 0, ease: EASE_POP }}
     >
       Stumped the room
     </motion.span>
@@ -116,50 +113,33 @@ export const WinnersCard = ({
   const nameTop = layout.chipTop + layout.chip + 18;
   const totalTop = nameTop + layout.name * 1.05 + 14;
   const big = kind === "exact";
-  // The stamp is printed at an angle: its low corner reaches ~30 px under its row.
+  // The stamp sits at a slight angle: keep the badges clear of its low corner.
   const badges = winnerCardRects(winners, layout, STAMP_ROW_BOTTOM);
   return (
     <div className="absolute inset-0" style={{ zIndex: 30 }} data-testid="tv-highlight">
-      {big ? (
-        // EXACT owns the whole frame: a full-width printed burst behind everything.
-        <motion.div
-          className="absolute inset-0"
-          initial={live ? { scale: 0.2, opacity: 0 } : false}
-          animate={{ scale: 1, opacity: 1 }}
-          transition={{ type: "spring", stiffness: 180, damping: 16 }}
-        >
-          <Sunburst size={2600} x={960} y={layout.chipTop + layout.chip / 2} rays={26} spin={false} />
-        </motion.div>
-      ) : null}
+      {/* A bloom of light behind the winners: green and frame-wide for EXACT, lavender (or amber for closest) otherwise. */}
+      <Bloom
+        x={960}
+        y={layout.chipTop + layout.chip / 2}
+        r={big ? 900 : 560}
+        color={big ? "rgba(74, 222, 128, 0.3)" : kind === "closest" ? "rgba(251, 191, 36, 0.2)" : "rgba(196, 181, 253, 0.3)"}
+        live={live}
+      />
       <StepUp compact={compact}>
-      {big ? null : (
-        <motion.svg
-          aria-hidden="true"
-          className="absolute"
-          width={900}
-          height={900}
-          style={{ left: 960 - 450, top: layout.chipTop + layout.chip / 2 - 450, mixBlendMode: "multiply" }}
-          initial={live ? { scale: 0 } : false}
-          animate={{ scale: 1 }}
-          transition={{ type: "spring", stiffness: 260, damping: 18 }}
-        >
-          <circle cx={450} cy={450} r={kind === "closest" ? 360 : 400} fill="url(#tv-dots-yellow)" />
-        </motion.svg>
-      )}
       <div className="absolute flex items-center justify-center gap-10" style={{ left: 0, right: 0, top: big ? 50 : 100, height: big ? 200 : 150 }}>
         <motion.span
-          className="tv-stamp"
-          style={{ fontSize: stamp.size, color: stamp.fg, background: stamp.bg, borderColor: "var(--ink)", borderWidth: big ? 10 : 6, padding: big ? "6px 40px" : "4px 26px" }}
-          initial={live ? { scale: 2.6, opacity: 0, rotate: stamp.rotate - 18 } : false}
-          animate={{ scale: [2.6, 0.86, 1], opacity: 1, rotate: stamp.rotate }}
-          transition={{ duration: 0.42, times: [0, 0.6, 1], delay: live ? 0.35 : 0 }}
+          className={`tv-pill ${stamp.tone}`}
+          style={{ fontSize: stamp.size, padding: big ? "18px 64px" : "14px 44px", letterSpacing: "-0.02em" }}
+          initial={live ? { scale: 0.3, opacity: 0, rotate: 0 } : false}
+          animate={{ scale: [0.3, 1.12, 1], opacity: 1, rotate: stamp.rotate }}
+          transition={{ duration: 0.45, times: [0, 0.6, 1], delay: live ? 0.35 : 0, ease: EASE_POP }}
         >
           {stamp.label}
         </motion.span>
         {detail ? (
           <motion.span
-            className="slug"
-            style={{ fontSize: 44, lineHeight: 1, background: "var(--ink)", color: "var(--paper)", padding: "10px 18px" }}
+            className="tv-pill tv-pill--glass"
+            style={{ fontSize: 44, padding: "14px 28px", fontWeight: 700 }}
             initial={live ? { opacity: 0, x: -30 } : false}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: live ? 0.6 : 0, duration: 0.3 }}
@@ -182,20 +162,18 @@ export const WinnersCard = ({
               animate={{ x: 0, y: 0, scale: 1 }}
               transition={{ type: "spring", stiffness: 190, damping: 15, mass: 1, delay: live ? i * 0.06 : 0 }}
             >
-              <span className="block" style={{ borderRadius: 999, boxShadow: "0 0 0 10px var(--paper), 14px 14px 0 10px var(--ink)" }}>
-                <InkToken name={w.name} inkIndex={w.inkIndex} size={layout.chip} />
+              <span className="block" style={{ borderRadius: 999 }}>
+                <GlassToken name={w.name} inkIndex={w.inkIndex} size={layout.chip} win />
               </span>
             </motion.div>
             <motion.span
               className="absolute tv-display text-center whitespace-nowrap"
-              style={{ left: spot.x - 500, width: 1000, top: nameTop, fontSize: layout.name, lineHeight: 1, letterSpacing: "-0.02em", zIndex: 3 }}
-              initial={live ? { opacity: 0, y: 30, scale: 0.7 } : false}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              transition={{ delay: live ? 0.3 + i * 0.06 : 0, duration: 0.35, ease: [0.2, 0.9, 0.2, 1.2] }}
+              style={{ left: spot.x - 500, width: 1000, top: nameTop, fontSize: layout.name, lineHeight: 1.04, letterSpacing: "-0.035em", zIndex: 3, color: "var(--text)", textShadow: "0 0 40px rgba(196, 181, 253, 0.45)" }}
+              initial={live ? { opacity: 0, y: 20 } : false}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: live ? 0.3 + i * 0.06 : 0, duration: 0.4, ease: EASE_OUT }}
             >
-              <RisoType top="var(--ink)" under="var(--pink)" offset={5}>
-                {w.name}
-              </RisoType>
+              {w.name}
             </motion.span>
             {scoring && w.points > 0 ? (
               <>
@@ -207,17 +185,15 @@ export const WinnersCard = ({
                   transition={{ delay: live ? 0.2 : 0, duration: 0.3 }}
                 >
                   <motion.span
-                    className="tv-display tabular"
-                    style={{ fontSize: layout.total, lineHeight: 1, color: "var(--blue)" }}
+                    className="tv-display"
+                    style={{ fontSize: layout.total, lineHeight: 1, color: "var(--glow)" }}
                     initial={false}
-                    animate={live ? { scale: [1, 1, 1.3, 1] } : { scale: 1 }}
+                    animate={live ? { scale: [1, 1, 1.18, 1] } : { scale: 1 }}
                     transition={{ duration: 0.45, times: [0, 0.6, 0.8, 1], delay: 0.3 + i * 0.12 }}
                   >
                     <ArrivingTotal from={w.prevScore} to={w.prevScore + w.points} afterMs={450 + i * 120} live={live} />
                   </motion.span>
-                  <span className="slug" style={{ fontSize: 30, lineHeight: 1, writingMode: "vertical-rl", rotate: "180deg" }}>
-                    total
-                  </span>
+                  <Label size={30} className="!leading-none">total</Label>
                 </motion.span>
               </>
             ) : null}
@@ -232,11 +208,11 @@ export const WinnersCard = ({
               <motion.span
                 key={`badge-${b.id}`}
                 aria-hidden="true"
-                className="absolute tv-display tabular flex items-center justify-center"
-                style={{ left: b.badge.x, top: b.badge.y, width: b.badge.w, height: b.badge.h, fontSize: b.font, lineHeight: 1, background: "var(--pink)", border: "6px solid var(--ink)", zIndex: 6 }}
-                initial={live ? { scale: 0, rotate: -20 } : false}
-                animate={{ scale: [0, 1.25, 1], rotate: -6 }}
-                transition={{ duration: 0.3, delay: live ? i * 0.12 : 0 }}
+                className="absolute tv-pill tv-pill--lav"
+                style={{ left: b.badge.x, top: b.badge.y, width: b.badge.w, height: b.badge.h, fontSize: b.font, zIndex: 6 }}
+                initial={live ? { scale: 0, opacity: 0 } : false}
+                animate={{ scale: [0, 1.15, 1], opacity: 1 }}
+                transition={{ duration: 0.35, delay: live ? i * 0.12 : 0, ease: EASE_POP }}
                 data-testid={`tv-winner-badge-${b.id}`}
               >
                 +{w.points}
@@ -245,7 +221,7 @@ export const WinnersCard = ({
           })
         : null}
       {layout.more > 0 ? (
-        <span className="absolute slug" style={{ left: (layout.spots.at(-1)?.x ?? 960) + layout.chip / 2 + 40, top: layout.chipTop + layout.chip / 2 - 20, fontSize: 44 }}>
+        <span className="absolute tv-label" style={{ left: (layout.spots.at(-1)?.x ?? 960) + layout.chip / 2 + 40, top: layout.chipTop + layout.chip / 2 - 20, fontSize: 44, color: "var(--text-2)" }}>
           +{layout.more}
         </span>
       ) : null}

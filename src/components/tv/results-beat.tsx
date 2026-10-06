@@ -1,14 +1,14 @@
 import { useReducedMotion } from "framer-motion";
 import { useEffect, useMemo, useState } from "react";
 import type { Question, QuestionResult } from "~/game.types";
-import { RolledSheet } from "./print";
+import { SheetIn } from "./glass";
 import { TvReveal } from "./reveal";
 import { TvStandingsBoard } from "./standings-board";
 import { buildStandings, revealSchedule } from "./tv-model";
 
 /** How long the settled reveal holds before the standings board takes over. */
 const HOLD_MS = 2400;
-/** The board is rolled on over the reveal (a printed wipe, never a cross-fade); then the reveal is dropped. */
+/** The board fades and rises in on an opaque layer over the reveal (never seen through); then the reveal is dropped. */
 const WIPE_MS = 450;
 
 /** After a question: the staged reveal, then the big standings board until the next question. */
@@ -53,9 +53,9 @@ export const TvResultsBeat = ({
         </div>
       )}
       {showBoard ? (
-        <RolledSheet live={!boardOnly} duration={WIPE_MS / 1000} zIndex={80}>
+        <SheetIn live={!boardOnly} duration={WIPE_MS / 1000} zIndex={80}>
           <TvStandingsBoard rows={rows} afterNumber={result.questionNumber} total={total} live={live} />
-        </RolledSheet>
+        </SheetIn>
       ) : null}
     </>
   );
