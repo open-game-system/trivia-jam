@@ -4,6 +4,7 @@
  * Mallets and wood for the print-shop feel; nothing square-edged (square waves click at 20 kHz).
  */
 import type { Bed, Cue } from "./cues";
+import { finaleTakeoverMs } from "~/components/tv/finale-timeline";
 
 const BED_URLS: Record<Bed, string> = {
   lobby: "/audio/music/lobby.m4a",
@@ -75,6 +76,10 @@ export class TvAudio {
   /** The final output node (after the limiter): what the speakers and the recording tap hear. */
   private comp: AudioNode | null = null;
 
+  private reducedMotion(): boolean {
+    return typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  }
+
   /** Resume after a user gesture (or immediately where autoplay is allowed). */
   unlock() {
     const { ctx } = this.context();
@@ -124,13 +129,19 @@ export class TvAudio {
       case "reveal":
         // The TV's reveal scores itself to its own animation clock: see revealScore().
         return;
-      case "gameOver":
-        this.hit(0);
-        this.arp([0, 2, 4, 5, 7, 9], 0.09, 0.42, 0.15);
-        this.arp([5, 7, 9], 0.0, 0.45, 0.9);
-        this.drumroll(1.2, 1.4);
-        this.hit(2.65);
+      case "gameOver": {
+        // Scored to the TV finale: a soft stamp per podium block, a roll under the build, and the big
+        // hit + fanfare exactly on the winner takeover (finale-timeline.ts).
+        const takeover = finaleTakeoverMs(this.reducedMotion()) / 1000;
+        this.stamp(takeover * 0.23, 0.5);
+        this.stamp(takeover * 0.36, 0.55);
+        this.stamp(takeover * 0.52, 0.6);
+        this.drumroll(takeover * 0.68, takeover * 0.32);
+        this.hit(takeover);
+        this.arp([0, 2, 4, 5, 7, 9], 0.09, 0.42, takeover + 0.15);
+        this.arp([5, 7, 9], 0.0, 0.45, takeover + 0.9);
         return;
+      }
     }
   }
 
