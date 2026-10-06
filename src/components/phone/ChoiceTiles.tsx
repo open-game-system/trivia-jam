@@ -1,10 +1,6 @@
 const TILE_INKS = ["pink", "blue", "yellow", "teal"] as const;
 
-/** Many or long options keep the smaller disc so everything still fits. */
-export const isDense = (options: readonly string[]): boolean =>
-  options.length > 4 || options.some((option) => option.length > 16);
-
-/** Four giant answer tiles in the four inks (2x2 on landscape). */
+/** One full-width answer tile per option, in the four inks. */
 export const ChoiceTiles = ({
   options,
   disabled,
@@ -14,7 +10,7 @@ export const ChoiceTiles = ({
   disabled: boolean;
   onChoose: (value: string) => void;
 }) => (
-  <div className="ptiles" role="group" aria-label="Choices" data-dense={isDense(options)}>
+  <div className="ptiles" role="group" aria-label="Choices">
     {options.map((option, index) => {
       const letter = String.fromCharCode(65 + index);
       return (

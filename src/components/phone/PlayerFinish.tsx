@@ -23,8 +23,8 @@ export const PlayerFinish = ({
   return (
     <PhoneShell className="pb-8">
       <div className="mx-auto w-full max-w-5xl px-4 pt-6">
-        <div className="grid grid-cols-1 gap-6 landscape:grid-cols-2 landscape:items-start">
-          <div className="flex flex-col items-center gap-3 landscape:sticky landscape:top-4">
+        <div className="grid grid-cols-1 gap-6">
+          <div className="flex flex-col items-center gap-3">
             <h1
               className="font-display font-extrabold leading-none"
               style={{ fontSize: "clamp(32px, 6dvh, 56px)", letterSpacing: "-0.02em" }}

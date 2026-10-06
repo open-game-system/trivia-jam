@@ -38,7 +38,7 @@ const HelpButton = ({ onOpen }: { onOpen: () => void }) => (
   </button>
 );
 
-/** The kid's waiting screen: their own big token and name fill the screen. */
+/** The waiting screen: your own token and name, and what you are waiting for. */
 const WaitCard = ({
   title,
   seat,
@@ -66,10 +66,10 @@ const WaitCard = ({
         <span className="pslug">Trivia Jam</span>
         <h1 className="misreg pwait-title">{title}</h1>
         {children}
-        <div className="mt-5 flex justify-center landscape:justify-start">
+        <div className="mt-5 flex justify-center">
           <WaitingDots />
         </div>
-        {footer && <div className="mt-5 flex justify-center landscape:justify-start">{footer}</div>}
+        {footer && <div className="mt-5 flex justify-center">{footer}</div>}
       </div>
     </motion.div>
   </PhoneShell>
@@ -152,9 +152,6 @@ const ActiveQuestionDisplay = ({
   onSubmitNumeric: () => void;
   onChoose: (value: string) => void;
 }) => {
-  const isFirstQuestion = GameContext.useSelector(
-    (state) => state.public.questionResults.length === 0,
-  );
   const question = questions[currentQuestion.questionId];
   const isMultipleChoice = question?.questionType === "multiple-choice";
   const myAnswer = currentQuestion.answers.find((a) => a.playerId === userId);
@@ -167,9 +164,6 @@ const ActiveQuestionDisplay = ({
         text={question ? question.text : "Loading question..."}
         timeLeft={timeLeft}
         totalTime={totalTime}
-        questionId={currentQuestion.questionId}
-        hint={isFirstQuestion}
-        options={isMultipleChoice ? options : undefined}
       />
       {hasAnswered && myAnswer ? (
         <LockedIn

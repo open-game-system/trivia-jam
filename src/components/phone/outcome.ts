@@ -41,10 +41,3 @@ export const finishStamp = (place: number): string => {
   if (place === 3) return "BRONZE!";
   return "GREAT GAME!";
 };
-
-/** This question's result as 0-3 printed stars: exact 3, scored 2, answered 1, no answer 0. */
-export const starsFor = (outcome: Outcome, points: number): 0 | 1 | 2 | 3 => {
-  if (outcome === "none") return 0;
-  if (outcome === "exact") return 3;
-  return points > 0 ? 2 : 1;
-};

@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { PlayerToken } from "./ink";
 import { LookAtTv } from "./LookAtTv";
 import { useSpoilerGate } from "./useSpoilerGate";
-import { describeOutcome, ordinal, resultHeadline, starsFor, type Outcome } from "./outcome";
+import { describeOutcome, ordinal, resultHeadline, type Outcome } from "./outcome";
 import { useCountUp } from "./useCountUp";
 
 type Person = { id: string; name: string; score: number };
@@ -46,33 +46,6 @@ const Stat = ({
   </motion.div>
 );
 
-/** Three printed stars: how this question went (filled = earned). */
-const Stars = ({ count }: { count: number }) => (
-  <motion.div
-    data-testid="my-stars"
-    role="img"
-    aria-label={`${count} of 3 stars`}
-    className="pstars"
-    initial={{ scale: 1.5, rotate: 6, opacity: 0 }}
-    animate={{ scale: [1.5, 0.95, 1], rotate: 2, opacity: 1 }}
-    transition={{ duration: 0.4, times: [0, 0.7, 1], ease: "easeOut" }}
-  >
-    {[0, 1, 2].map((i) => (
-      <motion.svg
-        key={i}
-        viewBox="0 0 48 48"
-        className={i < count ? "pstar pstar-on" : "pstar"}
-        aria-hidden="true"
-        initial={{ scale: i < count ? 0 : 1 }}
-        animate={{ scale: i < count ? [0, 1.25, 1] : 1 }}
-        transition={{ delay: 0.3 + i * 0.18, duration: 0.3 }}
-      >
-        <path d="M24 3l6.2 14.2 15.3 1.4-11.6 10.2 3.5 15L24 35.8 10.6 43.8l3.5-15L2.5 18.6l15.3-1.4z" />
-      </motion.svg>
-    ))}
-  </motion.div>
-);
-
 /** The player's own result: big, short, and happy about it. */
 const MyOutcome = ({
   question,
@@ -111,10 +84,6 @@ const MyOutcome = ({
       >
         {headline}
       </motion.div>
-
-      <div className="pres-place">
-        <Stars count={starsFor(outcome, earned)} />
-      </div>
 
       <div className="pres-coin">
         <Stat tone="bg-pink text-ink" label={`${earned} points`} tilt={-4} testId="my-points">
@@ -180,7 +149,7 @@ const Everyone = ({
   players: Person[];
   meId: string;
 }) => (
-  <section aria-label="Everyone's answers" className="landscape:sr-only">
+  <section aria-label="Everyone's answers" >
     <h2 className="pslug mb-2" style={{ fontSize: 16 }}>
       Everyone
     </h2>
@@ -200,13 +169,9 @@ const Everyone = ({
               <div className="truncate text-xl font-extrabold leading-tight">
                 {answer.playerName}
               </div>
-              {/* The small stat line is for portrait phones; the kid's landscape iPad gets the big number. */}
-              <div className="pslug truncate landscape:hidden">
+              <div className="pslug truncate">
                 {answer.value} - {score.timeTaken.toFixed(1)}s
               </div>
-            </div>
-            <div className="tabular hidden whitespace-nowrap text-2xl font-extrabold text-blue landscape:block">
-              {answer.value}
             </div>
             {score.points > 0 ? (
               <div className="tabular whitespace-nowrap text-2xl font-extrabold">
@@ -257,7 +222,7 @@ export const PlayerResult = ({
       >
         {question.text}
       </h1>
-      <div className="grid grid-cols-1 gap-5 landscape:grid-cols-1">
+      <div className="grid grid-cols-1 gap-5">
         <MyOutcome
           question={question}
           result={result}
