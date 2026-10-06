@@ -11,6 +11,7 @@ export const QuestionProgress = ({
   current: number;
   total: number;
 }) => {
+  const label = current === 0 ? `Ready: ${total} ${total === 1 ? "question" : "questions"}` : `Question ${current} of ${total}`;
   const ticks = Math.min(total, 12);
   const filled = total <= 12 ? current : Math.round((current / total) * ticks);
 
@@ -20,7 +21,7 @@ export const QuestionProgress = ({
       data-testid="question-progress"
     >
       <span className="pslug whitespace-nowrap">
-        Question {current} of {total}
+        {label}
       </span>
       <div className="flex flex-1 gap-1.5" aria-hidden="true">
         {Array.from({ length: ticks }, (_, i) => (

@@ -868,7 +868,7 @@ const LiveQuestionPanel = ({
       )}
 
       <div className="mt-4">
-        <Details>
+        <Details summary="Answer and guesses">
           {question && <QuestionExtras question={question} />}
           {currentQuestion.answers.length > 0 && question && (
             <div className="flex flex-col gap-2">
@@ -972,11 +972,11 @@ const QuestionControls = ({
                 </section>
               )}
 
-              <div className="mt-5">
-                <Details summary="More">
-                  {!(lastQuestionResult && isLastQuestion) && (
+              <section className="mt-5 flex flex-col gap-3" aria-label="Host tools">
+                <p className="pslug">Host tools</p>
+                {!(lastQuestionResult && isLastQuestion) && (
+                  <Details summary={isFirst ? "Answer key" : "Up next"}>
                     <section aria-label="Up next">
-                      {!isFirst && <p className="pslug mb-2">Up next</p>}
                       {!isFirst && nextQuestion && <QuestionHeadline question={nextQuestion} />}
                       {!isFirst && !nextQuestion && (
                         <p className="h-detail">No more questions available</p>
@@ -987,7 +987,9 @@ const QuestionControls = ({
                         </div>
                       )}
                     </section>
-                  )}
+                  </Details>
+                )}
+                <Details summary={`Players (${players.length})`}>
                   <PlayerLedger
                     players={players}
                     hostId={hostId}
@@ -995,7 +997,7 @@ const QuestionControls = ({
                     onRemove={(playerId) => send({ type: "REMOVE_PLAYER", playerId })}
                   />
                 </Details>
-              </div>
+              </section>
               {showEndGameDemoted && (
                 <div className="mt-5 flex justify-center">
                   <EndGameControl onEnd={endGame} confirm={false} />
