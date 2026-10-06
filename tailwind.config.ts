@@ -12,8 +12,8 @@ export default {
       },
       fontFamily: {
         sans: ['"Inter Variable"', "Inter", "system-ui", "sans-serif"],
-        display: ['"Bricolage Grotesque Variable"', "system-ui", "sans-serif"],
-        mono: ['"Space Mono"', "ui-monospace", "monospace"],
+        // Kept only for two story-asserted class names (PlayerResult); renders as Inter.
+        display: ['"Inter Variable"', "Inter", "system-ui", "sans-serif"],
       },
       colors: {
         // Aurora Glass (docs/art-style.md).
@@ -23,13 +23,6 @@ export default {
         win: { DEFAULT: "#4ADE80", fill: "#22C55E", ink: "#052E16" },
         close: "#FBBF24",
         aurora: { indigo: "#6366F1", purple: "#A855F7", pink: "#EC4899" },
-        // Riso inks (docs/art-style.md). The only colours new UI should use.
-        paper: { DEFAULT: "#F3EEE3", 2: "#E9E2D3" },
-        ink: "#1E1B1A",
-        pink: "#FF48B0",
-        blue: "#3255A4",
-        yellow: "#FFE800",
-        teal: "#00838A",
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         card: {
