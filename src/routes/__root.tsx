@@ -1,4 +1,5 @@
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
+import { installTelemetry, reportError } from "../client-telemetry";
 import {
   HeadContent,
   Outlet,
@@ -121,6 +122,7 @@ export const Route = createRootRoute({
   loader: async () => loadSession(),
   shellComponent: RootDocument,
   component: RootComponent,
+  errorComponent: RootError,
 });
 
 function RootDocument({ children }: { children: ReactNode }) {
@@ -137,8 +139,27 @@ function RootDocument({ children }: { children: ReactNode }) {
   );
 }
 
+/** A render error anywhere: report it (type/message only) and show a calm printed card. */
+function RootError({ error }: { error: Error }) {
+  // Reporting is a side effect on an external system, once per error.
+  useEffect(() => reportError(error, { boundary: "root" }), [error]);
+  return (
+    <div className="riso flex min-h-screen items-center justify-center p-8 text-center">
+      <div className="sheet max-w-md px-8 py-10">
+        <h1 className="misreg mb-4 text-4xl font-extrabold">Oops</h1>
+        <p className="mb-6 text-lg">Something went wrong. Reload to jump back in.</p>
+        <button type="button" className="pbtn pbtn-pink pbtn-lg" onClick={() => window.location.reload()}>
+          Reload
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function RootComponent() {
   const { host, sessionId, accessToken, payload } = Route.useLoaderData();
+  // Client errors and sessions go to this Worker's /events (subscribes to window events once).
+  useEffect(() => installTelemetry(window.location.pathname.startsWith("/spectate") ? "tv" : "phone"), []);
 
   return (
     <SessionProvider
