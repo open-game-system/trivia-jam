@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { useEffect, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 import { InkToken, RisoType } from "./print";
 import { RollingNumber } from "./standings";
 import { Sunburst } from "./sunburst";
@@ -24,6 +24,21 @@ const STAMP = {
   closest: { label: "Closest!", bg: "var(--yellow)", fg: "var(--ink)", size: 84, rotate: -4 },
   right: { label: "Got it!", bg: "var(--teal)", fg: "var(--paper)", size: 110, rotate: -5 },
 } as const;
+
+/** How far the card shrinks for the misses beat (from the top centre of the frame). */
+export const STEP_UP_SCALE = 0.62;
+
+const StepUp = ({ compact, children }: { compact: boolean; children: ReactNode }) => (
+  <motion.div
+    className="absolute inset-0"
+    style={{ transformOrigin: "50% 0" }}
+    initial={false}
+    animate={{ scale: compact ? STEP_UP_SCALE : 1, y: compact ? -14 : 0 }}
+    transition={{ type: "spring", stiffness: 260, damping: 26 }}
+  >
+    {children}
+  </motion.div>
+);
 
 /** The lowest point of the angled stamp (row top + height + its tilt). */
 const STAMP_ROW_BOTTOM = 284;
@@ -76,17 +91,22 @@ export const WinnersCard = ({
   detail,
   scoring,
   live,
+  compact = false,
 }: {
   kind: WinnersKind;
   winners: Winner[];
   detail?: string;
   scoring: boolean;
   live: boolean;
+  /** The misses beat: the whole card steps up and shrinks to the top of the frame. */
+  compact?: boolean;
 }) => {
   if (kind === "nobody" || winners.length === 0) {
     return (
       <div className="absolute inset-0" style={{ zIndex: 30 }} data-testid="tv-highlight">
-        <NobodyBeat live={live} />
+        <StepUp compact={compact}>
+          <NobodyBeat live={live} />
+        </StepUp>
       </div>
     );
   }
@@ -110,7 +130,9 @@ export const WinnersCard = ({
         >
           <Sunburst size={2600} x={960} y={layout.chipTop + layout.chip / 2} rays={26} spin={false} />
         </motion.div>
-      ) : (
+      ) : null}
+      <StepUp compact={compact}>
+      {big ? null : (
         <motion.svg
           aria-hidden="true"
           className="absolute"
@@ -227,6 +249,7 @@ export const WinnersCard = ({
           +{layout.more}
         </span>
       ) : null}
+      </StepUp>
     </div>
   );
 };

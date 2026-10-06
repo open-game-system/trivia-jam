@@ -49,8 +49,14 @@ export const OptionTiles = ({
         <motion.div
           key={`${i}-${option}`}
           initial={{ y: 40, opacity: 0 }}
-          animate={{ y: 0, opacity: dimmed ? 0.32 : 1 }}
-          transition={{ duration: 0.45, delay: correctIndex === undefined ? 0.25 + i * 0.08 : 0, ease: [0.2, 0.9, 0.2, 1.15] }}
+          animate={{ y: 0, opacity: dimmed ? 0.32 : 1, scale: isRight ? [1, 1.07, 1] : 1 }}
+          transition={{
+            duration: 0.45,
+            delay: correctIndex === undefined ? 0.25 + i * 0.08 : 0,
+            ease: [0.2, 0.9, 0.2, 1.15],
+            // The right tile is stamped: it punches up a size and settles.
+            scale: { duration: 0.4, times: [0, 0.4, 1] },
+          }}
           className="relative flex items-center"
           style={{
             height,
@@ -73,7 +79,7 @@ export const OptionTiles = ({
           {isRight ? (
             <motion.span
               className="tv-stamp absolute"
-              style={{ left: height - 70, bottom: -26, color: "var(--paper)", fontSize: 40, background: "var(--teal)", borderColor: "var(--ink)", zIndex: 2 }}
+              style={{ left: height - 70, bottom: -30, color: "var(--paper)", fontSize: 52, background: "var(--teal)", borderColor: "var(--ink)", zIndex: 2 }}
               initial={{ scale: 2.2, opacity: 0, rotate: -18 }}
               animate={{ scale: [2.2, 0.88, 1], opacity: 1, rotate: -8 }}
               transition={{ duration: 0.45, times: [0, 0.6, 1] }}

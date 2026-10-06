@@ -17,6 +17,8 @@ import {
   revealSchedule,
   toNumber,
 } from "./tv-model";
+import { choiceMisses, numericMisses } from "./misses";
+import { MissesStrip } from "./misses-strip";
 import { choiceAnswerText, PUCK } from "./reveal-geometry";
 import { PHASE, useRevealPhase } from "./use-reveal-phase";
 import { type Winner, WinnersCard, type WinnersKind } from "./winners-card";
@@ -67,6 +69,9 @@ const LineLayer = ({ back, live, children }: { back: boolean; live: boolean; chi
   </>
 );
 
+/** Where the answer steps up to for the misses beat: between the shrunken winners and the misses strip. */
+const STEPPED_ANSWER = { top: 498, scale: 0.6 } as const;
+
 const answerCenter = (x: number) => Math.min(REVEAL_FRAME.right - 260, Math.max(REVEAL_FRAME.left + 240, x));
 
 /** The pin where the answer lands on the line: a pink stem and diamond. */
@@ -92,15 +97,19 @@ const AnswerPin = ({ x, live }: { x: number; live: boolean }) => (
 );
 
 /** The answer, huge, under the line: it stays printed while everything else steps back. */
-const AnswerNumeral = ({ value, x, live }: { value: string; x: number; live: boolean }) => {
+const AnswerNumeral = ({ value, x, live, compact }: { value: string; x: number; live: boolean; compact: boolean }) => {
   const center = answerCenter(x);
   return (
     <motion.div
       className="absolute tv-display tabular"
-      style={{ top: AXIS_Y + 78, fontSize: 200, lineHeight: 0.86, x: "-50%", zIndex: 35 }}
+      style={{ top: AXIS_Y + 78, fontSize: 200, lineHeight: 0.86, x: "-50%", zIndex: 35, transformOrigin: "50% 0" }}
       initial={live ? { scale: 2.4, opacity: 0, y: -120, left: center } : false}
-      animate={{ scale: [2.4, 0.9, 1.03, 1], opacity: 1, y: 0, left: center }}
-      transition={{ duration: 0.5, times: [0, 0.55, 0.8, 1], delay: 0.12, left: { type: "spring", stiffness: 200, damping: 22 } }}
+      animate={compact ? { scale: STEPPED_ANSWER.scale, opacity: 1, y: STEPPED_ANSWER.top - (AXIS_Y + 78), left: center } : { scale: [2.4, 0.9, 1.03, 1], opacity: 1, y: 0, left: center }}
+      transition={
+        compact
+          ? { type: "spring", stiffness: 260, damping: 26 }
+          : { duration: 0.5, times: [0, 0.55, 0.8, 1], delay: 0.12, left: { type: "spring", stiffness: 200, damping: 22 } }
+      }
       data-testid="correct-answer"
     >
       <span className="tv-riso-type">
@@ -122,16 +131,16 @@ const AnswerNumeral = ({ value, x, live }: { value: string; x: number; live: boo
   );
 };
 
-const ChoiceAnswerLine = ({ letter, text, live }: { letter: string; text: string; live: boolean }) => {
+const ChoiceAnswerLine = ({ letter, text, live, compact }: { letter: string; text: string; live: boolean; compact: boolean }) => {
   const size = text.length <= 10 ? 180 : text.length <= 18 ? 130 : 88;
   const full = choiceAnswerText(letter, text);
   return (
     <motion.div
       className="absolute flex items-end justify-center gap-10"
-      style={{ left: 96, right: 96, top: 850, zIndex: 35 }}
+      style={{ left: 96, right: 96, top: 850, zIndex: 35, transformOrigin: "50% 0" }}
       initial={live ? { scale: 1.8, opacity: 0, y: -80 } : false}
-      animate={{ scale: [1.8, 0.94, 1], opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, times: [0, 0.65, 1] }}
+      animate={compact ? { scale: STEPPED_ANSWER.scale, opacity: 1, y: STEPPED_ANSWER.top - 850 } : { scale: [1.8, 0.94, 1], opacity: 1, y: 0 }}
+      transition={compact ? { type: "spring", stiffness: 260, damping: 26 } : { duration: 0.5, times: [0, 0.65, 1] }}
       data-testid="correct-answer"
     >
       <FitName text={full} max={size} floor={72} box={1728} lineHeight={1} className="tv-display text-center">
@@ -264,6 +273,8 @@ export const TvReveal = ({
     return { id, name, inkIndex, points, prevScore: (scoreOf.get(id) ?? points) - points, from };
   };
   const forward = phase >= PHASE.spotlight;
+  /** The misses beat: winners and answer step up, everyone else slides in with how far off they were. */
+  const settling = phase >= PHASE.standings;
   const shaking = live && exact && phase === PHASE.answer;
 
   if (isChoice && question.options) {
@@ -275,17 +286,24 @@ export const TvReveal = ({
       const idx = matchOptionIndex(a.value, options);
       if (idx >= 0) byOption[idx].push({ playerId: a.playerId, name: a.playerName, inkIndex: inkOf(a.playerId, order), order });
     });
-    const tokens = byOption.map((list) =>
+    const tokens = byOption.map((list, oi) =>
       list.length === 0 ? null : (
         <>
-          {list.map((t) => (
+          {list.map((t, k) => {
+            // As the answer lands, the tokens on the wrong tiles drop away off the sheet.
+            const dropped = phase >= PHASE.answer && correctIndex >= 0 && oi !== correctIndex;
+            return (
             <motion.span
               key={t.playerId}
               className="relative inline-flex flex-col items-center"
               data-testid={`player-result-${t.playerId}`}
               initial={live ? { y: -360, opacity: 0 } : false}
-              animate={{ y: 0, opacity: 1 }}
-              transition={{ y: { delay: live ? firstDrop + t.order * stagger : 0, type: "spring", stiffness: 420, damping: 17 }, opacity: { delay: live ? firstDrop + t.order * stagger : 0 } }}
+              animate={dropped ? { y: 420, opacity: 0, rotate: k % 2 === 0 ? 28 : -24 } : { y: 0, opacity: 1 }}
+              transition={
+                dropped
+                  ? { duration: live ? 0.6 : 0, delay: live ? 0.18 + k * 0.06 : 0, ease: [0.5, 0, 0.9, 0.6] }
+                  : { y: { delay: live ? firstDrop + t.order * stagger : 0, type: "spring", stiffness: 420, damping: 17 }, opacity: { delay: live ? firstDrop + t.order * stagger : 0 } }
+              }
             >
               <motion.span
                 className="inline-flex"
@@ -301,7 +319,8 @@ export const TvReveal = ({
                 </span>
               ) : null}
             </motion.span>
-          ))}
+            );
+          })}
         </>
       ),
     );
@@ -331,9 +350,15 @@ export const TvReveal = ({
           </div>
         </LineLayer>
         {phase >= PHASE.answer && correctIndex >= 0 ? (
-          <ChoiceAnswerLine letter={optionLetter(correctIndex)} text={options[correctIndex]} live={live} />
+          <ChoiceAnswerLine letter={optionLetter(correctIndex)} text={options[correctIndex]} live={live} compact={settling} />
         ) : null}
-        {forward && correctIndex >= 0 ? <WinnersCard kind={kind} winners={winners} scoring={phase >= PHASE.points} live={live} /> : null}
+        {forward && correctIndex >= 0 ? <WinnersCard kind={kind} winners={winners} scoring={phase >= PHASE.points} live={live} compact={settling} /> : null}
+        {settling && correctIndex >= 0 ? (
+          <MissesStrip
+            misses={choiceMisses(result.answers.map((a, i) => ({ playerId: a.playerId, name: a.playerName, inkIndex: inkOf(a.playerId, i), value: a.value })), options, correctIndex)}
+            live={live}
+          />
+        ) : null}
       </motion.div>
     );
   }
@@ -389,8 +414,11 @@ export const TvReveal = ({
           ))}
           {phase >= PHASE.answer ? <AnswerPin x={layout.correctX} live={live} /> : null}
         </LineLayer>
-        {phase >= PHASE.answer ? <AnswerNumeral value={String(question.correctAnswer)} x={forward && winners.length > 0 ? 960 : layout.correctX} live={live} /> : null}
-        {forward && litKind ? <WinnersCard kind={litKind} winners={winners} detail={detail} scoring={phase >= PHASE.points} live={live} /> : null}
+        {phase >= PHASE.answer ? (
+          <AnswerNumeral value={String(question.correctAnswer)} x={forward && winners.length > 0 ? 960 : layout.correctX} live={live} compact={settling && winners.length > 0} />
+        ) : null}
+        {forward && litKind ? <WinnersCard kind={litKind} winners={winners} detail={detail} scoring={phase >= PHASE.points} live={live} compact={settling} /> : null}
+        {settling && litKind ? <MissesStrip misses={numericMisses(guesses, correct, new Set(winners.map((w) => w.id)))} live={live} /> : null}
       </Shake>
     </motion.div>
   );
