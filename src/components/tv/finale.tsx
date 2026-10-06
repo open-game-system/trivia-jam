@@ -5,16 +5,16 @@ import { type Award, computeAwards } from "./awards";
 import { PODIUM_LAYOUT, podiumHeights } from "./finale-layout";
 import { FINALE_AT as AT } from "./finale-timeline";
 import { FitName } from "./fit-name";
-import { InkToken, RisoType, Roller, Slug, WIPE } from "./print";
+import { AuroraGlow, Bloom, EASE_OUT, EASE_POP, GlassToken, Label } from "./glass";
 import { RollingNumber } from "./standings";
-import { Sunburst } from "./sunburst";
 import { joinNames } from "./tv-model";
 
 type FinalPlayer = { id: string; name: string; score: number };
 
-const INKS = ["var(--pink)", "var(--blue)", "var(--yellow)", "var(--teal)"];
+/** The aurora's own colours, for the glowing confetti. */
+const GLOWS = ["#a5b4fc", "#c084fc", "#f9a8d4", "#c4b5fd", "#ffffff"];
 
-/** Deterministic pseudo-random so the confetti sheet is the same on every TV. */
+/** Deterministic pseudo-random so the confetti is the same on every TV. */
 const seeded = (seed: number) => {
   let s = seed;
   return () => {
@@ -23,45 +23,40 @@ const seeded = (seed: number) => {
   };
 };
 
-type Scrap = { x: number; size: number; ink: string; shape: "rect" | "dot" | "tri"; delay: number; spin: number; drift: number; fall: number };
+type Mote = { x: number; size: number; color: string; delay: number; drift: number; fall: number; twinkle: number };
 
-/** Confetti as printed paper scraps in the four inks, overprinting where they cross. */
-const PaperConfetti = ({ count, start }: { count: number; start: number }) => {
-  const scraps = useMemo<Scrap[]>(() => {
+/** Confetti as soft glowing motes of light in the aurora colours, drifting down and twinkling. */
+const GlowConfetti = ({ count, start }: { count: number; start: number }) => {
+  const motes = useMemo<Mote[]>(() => {
     const rnd = seeded(7);
     return Array.from({ length: count }, (_, i) => ({
       x: rnd() * 1920,
-      size: 18 + rnd() * 26,
-      ink: INKS[i % INKS.length],
-      shape: (["rect", "dot", "tri"] as const)[Math.floor(rnd() * 3)],
-      delay: start + rnd() * 1.6,
-      spin: (rnd() - 0.5) * 720,
-      drift: (rnd() - 0.5) * 260,
-      fall: 3.2 + rnd() * 2.2,
+      size: 10 + rnd() * 22,
+      color: GLOWS[i % GLOWS.length],
+      delay: start + rnd() * 1.8,
+      drift: (rnd() - 0.5) * 220,
+      fall: 3.6 + rnd() * 2.4,
+      twinkle: 0.5 + rnd() * 0.5,
     }));
   }, [count, start]);
   return (
     <div aria-hidden="true" className="absolute inset-0 pointer-events-none" style={{ zIndex: 60 }}>
-      {scraps.map((c, i) => (
-        <motion.svg
+      {motes.map((m, i) => (
+        <motion.span
           key={i}
-          width={c.size}
-          height={c.size}
-          viewBox="0 0 10 10"
-          className="absolute overprint"
-          style={{ left: c.x, top: -60 }}
-          initial={{ y: 0, x: 0, rotate: 0, opacity: 0 }}
-          animate={{ y: 1220, x: c.drift, rotate: c.spin, opacity: [0, 1, 1, 1] }}
-          transition={{ duration: c.fall, delay: c.delay, ease: [0.3, 0.1, 0.6, 1] }}
-        >
-          {c.shape === "rect" ? (
-            <rect x="0" y="2" width="10" height="6" fill={c.ink} />
-          ) : c.shape === "dot" ? (
-            <circle cx="5" cy="5" r="5" fill={c.ink} />
-          ) : (
-            <polygon points="5,0 10,10 0,10" fill={c.ink} />
-          )}
-        </motion.svg>
+          className="tv-particle"
+          style={{
+            left: m.x,
+            top: -60,
+            width: m.size,
+            height: m.size,
+            background: `radial-gradient(circle, #ffffff 0%, ${m.color} 35%, transparent 70%)`,
+            boxShadow: `0 0 ${Math.round(m.size * 1.2)}px ${m.color}`,
+          }}
+          initial={{ y: 0, x: 0, opacity: 0 }}
+          animate={{ y: 1220, x: m.drift, opacity: [0, 1, m.twinkle, 1, 0.6] }}
+          transition={{ duration: m.fall, delay: m.delay, ease: [0.3, 0.1, 0.6, 1] }}
+        />
       ))}
     </div>
   );
@@ -75,13 +70,13 @@ const STEP_BACK = { scale: 0.74, originY: 300 } as const;
 const steppedY = (y: number) => STEP_BACK.originY + (y - STEP_BACK.originY) * STEP_BACK.scale;
 const AWARDS_TOP = 872;
 
-/** The share of the takeover spent on screen before the roller wipes it off. */
-const TAKEOVER_WIPE = 0.86;
+/** The share of the takeover spent at full strength before it fades away. */
+const TAKEOVER_HOLD = 0.86;
 
 const PODIUM = [
-  { place: 2, slot: 0, ink: "var(--blue)", on: "var(--paper)", at: AT.second, label: "2nd" },
-  { place: 1, slot: 1, ink: "var(--pink)", on: "var(--ink)", at: AT.first, label: "1st" },
-  { place: 3, slot: 2, ink: "var(--teal)", on: "var(--paper)", at: AT.third, label: "3rd" },
+  { place: 2, slot: 0, at: AT.second, label: "2nd" },
+  { place: 1, slot: 1, at: AT.first, label: "1st" },
+  { place: 3, slot: 2, at: AT.third, label: "3rd" },
 ] as const;
 
 /** A score that sits on 0 until its moment, then counts up to the final total. */
@@ -99,16 +94,16 @@ const CountUp = ({ to, atSeconds, live }: { to: number; atSeconds: number; live:
 const Mystery = ({ size }: { size: number }) => (
   <span
     aria-hidden="true"
-    className="tv-display flex items-center justify-center"
-    style={{ width: size, height: size, borderRadius: 999, background: "var(--paper)", border: "8px solid var(--ink)", fontSize: size * 0.62, color: "var(--ink)" }}
+    className="tv-display tv-glass-pill flex items-center justify-center"
+    style={{ width: size, height: size, fontSize: size * 0.56, color: "var(--glow)", borderColor: "var(--glow)", borderStyle: "dashed", boxShadow: "0 0 40px rgba(196, 181, 253, 0.4)" }}
   >
     ?
   </span>
 );
 
 /**
- * A podium block rises out of the floor already printed with its player (no empty slab), lands with a
- * squash, and its score counts up from 0 while the room watches. 1st rises as "1st ?" and only shows
+ * A podium block (a tall glass slab) rises out of the floor already carrying its player (no empty slab),
+ * settles, and its score counts up from 0 while the room watches. 1st rises as "1st ?" and only shows
  * its player when the winner takeover clears (`revealAt`).
  */
 const PodiumStep = ({
@@ -135,49 +130,53 @@ const PodiumStep = ({
   }, [first, speed]);
   return (
     <div
-      className="absolute overflow-hidden"
-      style={{ left: PODIUM_LEFT + step.slot * (BLOCK + GAP), top: FLOOR - height - 40, width: BLOCK + 16, height: height + 40 }}
+      className="absolute"
+      // Cut only at the floor (the slab rises out of it); its glow spills freely to the sides and above.
+      style={{ left: PODIUM_LEFT + step.slot * (BLOCK + GAP), top: FLOOR - height - 40, width: BLOCK + 16, height: height + 40, clipPath: "inset(-400px -400px 0 -400px)" }}
     >
       <motion.div
-        className="absolute flex flex-col items-center"
+        className="absolute flex flex-col items-center tv-glass"
         style={{
-          left: 0,
+          left: 8,
           top: 40,
           width: BLOCK,
-          height,
-          background: step.ink,
-          border: "6px solid var(--ink)",
-          boxShadow: `10px 10px 0 ${first ? "var(--yellow)" : "var(--ink)"}`,
+          height: height + 32,
+          borderRadius: "32px 32px 0 0",
+          borderBottom: "none",
+          background: first
+            ? "linear-gradient(180deg, rgba(129, 140, 248, 0.5), rgba(168, 85, 247, 0.28) 55%, rgba(168, 85, 247, 0.1)), rgba(11, 15, 26, 0.35)"
+            : "linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.04)), rgba(11, 15, 26, 0.42)",
+          borderColor: first ? "rgba(196, 181, 253, 0.6)" : undefined,
+          boxShadow: first ? "0 0 90px rgba(139, 92, 246, 0.45), inset 0 1px 0 rgba(255,255,255,.3)" : undefined,
           transformOrigin: "50% 100%",
           paddingTop: 22,
         }}
-        initial={{ y: height + 60 }}
-        animate={{ y: [height + 60, -18, 0, 0, 0], scaleY: [1, 1, 0.9, 1.04, 1], scaleX: [1, 1, 1.06, 0.98, 1] }}
-        transition={{ delay: rise, duration: (first ? 0.95 : 0.75) * Math.max(speed, 0.6), times: [0, 0.55, 0.72, 0.86, 1], ease: "easeOut" }}
+        initial={{ y: height + 80 }}
+        animate={{ y: [height + 80, -10, 0] }}
+        transition={{ delay: rise, duration: (first ? 0.95 : 0.75) * Math.max(speed, 0.6), times: [0, 0.7, 1], ease: EASE_OUT }}
         data-testid={`player-score-${player.id}`}
       >
-        <span aria-hidden="true" className="absolute inset-0 halftone-ink" style={{ opacity: 0.2 }} />
-        <span className="relative slug" style={{ fontSize: 40, color: step.on, lineHeight: 1 }}>
+        <span className="relative tv-label" style={{ fontSize: 40, color: first ? "var(--text)" : "var(--text-2)", lineHeight: 1 }}>
           {step.label}
         </span>
         {revealed ? (
           <motion.span
             className="relative flex flex-col items-center"
-            initial={first ? { scale: 1.6, opacity: 0, rotate: -8 } : false}
-            animate={{ scale: [first ? 1.6 : 1, 0.9, 1], opacity: 1, rotate: 0 }}
-            transition={{ duration: 0.45, times: [0, 0.6, 1] }}
+            initial={first ? { scale: 1.3, opacity: 0 } : false}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ duration: 0.5, ease: EASE_OUT }}
           >
-            <span className="relative mt-3" style={{ borderRadius: 999, boxShadow: "0 0 0 7px var(--paper)" }}>
-              <InkToken name={player.name} inkIndex={inkIndex} size={token} />
+            <span className="relative mt-3" style={{ borderRadius: 999 }}>
+              <GlassToken name={player.name} inkIndex={inkIndex} size={token} win={first} />
             </span>
             <FitName
               text={player.name}
               max={first ? 84 : 60}
               box={BLOCK - 44}
               className="tv-display text-center mt-3"
-              style={{ letterSpacing: "-0.015em", color: step.on }}
+              style={{ letterSpacing: "-0.03em", color: "var(--text)" }}
             />
-            <span className="relative tv-display tabular" style={{ fontSize: first ? 96 : 68, lineHeight: 1, color: step.on }} aria-hidden="true">
+            <span className={`relative tv-display ${first ? "glow-text" : ""}`} style={{ fontSize: first ? 96 : 68, lineHeight: 1, color: first ? undefined : "var(--glow)" }} aria-hidden="true">
               {first ? <CountUp to={player.score} atSeconds={0.2} live /> : <CountUp to={player.score} atSeconds={AT.count * speed} live />}
             </span>
           </motion.span>
@@ -195,76 +194,64 @@ const PodiumStep = ({
   );
 };
 
-const STAMP_INKS = [
-  { bg: "var(--teal)", fg: "var(--paper)" },
-  { bg: "var(--blue)", fg: "var(--paper)" },
-  { bg: "var(--pink)", fg: "var(--ink)" },
-];
-
-/** One award at a time along the bottom strip: the card rises in, then its own stamp slams onto it. */
-const AwardCard = ({ award, index, at, box }: { award: Award; index: number; at: number; box: number }) => {
-  const stamp = STAMP_INKS[index % STAMP_INKS.length];
-  return (
-    <motion.div
-      className="relative flex flex-col justify-center flex-1 min-w-0"
-      style={{ height: 176, padding: "16px 26px", background: "var(--paper-2)", border: "6px solid var(--ink)", boxShadow: `10px 10px 0 ${INKS[index % INKS.length]}` }}
-      initial={{ y: 260, opacity: 0, rotate: 3 }}
-      animate={{ y: 0, opacity: 1, rotate: index % 2 === 0 ? -1 : 1 }}
-      transition={{ delay: at, duration: 0.5, ease: [0.2, 0.9, 0.2, 1.15] }}
-      data-testid={`tv-award-${award.id}`}
-    >
-      <span className="flex items-center justify-between gap-4">
-        <span className="slug whitespace-nowrap" style={{ fontSize: 30, lineHeight: 1 }}>
-          {award.title}
-        </span>
-        <motion.span
-          className="tv-stamp tabular flex-none"
-          style={{ fontSize: 34, padding: "3px 12px", background: stamp.bg, color: stamp.fg, borderColor: "var(--ink)" }}
-          initial={{ scale: 2.6, opacity: 0, rotate: -22 }}
-          animate={{ scale: [2.6, 0.86, 1.04, 1], opacity: 1, rotate: -8 }}
-          transition={{ delay: at + 0.55, duration: 0.42, times: [0, 0.55, 0.8, 1] }}
-        >
-          {award.detail}
-        </motion.span>
+/** One award at a time along the bottom strip: the glass card rises in, then its pill pops on. */
+const AwardCard = ({ award, index, at, box }: { award: Award; index: number; at: number; box: number }) => (
+  <motion.div
+    className="relative flex flex-col justify-center flex-1 min-w-0 tv-glass"
+    style={{ height: 176, padding: "16px 28px", borderRadius: 28 }}
+    initial={{ y: 30, opacity: 0 }}
+    animate={{ y: 0, opacity: 1 }}
+    transition={{ delay: at, duration: 0.45, ease: EASE_OUT }}
+    data-testid={`tv-award-${award.id}`}
+  >
+    <span className="flex items-center justify-between gap-4">
+      <span className="tv-label whitespace-nowrap" style={{ fontSize: 30, lineHeight: 1 }}>
+        {award.title}
       </span>
-      <FitName text={joinNames(award.names)} max={68} box={box} className="tv-display mt-3" style={{ letterSpacing: "-0.015em" }} />
-    </motion.div>
-  );
-};
-
-/** The finale opens on a title card, not a bare sunburst; the roller wipes it off as the podium starts to rise. */
-const Opener = ({ speed }: { speed: number }) => (
-  <>
-    <motion.div
-      aria-hidden="true"
-      className="absolute inset-0 flex flex-col items-center justify-center"
-      style={{ background: "var(--paper)", zIndex: 72 }}
-      initial={{ clipPath: WIPE.shown }}
-      animate={{ clipPath: WIPE.gone }}
-      transition={{ delay: AT.openerOut * speed, duration: 0.35 * speed, ease: WIPE.ease }}
-    >
       <motion.span
-        className="tv-display"
-        style={{ fontSize: 230, lineHeight: 0.9, letterSpacing: "-0.03em" }}
-        initial={{ scale: 1.5, opacity: 0, rotate: -4 }}
-        animate={{ scale: [1.5, 0.94, 1], opacity: 1, rotate: -2 }}
-        transition={{ duration: 0.45, times: [0, 0.65, 1] }}
+        className={`tv-pill ${index % 2 === 0 ? "tv-pill--lav" : "tv-pill--close"} flex-none`}
+        style={{ fontSize: 32, padding: "6px 16px" }}
+        initial={{ scale: 0.3, opacity: 0 }}
+        animate={{ scale: [0.3, 1.12, 1], opacity: 1 }}
+        transition={{ delay: at + 0.55, duration: 0.42, times: [0, 0.6, 1], ease: EASE_POP }}
       >
-        <RisoType top="var(--ink)" under="var(--pink)" offset={8}>
-          That&apos;s the game
-        </RisoType>
+        {award.detail}
       </motion.span>
-      <motion.span className="mt-12" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35, duration: 0.3 }}>
-        <Slug className="text-blue">The final scores</Slug>
-      </motion.span>
-    </motion.div>
-    <Roller delay={AT.openerOut * speed} duration={0.35 * speed} zIndex={74} />
-  </>
+    </span>
+    <FitName text={joinNames(award.names)} max={64} box={box} className="tv-display mt-3" style={{ letterSpacing: "-0.03em", color: "var(--text)" }} />
+  </motion.div>
+);
+
+/** The finale opens on a title card on its own night layer, which fades away as the podium starts to rise. */
+const Opener = ({ speed }: { speed: number }) => (
+  <motion.div
+    aria-hidden="true"
+    className="absolute inset-0 flex flex-col items-center justify-center"
+    style={{ background: "var(--night)", zIndex: 72 }}
+    initial={{ opacity: 1 }}
+    animate={{ opacity: 0 }}
+    transition={{ delay: AT.openerOut * speed, duration: 0.35 * speed, ease: EASE_OUT }}
+  >
+    <AuroraGlow />
+    <Bloom x={960} y={500} r={700} color="rgba(139, 92, 246, 0.3)" live />
+    <motion.span
+      className="tv-display glow-text relative"
+      style={{ fontSize: 210, lineHeight: 1, letterSpacing: "-0.045em", paddingBottom: 12 }}
+      initial={{ scale: 1.3, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      transition={{ duration: 0.5, ease: EASE_OUT }}
+    >
+      That&apos;s the game
+    </motion.span>
+    <motion.span className="mt-10 relative" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35, duration: 0.3 }}>
+      <Label size={36}>The final scores</Label>
+    </motion.span>
+  </motion.div>
 );
 
 /**
- * Game over, as a ceremony: a title card; the podium blocks rise out of the floor 3rd, 2nd, then 1st as a
- * question mark; the scores count up; the winner takes over the whole screen with confetti; as it clears,
+ * Game over, as a ceremony: a title card; the podium slabs rise out of the floor 3rd, 2nd, then 1st as a
+ * question mark; the scores count up; the winner takes over the whole screen in an aurora bloom with glowing confetti; as it clears,
  * 1st is revealed on the podium and the title lands; then the podium steps back and the recap awards come
  * in along the bottom, one at a time; then a calm "thanks for playing" hold.
  */
@@ -297,14 +284,14 @@ export const TvFinale = ({
   const awardBox = (1728 - 2 * 30) / Math.max(1, awards.length) - 64;
   return (
     <motion.div key="finale" className="absolute inset-0" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-      <Sunburst size={2000} x={960} y={620} rays={30} />
+      <Bloom x={960} y={700} r={820} color="rgba(139, 92, 246, 0.22)" live />
       <div className="absolute flex items-center justify-between" style={{ left: 96, right: 96, top: 48, zIndex: 50 }} data-testid="game-over-title">
-        <Slug>
-          <span style={{ background: "var(--ink)", color: "var(--paper)", padding: "12px 20px", display: "inline-block" }}>Game over</span>
-        </Slug>
+        <span className="tv-glass-pill inline-flex items-center" style={{ padding: "12px 26px" }}>
+          <Label className="!text-[color:var(--text-2)]">Game over</Label>
+        </span>
         <motion.span
-          className="tv-display text-blue"
-          style={{ fontSize: 60, lineHeight: 1 }}
+          className="tv-display lav-text"
+          style={{ fontSize: 60, lineHeight: 1.1, letterSpacing: "-0.03em" }}
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: beat === "calm" ? 1 : 0, y: beat === "calm" ? 0 : -10 }}
           transition={{ duration: 1.4, ease: "easeOut" }}
@@ -326,12 +313,7 @@ export const TvFinale = ({
           }}
           data-testid="winner-announcement"
         >
-          <FitName text={winnerLine} max={156} floor={84} box={HEADLINE_BOX} lineHeight={1.05} className="tv-display">
-            {/* Two inks only, a 5 px offset: ink over pink. */}
-            <RisoType top="var(--ink)" under="var(--pink)" offset={5}>
-              {winnerLine}
-            </RisoType>
-          </FitName>
+          <FitName text={winnerLine} max={156} floor={84} box={HEADLINE_BOX} lineHeight={1.08} className="tv-display glow-text" style={{ letterSpacing: "-0.04em", paddingBottom: "0.06em" }} />
           <span className="tv-sr">with {winner.score} points</span>
         </motion.div>
       ) : null}
@@ -349,7 +331,7 @@ export const TvFinale = ({
             <PodiumStep key={step.place} step={step} player={player} inkIndex={inkIndex.get(player.id) ?? 0} height={heights[step.place - 1] ?? PODIUM_LAYOUT.baseHeight} speed={speed} />
           ) : null;
         })}
-        <div className="absolute" style={{ left: 0, right: 0, top: FLOOR, height: 6, background: "var(--ink)", zIndex: 20 }} />
+        <div className="absolute tv-axis" style={{ left: PODIUM_LEFT - 120, width: PODIUM_WIDTH + 240, top: FLOOR, height: 6, zIndex: 20 }} />
       </motion.div>
 
       {/* The rest of the table sits under the floor at full size, and follows it when the podium steps back. */}
@@ -360,18 +342,18 @@ export const TvFinale = ({
         animate={{ y: stepBack ? steppedY(FLOOR) - FLOOR - 8 : 0 }}
         transition={{ type: "spring", stiffness: 200, damping: 26 }}
       >
-        <Slug className="text-ink whitespace-nowrap" testId="final-scores-heading">
+        <Label className="whitespace-nowrap" testId="final-scores-heading">
           Final scores
-        </Slug>
+        </Label>
         {rest.slice(0, 4).map((p, i) => (
           <span key={p.id} className="flex items-center gap-3" data-testid={`player-score-${p.id}`}>
-            <span className="slug text-[30px]">{i + 4}</span>
-            <InkToken name={p.name} inkIndex={inkIndex.get(p.id) ?? 0} size={56} />
-            <FitName text={p.name} max={40} floor={36} box={240} className="tv-display" style={{ letterSpacing: "-0.01em" }} />
-            <span className="tv-display tabular text-[40px] text-blue">{p.score}</span>
+            <span className="tv-display text-[32px]" style={{ color: "var(--text-3)" }}>{i + 4}</span>
+            <GlassToken name={p.name} inkIndex={inkIndex.get(p.id) ?? 0} size={56} />
+            <FitName text={p.name} max={40} floor={36} box={240} className="tv-name" />
+            <span className="tv-display text-[40px]" style={{ color: "var(--glow)" }}>{p.score}</span>
           </span>
         ))}
-        {rest.length > 4 ? <span className="slug text-[30px] whitespace-nowrap">+{rest.length - 4} more</span> : null}
+        {rest.length > 4 ? <Label size={30} className="whitespace-nowrap">+{rest.length - 4} more</Label> : null}
       </motion.div>
 
       {hasAwards && beat !== "podium" ? (
@@ -386,38 +368,45 @@ export const TvFinale = ({
         <motion.div
           aria-hidden="true"
           className="absolute inset-0 flex items-center justify-center pointer-events-none"
-          style={{ zIndex: 55 }}
-          initial={{ opacity: 0, clipPath: WIPE.shown }}
-          animate={{ opacity: [0, 1, 1], clipPath: [WIPE.shown, WIPE.shown, WIPE.gone] }}
+          style={{ zIndex: 55, background: "var(--night)" }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: [0, 1, 1, 0] }}
           transition={{
             delay: AT.takeover * speed,
             duration: (AT.title - AT.takeover) * speed,
-            // A hard cut in; out, the roller wipes the takeover off before the podium comes back.
-            opacity: { delay: AT.takeover * speed, duration: 0.02 },
-            clipPath: { delay: AT.takeover * speed, duration: (AT.title - AT.takeover) * speed, times: [0, TAKEOVER_WIPE, 1], ease: WIPE.ease },
+            // In fast; out, the bloom fades away before the podium comes back.
+            times: [0, 0.03, TAKEOVER_HOLD, 1],
+            ease: "easeOut",
           }}
         >
-          <div className="absolute inset-0" style={{ background: "var(--yellow)", mixBlendMode: "multiply" }} />
-          <Sunburst size={2400} x={960} y={540} rays={26} fill="url(#tv-dots-pink)" spin={false} />
+          <AuroraGlow />
+          {/* The aurora blooms: indigo, purple and pink light opening up behind the name. */}
+          <motion.div
+            className="absolute inset-0"
+            style={{
+              background:
+                "radial-gradient(38% 46% at 50% 50%, rgba(196, 181, 253, 0.55), transparent 70%), radial-gradient(40% 50% at 28% 40%, rgba(99, 102, 241, 0.6), transparent 72%), radial-gradient(40% 50% at 74% 58%, rgba(168, 85, 247, 0.55), transparent 72%), radial-gradient(50% 40% at 50% 100%, rgba(236, 72, 153, 0.45), transparent 72%)",
+              filter: "blur(30px)",
+            }}
+            initial={{ scale: 0.3, opacity: 0 }}
+            animate={{ scale: [0.3, 1.15, 1, 1.06], opacity: [0, 1, 0.9, 1] }}
+            transition={{ delay: AT.takeover * speed, duration: (AT.title - AT.takeover) * speed, times: [0, 0.2, 0.4, 1], ease: "easeOut" }}
+          />
+          {/* A dark well behind the name keeps the white-to-lavender type readable over the bright bloom. */}
+          <span className="tv-bloom" style={{ left: 960 - 900, top: 540 - 330, width: 1800, height: 660, background: "radial-gradient(closest-side, rgba(11, 15, 26, 0.55), transparent)" }} />
           <motion.span
             className="tv-display relative"
-            style={{ lineHeight: 0.9 }}
-            initial={{ scale: 2.4, rotate: -10 }}
-            animate={{ scale: [2.4, 0.9, 1.04, 1, 1.06], rotate: [-10, -4, -4, -4, -3] }}
-            transition={{ delay: AT.takeover * speed, duration: (AT.title - AT.takeover) * speed, times: [0, 0.18, 0.26, 0.32, 1] }}
+            style={{ lineHeight: 1 }}
+            initial={{ scale: 1.4, opacity: 0 }}
+            animate={{ scale: [1.4, 1, 1, 1.05], opacity: [0, 1, 1, 1] }}
+            transition={{ delay: AT.takeover * speed, duration: (AT.title - AT.takeover) * speed, times: [0, 0.16, 0.3, 1], ease: "easeOut" }}
           >
-            <FitName text={winner.name} max={takeoverSize} floor={120} box={1640} lineHeight={1} className="text-center">
-              <RisoType top="var(--ink)" under="var(--pink)" offset={6}>
-                {winner.name}
-              </RisoType>
-            </FitName>
+            <FitName text={winner.name} max={takeoverSize} floor={120} box={1640} lineHeight={1.04} className="text-center glow-text" style={{ letterSpacing: "-0.05em", paddingBottom: "0.06em", filter: "drop-shadow(0 0 0.25em rgba(196, 181, 253, 0.7))" }} />
           </motion.span>
         </motion.div>
       ) : null}
 
-      {winner ? <Roller delay={(AT.takeover + TAKEOVER_WIPE * (AT.title - AT.takeover)) * speed} duration={(1 - TAKEOVER_WIPE) * (AT.title - AT.takeover) * speed} zIndex={58} /> : null}
-
-      <PaperConfetti count={reduced ? 40 : 110} start={AT.takeover * speed} />
+      <GlowConfetti count={reduced ? 40 : 110} start={AT.takeover * speed} />
 
       <Opener speed={speed} />
     </motion.div>
