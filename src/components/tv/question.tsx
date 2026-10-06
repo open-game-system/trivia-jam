@@ -71,7 +71,7 @@ export const OptionTiles = ({
                 height: height * 0.66,
                 borderRadius: 999,
                 fontSize: height * 0.4,
-                background: isRight ? "var(--win-fill)" : "linear-gradient(135deg, var(--aurora-indigo), var(--aurora-purple))",
+                background: isRight ? "var(--win-fill)" : "linear-gradient(135deg, #4f46e5, #7e22ce)",
                 color: isRight ? "var(--win-ink)" : "var(--text)",
                 boxShadow: isRight ? "0 0 30px rgba(74,222,128,.6)" : "0 0 24px rgba(139,92,246,.45)",
               }}

@@ -61,7 +61,7 @@ export const NumberLineAxis = ({ layout, axisY, live }: { layout: LineLayout; ax
           transition={{ delay: live ? 0.2 + i * 0.06 : 0, duration: 0.3 }}
         >
           <span style={{ width: 4, height: 36, borderRadius: 4, background: "rgba(255, 255, 255, 0.28)" }} />
-          <span className="tv-display mt-2" style={{ fontSize: 38, lineHeight: 1, fontWeight: 600, letterSpacing: 0, color: "var(--text-3)" }}>
+          <span className="tv-display mt-2" style={{ fontSize: 38, lineHeight: 1, fontWeight: 600, letterSpacing: 0, color: "var(--text-2)" }}>
             {t.label}
           </span>
         </motion.div>
