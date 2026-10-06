@@ -37,3 +37,6 @@ Panels are now recorded with Chrome's screencast (frame swap timestamps) and reb
 
 ## Rig change before round 05 (2026-10-06)
 Re-scope (Jon): Trivia Jam is an adult game. The recorded third pane is now an adult player on an iPhone 15 (portrait), shots `*-player.png`; off-camera players are adults (Priya, Jordan). Checks and thresholds unchanged. Round 05 re-baselines (rounds 00-04 used a kid-on-iPad persona).
+
+## Rig change before round 06 (2026-10-06)
+The standings shot moved from results+12 s to results+13.5 s, because pass 06 rebuilt the standings beat (the reorder now lands about 3.35 s after the reveal ends, then holds). Thresholds unchanged.

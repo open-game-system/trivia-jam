@@ -372,10 +372,10 @@ async function main() {
       // The TV stages its reveal over ~10 s: shoot the answer landing and the standings that follow.
       await wait(4500);
       await shoot(`1${q}e-q${q + 1}-reveal-settled`, { tv });
-      await wait(5000);
+      await wait(6500);
       mark(`standings q${q + 1}`);
       await shoot(`1${q}f-q${q + 1}-standings`, { tv });
-      await wait(1000);
+      await wait(500);
     }
 
     // The last question ends the game (or the host ends it).
