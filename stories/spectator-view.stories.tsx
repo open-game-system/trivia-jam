@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react";
-import { expect } from "@storybook/test";
+import { expect, waitFor, within } from "@storybook/test";
 import { withActorKit } from "actor-kit/storybook";
 import { createActorKitMockClient } from "actor-kit/test";
 import React from "react";
@@ -589,3 +589,590 @@ export const WaitingForQuestion: Story = {
   },
 };
 
+
+// ---------------------------------------------------------------------------
+// TV art-direction stories: a family game (Sam, Mom, Grandpa, Lou) in every phase.
+// ---------------------------------------------------------------------------
+
+const FAMILY = [
+  { id: "p-sam", name: "Sam", score: 0 },
+  { id: "p-mom", name: "Mom", score: 0 },
+  { id: "p-grandpa", name: "Grandpa", score: 0 },
+  { id: "p-lou", name: "Lou", score: 0 },
+];
+
+const FAMILY_QUESTIONS = {
+  q1: { id: "q1", text: "How many legs does a spider have?", correctAnswer: 8, questionType: "numeric" as const },
+  q2: { id: "q2", text: "How many days does it take the Moon to go once around the Earth?", correctAnswer: 27, questionType: "numeric" as const },
+  q3: {
+    id: "q3",
+    text: "Which planet is the biggest in our solar system?",
+    correctAnswer: "Jupiter",
+    questionType: "multiple-choice" as const,
+    options: ["Mars", "Jupiter", "Saturn", "Neptune"],
+  },
+  q4: { id: "q4", text: "In what year did people first walk on the Moon?", correctAnswer: 1969, questionType: "numeric" as const },
+  q5: { id: "q5", text: "How many bones are in an adult human body?", correctAnswer: 206, questionType: "numeric" as const },
+};
+
+type FamilySnapshot = Parameters<typeof createActorKitMockClient<GameMachine>>[0]["initialSnapshot"];
+
+const familySnapshot = (
+  patch: Partial<FamilySnapshot["public"]>,
+  value: FamilySnapshot["value"],
+): FamilySnapshot => ({
+  ...defaultGameSnapshot,
+  public: {
+    ...defaultGameSnapshot.public,
+    players: FAMILY,
+    questions: FAMILY_QUESTIONS,
+    settings: { maxPlayers: 10, answerTimeWindow: 25 },
+    ...patch,
+  },
+  value,
+});
+
+const mountFamily = (snapshot: FamilySnapshot, after?: (client: ReturnType<typeof createActorKitMockClient<GameMachine>>) => void): Story["play"] =>
+  async ({ mount }) => {
+    const client = createActorKitMockClient<GameMachine>({ initialSnapshot: snapshot });
+    await mount(
+      <GameContext.ProviderFromClient client={client}>
+        <SpectatorView host="triviajam.tv" />
+      </GameContext.ProviderFromClient>
+    );
+    after?.(client);
+  };
+
+const now = Date.now();
+
+export const TvLobbyFamily: Story = {
+  play: mountFamily(familySnapshot({ players: FAMILY.slice(0, 3) }, { lobby: "ready" })),
+};
+
+export const TvLobbyFull: Story = {
+  play: mountFamily(
+    familySnapshot(
+      {
+        players: [
+          ...FAMILY,
+          { id: "p5", name: "Auntie Bea", score: 0 },
+          { id: "p6", name: "Uncle Ray", score: 0 },
+          { id: "p7", name: "Nana", score: 0 },
+          { id: "p8", name: "Ollie", score: 0 },
+          { id: "p9", name: "Maximiliana", score: 0 },
+          { id: "p10", name: "Dad", score: 0 },
+        ],
+      },
+      { lobby: "ready" },
+    ),
+  ),
+};
+
+export const TvBeforeFirstQuestion: Story = {
+  play: mountFamily(familySnapshot({}, { active: "questionPrep" })),
+};
+
+export const TvQuestionNumeric: Story = {
+  play: mountFamily(
+    familySnapshot(
+      {
+        questionNumber: 2,
+        currentQuestion: {
+          questionId: "q2",
+          startTime: now,
+          answers: [
+            { playerId: "p-mom", playerName: "Mom", value: 28, timestamp: now + 2000 },
+            { playerId: "p-sam", playerName: "Sam", value: 30, timestamp: now + 4000 },
+          ],
+        },
+      },
+      { active: "questionActive" },
+    ),
+  ),
+};
+
+export const TvQuestionMultipleChoice: Story = {
+  play: mountFamily(
+    familySnapshot(
+      {
+        questionNumber: 3,
+        currentQuestion: {
+          questionId: "q3",
+          startTime: now,
+          answers: [{ playerId: "p-grandpa", playerName: "Grandpa", value: "Jupiter", timestamp: now + 3000 }],
+        },
+      },
+      { active: "questionActive" },
+    ),
+  ),
+};
+
+export const TvQuestionLastSeconds: Story = {
+  play: mountFamily(
+    {
+      ...familySnapshot(
+        {
+          questionNumber: 4,
+          currentQuestion: { questionId: "q4", startTime: now, answers: [] },
+        },
+        { active: "questionActive" },
+      ),
+      public: {
+        ...familySnapshot({}, { active: "questionActive" }).public,
+        questionNumber: 4,
+        currentQuestion: { questionId: "q4", startTime: now, answers: [] },
+        settings: { maxPlayers: 10, answerTimeWindow: 4 },
+      },
+    },
+  ),
+};
+
+type FamilyResult = FamilySnapshot["public"]["questionResults"][number];
+
+const resultFor = (
+  questionId: string,
+  questionNumber: number,
+  guesses: Array<[string, string, number | string, number]>,
+): FamilyResult => ({
+  questionId,
+  questionNumber,
+  answers: guesses.map(([playerId, playerName, value], i) => ({ playerId, playerName, value, timestamp: now + 2000 + i * 1500 })),
+  scores: guesses.map(([playerId, playerName, , points], i) => ({ playerId, playerName, points, position: i + 1, timeTaken: 2 + i * 1.5 })),
+});
+
+const Q2_RESULT = resultFor("q2", 2, [
+  ["p-sam", "Sam", 30, 2],
+  ["p-mom", "Mom", 28, 3],
+  ["p-grandpa", "Grandpa", 14, 0],
+  ["p-lou", "Lou", 27, 4],
+]);
+const AFTER_Q1 = { "p-sam": 4, "p-mom": 3, "p-grandpa": 2, "p-lou": 0 };
+const withScores = (scores: Record<string, number>) => FAMILY.map((p) => ({ ...p, score: scores[p.id] ?? 0 }));
+const plus = (a: Record<string, number>, r: FamilyResult) =>
+  Object.fromEntries(Object.entries(a).map(([id, s]) => [id, s + (r.scores.find((x) => x.playerId === id)?.points ?? 0)]));
+
+/** Mounts mid-question, then the results arrive 600 ms later: the reveal plays live. */
+const liveReveal = (questionId: string, questionNumber: number, result: FamilyResult, before: Record<string, number>): Story["play"] =>
+  mountFamily(
+    familySnapshot(
+      {
+        players: withScores(before),
+        questionNumber,
+        questionResults: [],
+        currentQuestion: { questionId, startTime: now, answers: result.answers },
+      },
+      { active: "questionActive" },
+    ),
+    (client) => {
+      setTimeout(() => {
+        client.produce((draft) => {
+          draft.public.currentQuestion = null;
+          draft.public.questionResults.push(result);
+          for (const p of draft.public.players) p.score = plus(before, result)[p.id] ?? p.score;
+          draft.value = { active: "questionPrep" };
+        });
+      }, 600);
+    },
+  );
+
+export const TvRevealNumericLive: Story = { play: liveReveal("q2", 2, Q2_RESULT, AFTER_Q1) };
+
+export const TvRevealNumericSettled: Story = {
+  play: mountFamily(
+    familySnapshot(
+      { players: withScores(plus(AFTER_Q1, Q2_RESULT)), questionNumber: 2, questionResults: [Q2_RESULT] },
+      { active: "questionPrep" },
+    ),
+  ),
+};
+
+export const TvRevealYearLive: Story = {
+  play: liveReveal(
+    "q4",
+    4,
+    resultFor("q4", 4, [
+      ["p-sam", "Sam", 1950, 1],
+      ["p-mom", "Mom", 1969, 5],
+      ["p-grandpa", "Grandpa", 1972, 3],
+      ["p-lou", "Lou", 2001, 0],
+    ]),
+    AFTER_Q1,
+  ),
+};
+
+export const TvRevealMultipleChoiceLive: Story = {
+  play: liveReveal(
+    "q3",
+    3,
+    resultFor("q3", 3, [
+      ["p-sam", "Sam", "Saturn", 0],
+      ["p-mom", "Mom", "Jupiter", 4],
+      ["p-grandpa", "Grandpa", "Jupiter", 3],
+      ["p-lou", "Lou", "Mars", 0],
+    ]),
+    AFTER_Q1,
+  ),
+};
+
+export const TvGameOverFamily: Story = {
+  play: mountFamily(
+    familySnapshot(
+      { players: withScores({ "p-sam": 9, "p-mom": 14, "p-grandpa": 7, "p-lou": 11 }), winner: "p-mom", questionNumber: 5 },
+      "finished",
+    ),
+  ),
+};
+
+/** Ten players, close guesses: the crowded case for lanes and the two-column standings board. */
+export const TvRevealCrowdedLive: Story = {
+  play: mountFamily(
+    familySnapshot(
+      {
+        players: [
+          ...withScores(AFTER_Q1),
+          { id: "p5", name: "Auntie Bea", score: 3 },
+          { id: "p6", name: "Uncle Ray", score: 1 },
+          { id: "p7", name: "Nana", score: 5 },
+          { id: "p8", name: "Ollie", score: 2 },
+          { id: "p9", name: "Maximiliana", score: 0 },
+          { id: "p10", name: "Dad", score: 4 },
+        ],
+        questionNumber: 2,
+        currentQuestion: { questionId: "q2", startTime: now, answers: [] },
+      },
+      { active: "questionActive" },
+    ),
+    (client) => {
+      const result = resultFor("q2", 2, [
+        ["p-sam", "Sam", 30, 1],
+        ["p-mom", "Mom", 28, 3],
+        ["p-grandpa", "Grandpa", 14, 0],
+        ["p-lou", "Lou", 27, 5],
+        ["p5", "Auntie Bea", 29, 2],
+        ["p6", "Uncle Ray", 26, 4],
+        ["p7", "Nana", 31, 0],
+        ["p8", "Ollie", 100, 0],
+        ["p9", "Maximiliana", 27, 5],
+        ["p10", "Dad", 25, 1],
+      ]);
+      setTimeout(() => {
+        client.produce((draft) => {
+          draft.public.currentQuestion = null;
+          draft.public.questionResults.push(result);
+          for (const p of draft.public.players) p.score += result.scores.find((s) => s.playerId === p.id)?.points ?? 0;
+          draft.value = { active: "questionPrep" };
+        });
+      }, 600);
+    },
+  ),
+};
+
+const CROWD = [
+  ...withScores({ "p-sam": 5, "p-mom": 6, "p-grandpa": 2, "p-lou": 5 }),
+  { id: "p5", name: "Auntie Bea", score: 5 },
+  { id: "p6", name: "Uncle Ray", score: 5 },
+  { id: "p7", name: "Nana", score: 5 },
+  { id: "p8", name: "Ollie", score: 2 },
+  { id: "p9", name: "Maximiliana", score: 5 },
+  { id: "p10", name: "Dad", score: 5 },
+];
+
+/** A TV that loads between questions with ten players: settled reveal, then the two-column board. */
+export const TvStandingsCrowdedSettled: Story = {
+  play: mountFamily(
+    familySnapshot(
+      {
+        players: CROWD,
+        questionNumber: 2,
+        questionResults: [
+          resultFor("q2", 2, [
+            ["p-sam", "Sam", 30, 1],
+            ["p-mom", "Mom", 28, 3],
+            ["p-lou", "Lou", 27, 5],
+            ["p9", "Maximiliana", 27, 5],
+            ["p10", "Dad", 25, 1],
+          ]),
+        ],
+      },
+      { active: "questionPrep" },
+    ),
+  ),
+};
+
+/** Two identical exact guesses (one label, two chips) and a guess far off the scale (an edge tab with its true value). */
+export const TvRevealTiedAndOffScaleLive: Story = {
+  play: liveReveal(
+    "q1",
+    1,
+    resultFor("q1", 1, [
+      ["p-sam", "Sam", 8, 4],
+      ["p-mom", "Mom", 8, 4],
+      ["p-grandpa", "Grandpa", 6, 2],
+      ["p-lou", "Lou", 30, 0],
+    ]),
+    { "p-sam": 0, "p-mom": 0, "p-grandpa": 0, "p-lou": 0 },
+  ),
+};
+
+/** A finished family game with its results: podium, winner takeover, then recap awards. */
+export const TvGameOverWithAwards: Story = {
+  play: mountFamily(
+    familySnapshot(
+      {
+        players: withScores({ "p-sam": 9, "p-mom": 14, "p-grandpa": 7, "p-lou": 11 }),
+        winner: "p-mom",
+        questionNumber: 5,
+        questionResults: [
+          resultFor("q1", 1, [
+            ["p-sam", "Sam", 8, 4],
+            ["p-mom", "Mom", 8, 4],
+            ["p-grandpa", "Grandpa", 6, 2],
+            ["p-lou", "Lou", 30, 0],
+          ]),
+          Q2_RESULT,
+          resultFor("q3", 3, [
+            ["p-sam", "Sam", "Saturn", 0],
+            ["p-mom", "Mom", "Jupiter", 4],
+            ["p-grandpa", "Grandpa", "Jupiter", 3],
+            ["p-lou", "Lou", "Mars", 0],
+          ]),
+          resultFor("q4", 4, [
+            ["p-sam", "Sam", 1950, 1],
+            ["p-mom", "Mom", 1969, 5],
+            ["p-grandpa", "Grandpa", 1972, 3],
+            ["p-lou", "Lou", 2001, 0],
+          ]),
+        ],
+      },
+      "finished",
+    ),
+  ),
+};
+
+/** Nobody nails it: the closest guess breaks forward with a smaller CLOSEST stamp and how far off it was. */
+export const TvRevealClosestLive: Story = {
+  play: liveReveal(
+    "q5",
+    5,
+    resultFor("q5", 5, [
+      ["p-sam", "Sam", 180, 2],
+      ["p-mom", "Mom", 212, 4],
+      ["p-grandpa", "Grandpa", 150, 1],
+      ["p-lou", "Lou", 300, 0],
+    ]),
+    AFTER_Q1,
+  ),
+};
+
+/** Nobody picked the right tile: a gentle comic beat instead of a winner. */
+export const TvRevealMultipleChoiceNobodyLive: Story = {
+  play: liveReveal(
+    "q3",
+    3,
+    resultFor("q3", 3, [
+      ["p-sam", "Sam", "Saturn", 0],
+      ["p-mom", "Mom", "Mars", 0],
+      ["p-grandpa", "Grandpa", "Neptune", 0],
+      ["p-lou", "Lou", "Mars", 0],
+    ]),
+    AFTER_Q1,
+  ),
+};
+
+const LONG_NAMES = [
+  { id: "p-max", name: "Maximiliana", score: 0 },
+  { id: "p-gus", name: "Grandpa Augustus", score: 0 },
+  { id: "p-chris", name: "Christopher", score: 0 },
+  { id: "p-bea", name: "Auntie Bea", score: 0 },
+  { id: "p-jo", name: "Josephine", score: 0 },
+];
+
+/** Long names everywhere a name is printed: they shrink to fit, then wrap, and never end in an ellipsis. */
+export const TvGameOverLongNames: Story = {
+  play: mountFamily(
+    familySnapshot(
+      {
+        players: LONG_NAMES.map((p, i) => ({ ...p, score: [16, 12, 12, 9, 4][i] ?? 0 })),
+        winner: "p-max",
+        questionNumber: 2,
+        questionResults: [
+          resultFor("q1", 1, [
+            ["p-max", "Maximiliana", 8, 4],
+            ["p-chris", "Christopher", 8, 4],
+            ["p-gus", "Grandpa Augustus", 7, 2],
+            ["p-bea", "Auntie Bea", 10, 1],
+          ]),
+          resultFor("q2", 2, [
+            ["p-gus", "Grandpa Augustus", 26, 4],
+            ["p-max", "Maximiliana", 27, 5],
+            ["p-chris", "Christopher", 27, 5],
+            ["p-jo", "Josephine", 40, 0],
+          ]),
+        ],
+      },
+      "finished",
+    ),
+  ),
+};
+
+/** Three players, question 1, live: the board opens level on 0 in join order, rolls, reorders once, then "Up next". */
+export const TvStandingsAfterQ1ThreeLive: Story = {
+  play: mountFamily(
+    familySnapshot(
+      {
+        players: FAMILY.slice(0, 3),
+        questionNumber: 1,
+        questionResults: [],
+        currentQuestion: { questionId: "q1", startTime: now, answers: [] },
+      },
+      { active: "questionActive" },
+    ),
+    (client) => {
+      const result = resultFor("q1", 1, [
+        ["p-sam", "Sam", 6, 2],
+        ["p-mom", "Mom", 8, 4],
+        ["p-grandpa", "Grandpa", 10, 2],
+      ]);
+      setTimeout(() => {
+        client.produce((draft) => {
+          draft.public.currentQuestion = null;
+          draft.public.questionResults.push(result);
+          for (const p of draft.public.players) p.score += result.scores.find((s) => s.playerId === p.id)?.points ?? 0;
+          draft.value = { active: "questionPrep" };
+        });
+      }, 600);
+    },
+  ),
+};
+
+/** Three exact guesses (11e in round 04): three "+N" badges beside three names, none over a name or a total. */
+export const TvRevealThreeWinnersLive: Story = {
+  play: liveReveal(
+    "q1",
+    1,
+    resultFor("q1", 1, [
+      ["p-mom", "Mom", 8, 4],
+      ["p-sam", "Sam", 8, 3],
+      ["p-grandpa", "Grandpa", 8, 2],
+      ["p-lou", "Lou", 5, 0],
+    ]),
+    { "p-sam": 0, "p-mom": 0, "p-grandpa": 0, "p-lou": 0 },
+  ),
+};
+
+/** Samples the page every frame for `ms`, handing each frame to `check`. */
+const sampleFrames = (ms: number, check: (t: number) => void) =>
+  new Promise<void>((resolve, reject) => {
+    const t0 = performance.now();
+    const tick = () => {
+      const t = performance.now() - t0;
+      try {
+        check(t);
+      } catch (e) {
+        reject(e);
+        return;
+      }
+      if (t >= ms) resolve();
+      else requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
+
+const opacityUpTo = (node: Element, root: Element) => {
+  let o = 1;
+  for (let n: Element | null = node; n && n !== root; n = n.parentElement) o *= Number(getComputedStyle(n).opacity);
+  return o;
+};
+
+/**
+ * Round 05: the EXACT! stamp vanished for half a second mid-slam (a keyframe / times mismatch) and the
+ * winner's total sat on "0 TOTAL". Samples every frame of the takeover: one stamp node, mounted once,
+ * that never fades back out once seen; and a total that is never shown reading 0.
+ */
+export const TvRevealStampSlamsOnce: Story = {
+  // `mount` is destructured so Storybook waits for the play function to mount the story.
+  play: async ({ mount, canvasElement, ...ctx }) => {
+    await liveReveal("q2", 2, Q2_RESULT, AFTER_Q1)?.({ ...ctx, mount, canvasElement });
+    const root = canvasElement;
+    let first: Element | null = null;
+    let peak = 0;
+    let shownTotals = 0;
+    await sampleFrames(10500, () => {
+      const stamps = root.querySelectorAll("[data-testid=tv-stamp]");
+      expect(stamps.length).toBeLessThanOrEqual(1);
+      const stamp = stamps[0];
+      if (stamp) {
+        if (first === null) first = stamp;
+        expect(stamp).toBe(first);
+        const o = Number(getComputedStyle(stamp).opacity);
+        if (peak > 0.6) expect(o).toBeGreaterThan(0.6);
+        peak = Math.max(peak, o);
+      }
+      const highlight = root.querySelector("[data-testid=tv-highlight]");
+      for (const n of highlight ? Array.from(highlight.querySelectorAll(".tabular-nums")) : []) {
+        if (opacityUpTo(n, highlight ?? root) > 0.35) {
+          shownTotals++;
+          expect(n.textContent).not.toBe("0");
+        }
+      }
+    });
+    expect(first).not.toBeNull();
+    expect(peak).toBe(1);
+    expect(shownTotals).toBeGreaterThan(0);
+  },
+};
+
+/** Round 07: everybody nails it, so the takeover has no "rest of the room" and is composed centred from its first frame. */
+export const TvRevealEveryoneExactLive: Story = {
+  play: liveReveal(
+    "q1",
+    1,
+    resultFor("q1", 1, [
+      ["p-mom", "Mom", 8, 4],
+      ["p-sam", "Sam", 8, 3],
+    ]),
+    { "p-sam": 0, "p-mom": 0, "p-grandpa": 0, "p-lou": 0 },
+  ),
+};
+
+/**
+ * Bug pass: after the last question the standings' card read "Final scores" in the hero face, wrapped
+ * to two lines and spilled out of its pill and off the frame. It sets on one line inside the card.
+ */
+export const TvStandingsFinalScoresFits: Story = {
+  play: async ({ mount, canvasElement, ...ctx }) => {
+    const Q5_RESULT = resultFor("q5", 5, [
+      ["p-mom", "Mom", 206, 4],
+      ["p-sam", "Sam", 200, 3],
+      ["p-grandpa", "Grandpa", 150, 1],
+    ]);
+    await mountFamily(
+      familySnapshot(
+        { players: withScores({ "p-mom": 20, "p-sam": 13, "p-grandpa": 10 }).slice(0, 3), questionNumber: 5, questionResults: [Q5_RESULT] },
+        { active: "questionPrep" },
+      ),
+    )?.({ ...ctx, mount, canvasElement });
+    const card = await waitFor(
+      () => {
+        const el = canvasElement.querySelector("[data-testid=tv-up-next]");
+        expect(el).not.toBeNull();
+        return el;
+      },
+      { timeout: 6000 },
+    );
+    const headline = within(canvasElement).getByText("Final scores");
+    await waitFor(() => {
+      const c = card?.getBoundingClientRect();
+      const h = headline.getBoundingClientRect();
+      const size = parseFloat(getComputedStyle(headline).fontSize);
+      const scale = h.height / headline.offsetHeight;
+      expect(c).toBeDefined();
+      if (!c) return;
+      expect(h.right).toBeLessThanOrEqual(c.right + 0.5);
+      expect(h.top).toBeGreaterThanOrEqual(c.top - 0.5);
+      expect(h.bottom).toBeLessThanOrEqual(c.bottom + 0.5);
+      // One line: the box is no taller than one line of the face.
+      expect(h.height / scale).toBeLessThan(size * 1.5);
+    });
+  },
+};

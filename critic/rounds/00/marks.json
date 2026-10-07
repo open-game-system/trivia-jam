@@ -1,0 +1,108 @@
+{
+  "videos": [
+    "/Users/jonathanmumm/src/trivia-jam/recordings/raw/477ffc7aed795ceb6707fbbd0016366e.webm",
+    "/Users/jonathanmumm/src/trivia-jam/recordings/raw/81d8bf20c3512157e90b38fc34e81e48.webm",
+    "/Users/jonathanmumm/src/trivia-jam/recordings/raw/5e16a206c345567350ed4ddcbf310900.webm"
+  ],
+  "startedAt": [
+    1791177849715,
+    1791177849891,
+    1791177850070
+  ],
+  "audio": "recordings/raw/tv-audio.webm",
+  "hasAudio": false,
+  "marks": [
+    {
+      "label": "lobby",
+      "t": 2.8
+    },
+    {
+      "label": "host imports questions",
+      "t": 5.5
+    },
+    {
+      "label": "questions ready",
+      "t": 6.8
+    },
+    {
+      "label": "kid joined",
+      "t": 9.4
+    },
+    {
+      "label": "everyone joined",
+      "t": 14.8
+    },
+    {
+      "label": "game started",
+      "t": 16.6
+    },
+    {
+      "label": "question 1",
+      "t": 18.5
+    },
+    {
+      "label": "kid answers q1",
+      "t": 25
+    },
+    {
+      "label": "results q1",
+      "t": 29.9
+    },
+    {
+      "label": "question 2",
+      "t": 33.9
+    },
+    {
+      "label": "kid answers q2",
+      "t": 40.3
+    },
+    {
+      "label": "results q2",
+      "t": 45.2
+    },
+    {
+      "label": "question 3",
+      "t": 49.3
+    },
+    {
+      "label": "kid answers q3",
+      "t": 56.2
+    },
+    {
+      "label": "results q3",
+      "t": 61.3
+    },
+    {
+      "label": "question 4",
+      "t": 65.4
+    },
+    {
+      "label": "kid answers q4",
+      "t": 71.2
+    },
+    {
+      "label": "results q4",
+      "t": 75.9
+    },
+    {
+      "label": "question 5",
+      "t": 79.9
+    },
+    {
+      "label": "kid answers q5",
+      "t": 87.1
+    },
+    {
+      "label": "results q5",
+      "t": 92.2
+    },
+    {
+      "label": "game over",
+      "t": 96
+    },
+    {
+      "label": "end",
+      "t": 102.8
+    }
+  ]
+}

@@ -30,3 +30,11 @@ reports/
 
 # Nightshift agent data
 .nightshift/
+
+# critic evidence: sheets + metrics are committed, video and raw shots stay local
+recordings/
+critic/rounds/*/session.mp4
+critic/rounds/*/shots/
+.claude/worktrees/
+# tester-army/e2e results
+.e2e/

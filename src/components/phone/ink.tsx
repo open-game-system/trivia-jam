@@ -1,0 +1,49 @@
+import { playerTint } from "~/player-tint";
+
+/** The token's colour class: the player's hue by seat, the same one their chip wears on the TV. */
+export const tokenTintClass = (seat: number): string => `ptoken-${playerTint(seat)}`;
+
+/** One tint per player, by seat, then repeats. */
+export const PlayerToken = ({
+  name,
+  seat,
+  className = "",
+}: {
+  name: string;
+  seat: number;
+  className?: string;
+}) => (
+  <span
+    className={`ptoken ${tokenTintClass(seat)} ${className}`}
+    aria-hidden="true"
+  >
+    {name.trim().charAt(0).toUpperCase() || "?"}
+  </span>
+);
+
+/** Rank disc: a number in a circle (replaces medal emoji). */
+export const RankDisc = ({ rank }: { rank: number }) => (
+  <span
+    className={`prank ${rank <= 3 ? `prank-${rank}` : ""}`}
+    aria-label={`Place ${rank}`}
+  >
+    {rank}
+  </span>
+);
+
+export const Slug = ({
+  children,
+  className = "",
+}: {
+  children: React.ReactNode;
+  className?: string;
+}) => <span className={`pslug ${className}`}>{children}</span>;
+
+/** Three glowing dots that bob: waiting for the others. */
+export const WaitingDots = () => (
+  <span className="pdots" aria-hidden="true">
+    <span />
+    <span />
+    <span />
+  </span>
+);

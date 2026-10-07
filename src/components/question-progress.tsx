@@ -1,31 +1,43 @@
 import { motion } from "framer-motion";
 
-export const QuestionProgress = ({ 
-  current, 
-  total 
-}: { 
-  current: number; 
+/**
+ * "Question 2 of 5": a strip of glowing ticks. In the page flow (never
+ * fixed), so it can't overlap a heading or card.
+ */
+export const QuestionProgress = ({
+  current,
+  total,
+}: {
+  current: number;
   total: number;
 }) => {
-  const progress = (current / total) * 100;
-  
+  const label = current === 0 ? `Ready: ${total} ${total === 1 ? "question" : "questions"}` : `Question ${current} of ${total}`;
+  const ticks = Math.min(total, 12);
+  const filled = total <= 12 ? current : Math.round((current / total) * ticks);
+
   return (
-    <div className="fixed top-0 left-0 right-0 p-4 z-50">
-      <div className="max-w-2xl mx-auto">
-        <div className="flex items-center gap-3">
-          <div className="flex-1 h-3 bg-gray-800/50 rounded-full overflow-hidden">
-            <motion.div
-              className="h-full bg-gradient-to-r from-indigo-500 to-purple-500"
-              initial={{ width: 0 }}
-              animate={{ width: `${progress}%` }}
-              transition={{ duration: 0.5 }}
-            />
-          </div>
-          <div className="text-sm font-medium text-white/70 tabular-nums">
-            {current} / {total}
-          </div>
-        </div>
+    <div
+      className="flex items-center gap-3 px-4 pt-3 pb-1"
+      data-testid="question-progress"
+    >
+      <span className="pslug whitespace-nowrap">
+        {label}
+      </span>
+      <div className="flex flex-1 gap-1.5" aria-hidden="true">
+        {Array.from({ length: ticks }, (_, i) => (
+          <motion.span
+            key={i}
+            className="h-1.5 flex-1 rounded-full"
+            style={
+              i < filled
+                ? { background: "linear-gradient(90deg,#6366f1,#a855f7)", boxShadow: "0 0 8px rgba(168,85,247,0.8)" }
+                : { background: "rgba(255,255,255,0.14)" }
+            }
+            initial={false}
+            animate={{ opacity: 1 }}
+          />
+        ))}
       </div>
     </div>
   );
-}; 
+};

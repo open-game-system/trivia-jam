@@ -1,0 +1,96 @@
+diff --git a/dist/createActorKitClient-DpRjl3QV.mjs b/dist/createActorKitClient-DpRjl3QV.mjs
+index 387d027015d1b28b26429f4575e1599281541653..9cfb86647a7952b7beb376ea9db5aef8a4d060c6 100644
+--- a/dist/createActorKitClient-DpRjl3QV.mjs
++++ b/dist/createActorKitClient-DpRjl3QV.mjs
+@@ -25,8 +25,24 @@ function createActorKitClient(props) {
+ 	const listeners = /* @__PURE__ */ new Set();
+ 	const pendingEvents = [];
+ 	let reconnectAttempts = 0;
+-	const maxReconnectAttempts = 5;
++	let reconnectTimer = null;
++	let lastChecksum = props.checksum;
+ 	const maxQueueSize = 100;
++	const isOpenOrConnecting = () => socket !== null && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING);
++	/**
++	* Reconnects now (network back, tab visible again) instead of waiting out the backoff.
++	*/
++	const reconnectNow = () => {
++		if (!shouldReconnect || isOpenOrConnecting()) return;
++		if (typeof document !== "undefined" && document.visibilityState === "hidden") return;
++		if (reconnectTimer) clearTimeout(reconnectTimer);
++		reconnectTimer = null;
++		connect();
++	};
++	if (typeof window !== "undefined") {
++		window.addEventListener("online", reconnectNow);
++		if (typeof document !== "undefined") document.addEventListener("visibilitychange", reconnectNow);
++	}
+ 	/**
+ 	* Notifies all registered listeners with the current state.
+ 	*/
+@@ -39,18 +55,25 @@ function createActorKitClient(props) {
+ 	*/
+ 	const connect = async () => {
+ 		shouldReconnect = true;
+-		const url = getWebSocketUrl(props);
+-		socket = new WebSocket(url);
+-		socket.addEventListener("open", () => {
++		if (reconnectTimer) clearTimeout(reconnectTimer);
++		reconnectTimer = null;
++		const url = getWebSocketUrl({
++			...props,
++			checksum: lastChecksum
++		});
++		const ws = new WebSocket(url);
++		socket = ws;
++		ws.addEventListener("open", () => {
+ 			reconnectAttempts = 0;
+ 			flushPendingEvents();
+ 		});
+-		socket.addEventListener("message", (event) => {
++		ws.addEventListener("message", (event) => {
+ 			try {
+ 				const data = EmittedEventSchema.parse(JSON.parse(typeof event.data === "string" ? event.data : new TextDecoder().decode(event.data)));
+ 				currentSnapshot = produce(currentSnapshot, (draft) => {
+ 					applyPatch(draft, data.operations);
+ 				});
++				lastChecksum = data.checksum;
+ 				props.onStateChange?.(currentSnapshot);
+ 				notifyListeners();
+ 			} catch (error) {
+@@ -58,19 +81,18 @@ function createActorKitClient(props) {
+ 				props.onError?.(error instanceof Error ? error : /* @__PURE__ */ new Error("Unknown WebSocket message error"));
+ 			}
+ 		});
+-		socket.addEventListener("error", (error) => {
++		ws.addEventListener("error", (error) => {
+ 			console.error(`[ActorKitClient] WebSocket error:`, error);
+ 			props.onError?.(/* @__PURE__ */ new Error(`WebSocket error: ${error.type}`));
+ 		});
+-		socket.addEventListener("close", (_event) => {
+-			if (shouldReconnect && reconnectAttempts < maxReconnectAttempts) {
+-				reconnectAttempts++;
+-				const delay = Math.min(1e3 * Math.pow(2, reconnectAttempts), 3e4);
+-				setTimeout(connect, delay);
+-			} else if (shouldReconnect) console.error(`[ActorKitClient] Max reconnection attempts reached`);
++		ws.addEventListener("close", (_event) => {
++			if (socket !== ws || !shouldReconnect) return;
++			reconnectAttempts++;
++			const delay = Math.min(1e3 * Math.pow(2, reconnectAttempts), 3e4);
++			reconnectTimer = setTimeout(connect, delay);
+ 		});
+ 		return new Promise((resolve) => {
+-			socket.addEventListener("open", () => resolve());
++			ws.addEventListener("open", () => resolve());
+ 		});
+ 	};
+ 	/**
+@@ -78,6 +100,8 @@ function createActorKitClient(props) {
+ 	*/
+ 	const disconnect = () => {
+ 		shouldReconnect = false;
++		if (reconnectTimer) clearTimeout(reconnectTimer);
++		reconnectTimer = null;
+ 		if (socket) {
+ 			socket.close();
+ 			socket = null;

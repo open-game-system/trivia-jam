@@ -32,6 +32,7 @@ Start here. Load deeper docs **only when working on the relevant domain.**
 | Nanostores state management | [docs/NANOSTORES.md](docs/NANOSTORES.md) |
 | Zod schema patterns | [docs/ZOD.md](docs/ZOD.md) |
 | Storybook test runner | [docs/STORYBOOK_TEST_RUNNER.mdx](docs/STORYBOOK_TEST_RUNNER.mdx) |
+| Observability (wide events, client telemetry, sre-agent) | [docs/agents/observability.md](docs/agents/observability.md) |
 
 > **Progressive disclosure:** Do NOT load all docs upfront. Read this file, then load the specific doc relevant to your current task.
 
@@ -65,6 +66,8 @@ Start here. Load deeper docs **only when working on the relevant domain.**
 | Change screen flow or layouts | [docs/SCREENS.md](docs/SCREENS.md) |
 | Add/change Zod schemas | [docs/ZOD.md](docs/ZOD.md) (if pattern is novel) |
 | Add new E2E scenarios | [docs/E2E_TEST_IDEAS.md](docs/E2E_TEST_IDEAS.md) |
+| Add a route, room action, alarm or job | Emit one wide event (docs/agents/observability.md) |
+| Add a client error path or event | docs/agents/observability.md |
 | Change tech stack or conventions | This file |
 
 ## Off-Limits

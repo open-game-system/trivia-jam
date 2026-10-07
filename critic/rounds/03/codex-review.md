@@ -1,0 +1,36 @@
+Overall: **5.6/10 — a coherent, promising prototype, but not Nintendo ship-ready.** The branding is stronger than the moment-to-moment game presentation. No category reaches the 8/10 sign-off bar.
+
+| Category | Grade | Art-direction verdict |
+|---|---:|---|
+| Art direction & cohesion | **6/10** | The cream, navy, pink, teal, yellow, halftones, and offset shadows form a recognizable identity. `01-lobby-empty-tv`, `10a-before-q1-tv`, and `10e-q1-reveal-settled-tv` feel authored. But the gameplay alternates between energetic poster art, plain boxed tables, and web-dashboard controls. `10f-q1-standings-tv` and `10b-q1-asked-host` could belong to a different product. |
+| TV staging & couch readability | **5/10** | Too much unused canvas and too many tiny elements. In `10b-q1-asked-tv`, the question is pushed into one corner while the critical number line is thin and distant. Player markers and names in `10d-q1-results-tv` and `14d-q5-results-tv` will disappear from a couch. The reveals use the TV well; the screens players stare at longest do not. |
+| Typography & layout | **5/10** | The display type has personality, but the heavy offset shadow frequently adds blur rather than hierarchy. Labels such as “answers submitted,” “and the answer is,” round progress, player names, and “up next” are far below TV-readable scale. Phone screens compound this with tightly stacked boxes and several competing type sizes. |
+| Motion & juice | **5/10** | Inferred motion includes timer rings, score count-ups between `10f-q1-standings-tv` and `11a-before-q2-tv`, and podium growth from `20-game-over-tv` to `21-game-over-settled-tv`. Those are good foundations. But the compositions suggest mostly static cards changing state rather than objects carrying momentum through the scene. Player tokens, answer markers, rankings, and score awards need stronger physical choreography. |
+| Reveal & payoff drama | **6/10** | `10d-q1-results-tv` into `10e-q1-reveal-settled-tv` is the best sequence: uncertainty, answer, burst, winners. But the same “EXACT!” composition repeats in `11e`, `12e`, and `14e`, quickly exhausting the surprise. `13e-q4-reveal-settled-tv` is especially muddled: winners, point chips, faded answer grid, and “B Blue whale” compete instead of landing as one decisive beat. |
+| Kid UX | **6/10** | Large keypad buttons in `10b-q1-asked-kid`, colored answer quadrants in `13b-q4-asked-kid`, audio access, and enormous result ranks are appropriate. But the split keypad is unnecessarily odd, the enabled/disabled “GO” state is weak, progress indicators are tiny, and the locked screens such as `10c-q1-kid-answered-kid` waste most of the display while “waiting for everyone” is microscopic. It confirms submission without keeping a five-year-old engaged. |
+| Phone UI polish | **4/10** | The host phone looks like an internal operator dashboard. `10b-q1-asked-host` and `12d-q3-results-host` are dense stacks of bordered modules, tiny rows, generic disclosure controls, and compressed labels. The pink primary buttons help, but the whole surface lacks the touch-target scale, spacing, and finish expected from a consumer party game. |
+| Host flow | **7/10** | The sequence is understandable: import, share, start, monitor answers, reveal, advance. `04-lobby-full-host`, `10a-before-q1-host`, and `10d-q1-results-host` consistently expose the next primary action. It misses sign-off because the host must parse too much small information, “Details” is vague, and round control does not feel sufficiently separated from low-priority diagnostics or destructive actions. |
+| Replay & payoff | **5/10** | The personal `21-game-over-settled-kid` result is clear, and the TV adds “Most exact” and “Closest call.” But `21-game-over-settled-tv` presents those awards as tiny side notes—with a truncated “Gra…”—rather than memorable stories from the match. The repeated exact-answer bursts and standings tables make the five-round arc feel mechanically predictable. |
+
+## Single largest gap
+
+**The core play loop is not staged like a shared-room show.**
+
+The lobby and reveal screens are art-directed, but `10b-q1-asked-tv`, `10d-q1-results-tv`, and `10f-q1-standings-tv` look like web layouts projected onto a television. Those screens occupy most of the session. Mario Party and Buzz make even utilitarian information feel like an event; Wits & Wagers turns answer placement itself into the spectacle. Here, the spectacle arrives only after the important play has already happened.
+
+## Five highest-impact fixes
+
+1. **Recompose every TV gameplay screen for ten-foot comprehension.**  
+   Double or triple the player markers, names, answer ticks, and result values in `10b`, `10d`, `11d`, `12d`, and `14d`. Let the question span the stage instead of occupying the upper-left corner. Remove any text that cannot survive viewing the contact sheet at thumbnail size.
+
+2. **Storyboard the reveal as one continuous performance.**  
+   For numeric questions: lock submissions, zoom the number line around the cluster, drive the correct-answer marker onto the axis, pause, order players by distance, then award points sequentially. For multiple choice: eliminate wrong tiles, expand the correct tile, then bring player tokens onto it. `10d→10e` should feel causal, not like switching slides.
+
+3. **Carry the poster identity into the utility screens.**  
+   Replace the spreadsheet-like standings and browser-like phone modules with a consistent physical metaphor—score cards, marquee rails, pinned answer slips, or another device unique to Trivia Jam. Standardize border weight, shadow direction, labels, and color roles across `10f-q1-standings-tv`, `13b-q4-asked-tv`, and the host screens.
+
+4. **Redesign the companion surfaces around their single jobs.**  
+   The host gets one large phase status, submission count, and primary action; secondary details move behind a clearly named sheet. The kid gets the question, audio, answer controls, and an unmistakable submit state. After submission, `10c-q1-kid-answered-kid` should provide lively confirmation and progress—not an almost empty waiting screen.
+
+5. **Make the finale recount the match, not merely display totals.**  
+   In `20→21-game-over-settled-tv`, reveal podium places one at a time, count scores with rank changes, and give “Most Exact” and “Closest Call” their own full-size beats. On the kid screen, connect “2nd / SILVER” to a memorable accomplishment from that game. The finale should create the desire for an immediate rematch.

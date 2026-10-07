@@ -1,0 +1,23 @@
+[
+  {
+    "file": "public/audio/music/lobby.mp3",
+    "source": "ElevenLabs (generated)",
+    "kind": "music",
+    "prompt": "upbeat retro TV game show lobby groove, 112 BPM, funky clean electric bass, bright marimba and vibraphone hooks, hand claps, tight brushed drums, playful and warm, family friendly, instrumental, no vocals, no intro, steady loopable",
+    "date": "2026-10-05"
+  },
+  {
+    "file": "public/audio/music/think.mp3",
+    "source": "ElevenLabs (generated)",
+    "kind": "music",
+    "prompt": "game show thinking music under a countdown, 100 BPM, light ticking woodblock and muted pizzicato, soft marimba ostinato, gentle suspense but cheerful, sparse so a timer can sit on top, instrumental, no vocals, no intro, steady loopable",
+    "date": "2026-10-05"
+  },
+  {
+    "file": "public/audio/music/finale.mp3",
+    "source": "ElevenLabs (generated)",
+    "kind": "music",
+    "prompt": "game show winner celebration, 120 BPM, bright brass stabs, marimba, glockenspiel, hand claps, joyful big finish feel then steady loop, family friendly, instrumental, no vocals, no intro",
+    "date": "2026-10-05"
+  }
+]

@@ -4,8 +4,8 @@
   "type": "module",
   "scripts": {
     "build": "vite build",
-    "dev": "pnpm build && cp -f .dev.vars .output/server/.dev.vars 2>/dev/null; wrangler dev -c .output/server/wrangler.json --port 3000 --inspector-port 0",
-    "preview": "pnpm build && wrangler dev -c .output/server/wrangler.json --port 3000 --inspector-port 0",
+    "dev": "pnpm build && cp -f .dev.vars .output/server/.dev.vars 2>/dev/null; wrangler dev -c .output/server/wrangler.json --port 3000 --inspector-port 0 --persist-to .wrangler/state",
+    "preview": "pnpm build && wrangler dev -c .output/server/wrangler.json --port 3000 --inspector-port 0 --persist-to .wrangler/state",
     "deploy": "pnpm build && wrangler deploy -c .output/server/wrangler.json",
     "typecheck": "tsc",
     "test": "vitest",
@@ -14,6 +14,8 @@
     "test:ui": "vitest --ui",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
+    "test:e2e:flows": "E2E_TELEMETRY_DISABLED=1 e2e run",
+    "e2e:serve": "pnpm build && grep -v '^GEMINI_API_KEY' .dev.vars > .output/server/.dev.vars; wrangler dev -c .output/server/wrangler.json --port ${E2E_PORT:-3101} --inspector-port 0 --persist-to .wrangler/state-e2e --var USE_MOCK_LLM:1",
     "test:mutate": "stryker run",
     "test:mutate:incremental": "stryker run --incremental",
     "storybook": "storybook dev -p 6006",
@@ -27,8 +29,13 @@
   "license": "ISC",
   "dependencies": {
     "@ai-sdk/google": "^3.0.43",
+    "@fontsource-variable/inter": "^5.3.0",
+    "@fontsource-variable/unbounded": "^5.3.0",
     "@jonmumm/utils": "^1.0.3",
     "@nanostores/react": "^0.8.4",
+    "@open-game-system/cast-kit-core": "file:vendor/open-game-system-cast-kit-core-0.2.0.tgz",
+    "@open-game-system/cast-kit-react": "file:vendor/open-game-system-cast-kit-react-0.2.0.tgz",
+    "@open-game-system/profile-kit": "file:vendor/open-game-system-profile-kit-0.1.0.tgz",
     "@opentelemetry/api": "^1.9.0",
     "@radix-ui/react-icons": "^1.3.0",
     "@radix-ui/react-slot": "^1.1.0",
@@ -62,7 +69,9 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@ai-sdk/openai": "^4.0.86",
     "@cloudflare/workers-types": "^4.20240925.0",
+    "@e2e-dev/web": "^0.12.0",
     "@playwright/test": "^1.58.2",
     "@storybook/addon-coverage": "^1.0.5",
     "@storybook/addon-essentials": "^8.6.14",
@@ -88,6 +97,7 @@
     "autoprefixer": "^10.4.20",
     "concurrently": "^9.2.1",
     "daisyui": "^4.12.14",
+    "e2e": "^0.17.0",
     "http-server": "^14.1.1",
     "jsdom": "^26.0.0",
     "postcss": "^8.4.47",
@@ -105,6 +115,12 @@
       "esbuild",
       "workerd",
       "sharp"
-    ]
+    ],
+    "overrides": {
+      "@open-game-system/cast-kit-core": "file:./vendor/open-game-system-cast-kit-core-0.2.0.tgz"
+    },
+    "patchedDependencies": {
+      "actor-kit@0.52.5": "patches/actor-kit@0.52.5.patch"
+    }
   }
 }

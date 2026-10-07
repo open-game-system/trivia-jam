@@ -10,7 +10,19 @@ export default {
         md: "calc(var(--radius) - 2px)",
         sm: "calc(var(--radius) - 4px)",
       },
+      fontFamily: {
+        sans: ['"Inter Variable"', "Inter", "system-ui", "sans-serif"],
+        // Kept only for two story-asserted class names (PlayerResult); renders as Inter.
+        display: ['"Inter Variable"', "Inter", "system-ui", "sans-serif"],
+      },
       colors: {
+        // Aurora Glass (docs/art-style.md).
+        night: { DEFAULT: "#0B0F1A", 2: "#111827" },
+        lav: { 1: "#818CF8", 2: "#C084FC" },
+        glow: "#C4B5FD",
+        win: { DEFAULT: "#4ADE80", fill: "#22C55E", ink: "#052E16" },
+        close: "#FBBF24",
+        aurora: { indigo: "#6366F1", purple: "#A855F7", pink: "#EC4899" },
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         card: {

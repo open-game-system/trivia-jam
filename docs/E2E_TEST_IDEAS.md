@@ -1,5 +1,59 @@
 # E2E Test Ideas (Trivia Jam)
 
+## Current setup (2026-10 e2e sweep)
+
+**Server.** `pnpm e2e:serve` builds and runs the Worker on :3101 (`E2E_PORT` to change) with
+`--var USE_MOCK_LLM:1` and its own `--persist-to .wrangler/state-e2e`. It copies `.dev.vars` without
+`GEMINI_API_KEY`; no test needs a real key. The mock parser returns the two fixed questions in
+`src/gemini.ts` for any document with a letter or digit, and no questions (so the host's parse error)
+for one without, e.g. `--- ??? ---`.
+
+**Two runners, by device count.**
+
+- **tester-army/e2e** (`e2e.config.ts`, tests in `e2e/flows/*.e2e.ts`): single-device flows. Its web
+  engine drives one browser with one active tab per test (docs: `node_modules/e2e/docs/reference/web.mdx`,
+  "The active tab"); there is no second browser context, so it cannot be a host, a player and a TV at
+  once. No agent model is configured: every step is a locator + assertion. Run:
+  `APP_URL=http://localhost:3101 pnpm test:e2e:flows` (reuses a running server, else starts `pnpm e2e:serve`).
+- **Playwright** (`e2e/*.spec.ts`): multi-device flows, one browser context per device. Shared helpers:
+  `e2e/helpers/game-setup.ts` and `e2e/helpers/lobby.ts` (`openRoom`, `joinAndWait`, host/TV locators).
+  Run: `PLAYWRIGHT_BASE_URL=http://localhost:3101 pnpm test:e2e` (all three browsers locally; with
+  `PLAYWRIGHT_BASE_URL` set, Playwright does not start its own server).
+
+| Flow | Test |
+|---|---|
+| 1. Home -> Create New Game -> setup | `e2e/flows/01-create-game.e2e.ts` |
+| 2. Import questions, parse error, failed re-import | `e2e/flows/02-import-questions.e2e.ts` |
+| 3. Player joins; host + TV show them; no duplicates; reload keeps seat | `e2e/flow-03-player-join.spec.ts` |
+| 4. Settings reflected on host/TV/timer; host removes a player | `e2e/flow-04-settings-and-remove.spec.ts` |
+| 5. Question 1 on TV/host/phone; number pad digits, delete, GO; locked in | `e2e/flow-05-numeric-answer.spec.ts` |
+| 6. Multiple choice with the option tiles; right/wrong outcomes | `e2e/flow-06-multiple-choice.spec.ts` |
+| 7. Everyone answers -> auto-advance; TV reveal (answer, points); phone outcomes; host Next | `e2e/flow-07-auto-advance-reveal.spec.ts` |
+| 8. Time runs out -> results; no timer ever jumps back up (incl. a stale 0 before the first tick) | `e2e/flow-08-timer.spec.ts` |
+| 9. Host skips a live question (results at once, Next starts q2); host ends the game between questions -> game over on host, phone, TV | `e2e/flow-09-skip-and-end.spec.ts` |
+| 10. Full game (numeric + multiple choice) -> End Game -> final standings on TV, host, phones | `e2e/flow-10-full-game.spec.ts` |
+| 11. Host/player reload mid-question keep role and seat; late TV shows the live question; TV refreshed after results shows the settled reveal | `e2e/flow-11-refresh.spec.ts` |
+| 12. OGS TV seam: TV framed by a stand-in launcher; `ogs:start` hides the QR/join card; `ogs:suspend` suspends every AudioContext (a press does not wake it), `ogs:resume` -> running | `e2e/flow-12-ogs-tv.spec.ts` |
+| 13. OGS phone seam: fake app WebView with a profile + signed game token -> no name form, joins as the token's name (phone, host, TV; reload keeps one seat); a forged page name loses to the token; another game's token falls back to the page's name | `e2e/flow-13-ogs-phone.spec.ts` |
+| 14. TV audio: `?record` -> `window.__tvAudioTap()` metered with an AnalyserNode is audible (peak > 0.05) during a question | `e2e/flow-14-tv-audio.spec.ts` |
+
+**OGS seams (flows 12-14).** `e2e/helpers/ogs.ts` holds the fake OGS app WebView
+(`window.ReactNativeWebView` answering BRIDGE_READY with STATE_INIT for the `profile` store), a fixed
+ES256 test key (`e2e/fixtures/ogs-test-key.json`, test only: the server caches the key set, so the key
+never changes) and the token signer. Playwright's global setup (`e2e/global-setup.ts`) serves its key set
+on :8833 (`OGS_JWKS_PORT`); flow 13 needs the server pointed at it:
+`E2E_PORT=3104 pnpm e2e:serve --var OGS_JWKS_URL:http://localhost:8833/.well-known/jwks.json`, then
+`PLAYWRIGHT_BASE_URL=http://localhost:3104 pnpm exec playwright test e2e/flow-1[234]-*.spec.ts`. Flow 13
+skips in CI (CI's server verifies against production OGS per wrangler.toml). Flows 12 and 14 press the TV
+once, because a test browser may block autoplay (the cloud stream and the recorder allow it).
+
+In-game helpers (`startFirstQuestion`, `answerOnPad`, `setAnswerTime`, `answersSubmitted`, ...) live in
+`e2e/helpers/play.ts`. Flow 8 records each value a timer shows with a MutationObserver (instrumentation,
+not a selector for interaction), so a value painted for a single frame is caught.
+
+Known gap: `settings.maxPlayers` is shown but not enforced on join (deciding what a turned-away
+player sees is a design call, not a bug fix).
+
 Brainstorm for Playwright E2E tests that run in CI. The app needs **multiple participants** to start a game (host + ≥1 player; host needs questions).
 
 ## Constraints

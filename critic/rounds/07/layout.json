@@ -1,0 +1,926 @@
+{
+  "00-home-host": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"A numbers game for the whole room\"",
+      "18px \"How to Play\"",
+      "22px \"Create New Game\"",
+      "24px \"Guess the number. Closest wins.\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "01-lobby-empty-tv": {
+    "minFontPx": 28,
+    "smallTextSamples": [
+      "28px \"or open\"",
+      "30px \"Scan to join the game\"",
+      "32px \"Waiting for game to start\"",
+      "32px \"Waiting for players\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "01-lobby-empty-host": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Hosting\"",
+      "14px \"How many floors does the Burj Khalifa ha\"",
+      "14px \"Add questions to begin\"",
+      "16px \"Import Questions\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "02-parsing-host": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Hosting\"",
+      "14px \"Share Game Link\"",
+      "14px \"Waiting for a player to join\"",
+      "16px \"Copy link\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "03-join-player": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Trivia Jam\"",
+      "16px \"Your Name\"",
+      "16px \"How to Play\"",
+      "22px \"Join Game\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "04-lobby-full-tv": {
+    "minFontPx": 28,
+    "smallTextSamples": [
+      "28px \"or open\"",
+      "30px \"Scan to join the game\"",
+      "32px \"Waiting for game to start\"",
+      "32px \"3 players\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "04-lobby-full-host": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Hosting\"",
+      "14px \"Share Game Link\"",
+      "16px \"Copy link\"",
+      "16px \"Show QR\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "04-lobby-full-player": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Trivia Jam\"",
+      "16px \"How to Play\"",
+      "20px \"Waiting for host to start the game...\"",
+      "31.44px \"Welcome, Sam!\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "10a-before-q1-tv": {
+    "minFontPx": 28,
+    "smallTextSamples": [
+      "28px \"Waiting for Question...\"",
+      "29px \"S\"",
+      "29px \"P\"",
+      "29px \"J\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "10a-before-q1-host": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Ready: 5 questions\"",
+      "14px \"First up\"",
+      "14px \"Host tools\"",
+      "14px \"Answer\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "10a-before-q1-player": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Trivia Jam\"",
+      "16px \"How to Play\"",
+      "20px \"Everyone starts at zero.\"",
+      "31.44px \"First question coming up\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "10b-q1-asked-tv": {
+    "minFontPx": 32,
+    "smallTextSamples": [
+      "32px \"Question\"",
+      "32px \"1\"",
+      "32px \"of 5\"",
+      "32px \"Answers Submitted: 0 / 3\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "10b-q1-asked-host": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question 1 of 5\"",
+      "14px \"Answer\"",
+      "16px \"Waiting on\"",
+      "16px \"Skip question\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "10b-q1-asked-player": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question 1 of 5\"",
+      "22.1424px \"GO\"",
+      "22.1424px \"Submit answer\"",
+      "22.406px \"Your guess\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "10c-q1-player-answered-tv": {
+    "minFontPx": 32,
+    "smallTextSamples": [
+      "32px \"Question\"",
+      "32px \"1\"",
+      "32px \"of 5\"",
+      "32px \"Answers Submitted: 2 / 3\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "10c-q1-player-answered-host": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question 1 of 5\"",
+      "14px \"Answer\"",
+      "14px \"Exact\"",
+      "14px \"Exact\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "10c-q1-player-answered-player": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question 1 of 5\"",
+      "14px \"Waiting for everyone\"",
+      "16px \"LOCKED IN\"",
+      "26px \"18\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "10d-q1-results-tv": {
+    "minFontPx": 32,
+    "smallTextSamples": [
+      "32px \"Question\"",
+      "32px \"1\"",
+      "32px \"of 5\"",
+      "32px \"And the answer is...\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "10d-q1-results-host": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question 1 of 5\"",
+      "14px \"Answer\"",
+      "14px \"8\"",
+      "14px \"- 4.7s\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "10d-q1-results-player": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question 1 of 5\"",
+      "14px \"You locked in\"",
+      "27.678px \"How many legs does a spider have?\"",
+      "46.13px \"LOOK AT THE TV\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "10e-q1-reveal-settled-tv": {
+    "minFontPx": 28,
+    "smallTextSamples": [
+      "28px \"· fastest\"",
+      "30px \"total\"",
+      "30px \"total\"",
+      "32px \"Question\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "10f-q1-standings-tv": {
+    "minFontPx": 32,
+    "smallTextSamples": [
+      "32px \"After question\"",
+      "32px \"1\"",
+      "32px \"of 5\"",
+      "49px \"P\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "11a-before-q2-tv": {
+    "minFontPx": 32,
+    "smallTextSamples": [
+      "32px \"After question\"",
+      "32px \"1\"",
+      "32px \"of 5\"",
+      "40px \"Up next\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "11a-before-q2-host": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question 1 of 5\"",
+      "14px \"Answer\"",
+      "14px \"8\"",
+      "14px \"- 4.7s\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "11a-before-q2-player": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question 1 of 5\"",
+      "14px \"This round\"",
+      "14px \"Points\"",
+      "14px \"Overall\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "11b-q2-asked-tv": {
+    "minFontPx": 32,
+    "smallTextSamples": [
+      "32px \"Question\"",
+      "32px \"2\"",
+      "32px \"of 5\"",
+      "32px \"Answers Submitted: 0 / 3\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "11b-q2-asked-host": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question 2 of 5\"",
+      "14px \"Answer\"",
+      "16px \"Waiting on\"",
+      "16px \"Skip question\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "11b-q2-asked-player": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question 2 of 5\"",
+      "22.1424px \"GO\"",
+      "22.1424px \"Submit answer\"",
+      "22.406px \"Your guess\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "11c-q2-player-answered-tv": {
+    "minFontPx": 32,
+    "smallTextSamples": [
+      "32px \"Question\"",
+      "32px \"2\"",
+      "32px \"of 5\"",
+      "32px \"Answers Submitted: 2 / 3\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "11c-q2-player-answered-host": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question 2 of 5\"",
+      "14px \"Answer\"",
+      "14px \"Exact\"",
+      "14px \"Exact\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "11c-q2-player-answered-player": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question 2 of 5\"",
+      "14px \"Waiting for everyone\"",
+      "16px \"LOCKED IN\"",
+      "26px \"18\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "11d-q2-results-tv": {
+    "minFontPx": 32,
+    "smallTextSamples": [
+      "32px \"Question\"",
+      "32px \"2\"",
+      "32px \"of 5\"",
+      "32px \"And the answer is...\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "11d-q2-results-host": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question 2 of 5\"",
+      "14px \"Answer\"",
+      "14px \"7\"",
+      "14px \"- 4.7s\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "11d-q2-results-player": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question 2 of 5\"",
+      "14px \"You locked in\"",
+      "27.678px \"How many days are in a week?\"",
+      "46.13px \"LOOK AT THE TV\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "11e-q2-reveal-settled-tv": {
+    "minFontPx": 28,
+    "smallTextSamples": [
+      "28px \"· fastest\"",
+      "30px \"total\"",
+      "30px \"total\"",
+      "30px \"total\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "11f-q2-standings-tv": {
+    "minFontPx": 32,
+    "smallTextSamples": [
+      "32px \"After question\"",
+      "32px \"2\"",
+      "32px \"of 5\"",
+      "40px \"Up next\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "12a-before-q3-tv": {
+    "minFontPx": 32,
+    "smallTextSamples": [
+      "32px \"After question\"",
+      "32px \"2\"",
+      "32px \"of 5\"",
+      "40px \"Up next\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "12a-before-q3-host": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question 2 of 5\"",
+      "14px \"Answer\"",
+      "14px \"7\"",
+      "14px \"- 4.7s\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "12a-before-q3-player": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question 2 of 5\"",
+      "14px \"This round\"",
+      "14px \"Points\"",
+      "14px \"Overall\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "12b-q3-asked-tv": {
+    "minFontPx": 32,
+    "smallTextSamples": [
+      "32px \"Question\"",
+      "32px \"3\"",
+      "32px \"of 5\"",
+      "32px \"Answers Submitted: 0 / 3\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "12b-q3-asked-host": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question 3 of 5\"",
+      "14px \"Answer\"",
+      "16px \"Waiting on\"",
+      "16px \"Skip question\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "12b-q3-asked-player": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question 3 of 5\"",
+      "22.1424px \"GO\"",
+      "22.1424px \"Submit answer\"",
+      "22.406px \"Your guess\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "12c-q3-player-answered-tv": {
+    "minFontPx": 32,
+    "smallTextSamples": [
+      "32px \"Question\"",
+      "32px \"3\"",
+      "32px \"of 5\"",
+      "32px \"Answers Submitted: 2 / 3\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "12c-q3-player-answered-host": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question 3 of 5\"",
+      "14px \"Answer\"",
+      "14px \"Exact\"",
+      "16px \"Waiting on\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "12c-q3-player-answered-player": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question 3 of 5\"",
+      "14px \"Waiting for everyone\"",
+      "16px \"LOCKED IN\"",
+      "26px \"17\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "12d-q3-results-tv": {
+    "minFontPx": 32,
+    "smallTextSamples": [
+      "32px \"Question\"",
+      "32px \"3\"",
+      "32px \"of 5\"",
+      "32px \"And the answer is...\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "12d-q3-results-host": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question 3 of 5\"",
+      "14px \"Answer\"",
+      "14px \"32\"",
+      "14px \"- 5.0s\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "12d-q3-results-player": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question 3 of 5\"",
+      "14px \"You locked in\"",
+      "27.678px \"How many teeth does a grown-up have?\"",
+      "46.13px \"LOOK AT THE TV\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "12e-q3-reveal-settled-tv": {
+    "minFontPx": 30,
+    "smallTextSamples": [
+      "30px \"total\"",
+      "32px \"Question\"",
+      "32px \"3\"",
+      "32px \"of 5\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "12f-q3-standings-tv": {
+    "minFontPx": 32,
+    "smallTextSamples": [
+      "32px \"After question\"",
+      "32px \"3\"",
+      "32px \"of 5\"",
+      "40px \"Up next\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "13a-before-q4-tv": {
+    "minFontPx": 32,
+    "smallTextSamples": [
+      "32px \"After question\"",
+      "32px \"3\"",
+      "32px \"of 5\"",
+      "40px \"Up next\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "13a-before-q4-host": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question 3 of 5\"",
+      "14px \"Answer\"",
+      "14px \"32\"",
+      "14px \"- 5.0s\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "13a-before-q4-player": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question 3 of 5\"",
+      "14px \"This round\"",
+      "14px \"Points\"",
+      "14px \"Overall\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "13b-q4-asked-tv": {
+    "minFontPx": 32,
+    "smallTextSamples": [
+      "32px \"Question\"",
+      "32px \"4\"",
+      "32px \"of 5\"",
+      "32px \"Answers Submitted: 0 / 3\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "13b-q4-asked-host": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question 4 of 5\"",
+      "14px \"Answer\"",
+      "16px \"Waiting on\"",
+      "16px \"Skip question\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "13b-q4-asked-player": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question 4 of 5\"",
+      "21.088px \"Elephant\"",
+      "21.088px \"Blue whale\"",
+      "21.088px \"Giraffe\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "13c-q4-player-answered-tv": {
+    "minFontPx": 32,
+    "smallTextSamples": [
+      "32px \"Question\"",
+      "32px \"4\"",
+      "32px \"of 5\"",
+      "32px \"Answers Submitted: 2 / 3\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "13c-q4-player-answered-host": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question 4 of 5\"",
+      "14px \"Answer\"",
+      "16px \"Waiting on\"",
+      "16px \"Skip question\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "13c-q4-player-answered-player": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question 4 of 5\"",
+      "14px \"Waiting for everyone\"",
+      "16px \"LOCKED IN\"",
+      "20px \"Blue whale\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "13d-q4-results-tv": {
+    "minFontPx": 32,
+    "smallTextSamples": [
+      "32px \"Question\"",
+      "32px \"4\"",
+      "32px \"of 5\"",
+      "32px \"And the answer is...\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "13d-q4-results-host": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question 4 of 5\"",
+      "14px \"Answer\"",
+      "14px \"Blue whale\"",
+      "14px \"- 4.4s\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "13d-q4-results-player": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question 4 of 5\"",
+      "14px \"You locked in\"",
+      "27.678px \"Which animal is the biggest?\"",
+      "46.13px \"LOOK AT THE TV\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "13e-q4-reveal-settled-tv": {
+    "minFontPx": 30,
+    "smallTextSamples": [
+      "30px \"total\"",
+      "30px \"total\"",
+      "32px \"Question\"",
+      "32px \"4\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "13f-q4-standings-tv": {
+    "minFontPx": 32,
+    "smallTextSamples": [
+      "32px \"After question\"",
+      "32px \"4\"",
+      "32px \"of 5\"",
+      "40px \"Up next\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "14a-before-q5-tv": {
+    "minFontPx": 32,
+    "smallTextSamples": [
+      "32px \"After question\"",
+      "32px \"4\"",
+      "32px \"of 5\"",
+      "40px \"Up next\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "14a-before-q5-host": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question 4 of 5\"",
+      "14px \"Answer\"",
+      "14px \"Blue whale\"",
+      "14px \"- 4.4s\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "14a-before-q5-player": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question 4 of 5\"",
+      "14px \"This round\"",
+      "14px \"Points\"",
+      "14px \"Overall\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "14b-q5-asked-tv": {
+    "minFontPx": 32,
+    "smallTextSamples": [
+      "32px \"Question\"",
+      "32px \"5\"",
+      "32px \"of 5\"",
+      "32px \"Answers Submitted: 0 / 3\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "14b-q5-asked-host": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question 5 of 5\"",
+      "14px \"Answer\"",
+      "16px \"Waiting on\"",
+      "16px \"Skip question\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "14b-q5-asked-player": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question 5 of 5\"",
+      "22.1424px \"GO\"",
+      "22.1424px \"Submit answer\"",
+      "22.406px \"Your guess\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "14c-q5-player-answered-tv": {
+    "minFontPx": 32,
+    "smallTextSamples": [
+      "32px \"Question\"",
+      "32px \"5\"",
+      "32px \"of 5\"",
+      "32px \"Answers Submitted: 2 / 3\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "14c-q5-player-answered-host": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question 5 of 5\"",
+      "14px \"Answer\"",
+      "14px \"Exact\"",
+      "16px \"Waiting on\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "14c-q5-player-answered-player": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question 5 of 5\"",
+      "14px \"Waiting for everyone\"",
+      "16px \"LOCKED IN\"",
+      "26px \"17\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "14d-q5-results-tv": {
+    "minFontPx": 32,
+    "smallTextSamples": [
+      "32px \"Question\"",
+      "32px \"5\"",
+      "32px \"of 5\"",
+      "32px \"And the answer is...\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "14d-q5-results-host": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question 5 of 5\"",
+      "14px \"Answer\"",
+      "14px \"60\"",
+      "14px \"- 5.0s\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "14d-q5-results-player": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question 5 of 5\"",
+      "14px \"You locked in\"",
+      "27.678px \"How many minutes are in an hour?\"",
+      "46.13px \"LOOK AT THE TV\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "14e-q5-reveal-settled-tv": {
+    "minFontPx": 28,
+    "smallTextSamples": [
+      "28px \"· fastest\"",
+      "30px \"total\"",
+      "30px \"total\"",
+      "32px \"Question\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "14f-q5-standings-tv": {
+    "minFontPx": 32,
+    "smallTextSamples": [
+      "32px \"After question\"",
+      "32px \"5\"",
+      "32px \"of 5\"",
+      "40px \"That was the last question\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "20-game-over-tv": {
+    "minFontPx": 32,
+    "smallTextSamples": [
+      "32px \"Game over\"",
+      "32px \"Final scores\"",
+      "36px \"The final scores\"",
+      "40px \"2nd\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "20-game-over-host": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Hosting\"",
+      "16px \"with\"",
+      "16px \"20\"",
+      "16px \"points\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "20-game-over-player": {
+    "minFontPx": 18,
+    "smallTextSamples": [
+      "18px \"1\"",
+      "18px \"pts\"",
+      "18px \"2\"",
+      "18px \"pts\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "21-game-over-settled-tv": {
+    "minFontPx": 30,
+    "smallTextSamples": [
+      "30px \"Most exact\"",
+      "30px \"Closest call\"",
+      "30px \"Fastest finger\"",
+      "32px \"Game over\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "21-game-over-settled-host": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Hosting\"",
+      "16px \"with\"",
+      "16px \"20\"",
+      "16px \"points\""
+    ],
+    "clipped": [],
+    "truncated": []
+  },
+  "21-game-over-settled-player": {
+    "minFontPx": 18,
+    "smallTextSamples": [
+      "18px \"1\"",
+      "18px \"pts\"",
+      "18px \"2\"",
+      "18px \"pts\""
+    ],
+    "clipped": [],
+    "truncated": []
+  }
+}

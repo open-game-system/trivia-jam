@@ -1,0 +1,129 @@
+{
+  "videos": [
+    "/Users/jonathanmumm/src/trivia-jam/recordings/raw/9c5bdeda4833c545781b3003f61fda61.webm",
+    "/Users/jonathanmumm/src/trivia-jam/recordings/raw/cbe1df3888d419af966cfb12be145646.webm",
+    "/Users/jonathanmumm/src/trivia-jam/recordings/raw/916a66d146ffbf7ab2e80b7bf53ca8c2.webm"
+  ],
+  "startedAt": [
+    1791183909274,
+    1791183909411,
+    1791183909526
+  ],
+  "audio": "recordings/raw/tv-audio.webm",
+  "hasAudio": true,
+  "fault": null,
+  "marks": [
+    {
+      "label": "lobby",
+      "t": 3.1
+    },
+    {
+      "label": "host imports questions",
+      "t": 6.1
+    },
+    {
+      "label": "questions ready",
+      "t": 7.7
+    },
+    {
+      "label": "kid joined",
+      "t": 10
+    },
+    {
+      "label": "everyone joined",
+      "t": 14.2
+    },
+    {
+      "label": "game started",
+      "t": 16.5
+    },
+    {
+      "label": "question 1",
+      "t": 18.8
+    },
+    {
+      "label": "kid answers q1",
+      "t": 25.6
+    },
+    {
+      "label": "results q1",
+      "t": 30.9
+    },
+    {
+      "label": "standings q1",
+      "t": 41.2
+    },
+    {
+      "label": "question 2",
+      "t": 43.1
+    },
+    {
+      "label": "kid answers q2",
+      "t": 49.9
+    },
+    {
+      "label": "results q2",
+      "t": 55.2
+    },
+    {
+      "label": "standings q2",
+      "t": 65.5
+    },
+    {
+      "label": "question 3",
+      "t": 67.4
+    },
+    {
+      "label": "kid answers q3",
+      "t": 74.7
+    },
+    {
+      "label": "results q3",
+      "t": 80.2
+    },
+    {
+      "label": "standings q3",
+      "t": 90.5
+    },
+    {
+      "label": "question 4",
+      "t": 92.4
+    },
+    {
+      "label": "kid answers q4",
+      "t": 98.7
+    },
+    {
+      "label": "results q4",
+      "t": 103.7
+    },
+    {
+      "label": "standings q4",
+      "t": 114.1
+    },
+    {
+      "label": "question 5",
+      "t": 116
+    },
+    {
+      "label": "kid answers q5",
+      "t": 123.6
+    },
+    {
+      "label": "results q5",
+      "t": 129.1
+    },
+    {
+      "label": "standings q5",
+      "t": 139.4
+    },
+    {
+      "label": "game over",
+      "t": 140.6
+    },
+    {
+      "label": "end",
+      "t": 157
+    }
+  ]
+}

@@ -1,4 +1,5 @@
-import type { ReactNode } from "react";
+import { useEffect, type ReactNode } from "react";
+import { installTelemetry, reportError } from "../client-telemetry";
 import {
   HeadContent,
   Outlet,
@@ -6,16 +7,18 @@ import {
   createRootRoute,
 } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
+import { getRequest } from "@tanstack/react-start/server";
 import { createAccessToken, createActorFetch } from "actor-kit/server";
 import type { SessionMachine } from "../session.machine";
 import { SessionProvider } from "../session.context";
+import { getRequestSession } from "../request-session";
 import { getServerEnv, tryGetActorRuntimeEnv } from "../server-env";
 import type { Caller } from "actor-kit";
 import appCss from "../styles.css?url";
 
 export const loadSession = createServerFn({ method: "GET" }).handler(async () => {
   const env = getServerEnv();
-  const session = globalThis.__session__;
+  const session = getRequestSession(getRequest());
   if (!session) {
     throw new Error("Session not initialized");
   }
@@ -47,16 +50,12 @@ export const loadSession = createServerFn({ method: "GET" }).handler(async () =>
         accessToken
       );
 
-  // Collect cookies to set
-  const cookies = globalThis.__sessionCookies__;
-
   return {
     sessionId: session.sessionId,
     userId: session.userId,
     accessToken,
     payload,
     host: env.ACTOR_KIT_HOST,
-    cookies,
   };
 });
 
@@ -118,21 +117,12 @@ export const Route = createRootRoute({
     ],
     links: [
       { rel: "stylesheet", href: appCss },
-      { rel: "preconnect", href: "https://fonts.googleapis.com" },
-      {
-        rel: "preconnect",
-        href: "https://fonts.gstatic.com",
-        crossOrigin: "anonymous",
-      },
-      {
-        rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap",
-      },
     ],
   }),
   loader: async () => loadSession(),
   shellComponent: RootDocument,
   component: RootComponent,
+  errorComponent: RootError,
 });
 
 function RootDocument({ children }: { children: ReactNode }) {
@@ -149,8 +139,27 @@ function RootDocument({ children }: { children: ReactNode }) {
   );
 }
 
+/** A render error anywhere: report it (type/message only) and show a calm glass card. */
+function RootError({ error }: { error: Error }) {
+  // Reporting is a side effect on an external system, once per error.
+  useEffect(() => reportError(error, { boundary: "root" }), [error]);
+  return (
+    <div className="aurora flex min-h-screen items-center justify-center p-8 text-center">
+      <div className="pcard max-w-md px-8 py-10">
+        <h1 className="lav-text mb-4 text-4xl font-extrabold">Oops</h1>
+        <p className="mb-6 text-lg text-gray-200">Something went wrong. Reload to jump back in.</p>
+        <button type="button" className="pbtn pbtn-primary pbtn-lg" onClick={() => window.location.reload()}>
+          Reload
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function RootComponent() {
   const { host, sessionId, accessToken, payload } = Route.useLoaderData();
+  // Client errors and sessions go to this Worker's /events (subscribes to window events once).
+  useEffect(() => installTelemetry(window.location.pathname.startsWith("/spectate") ? "tv" : "phone"), []);
 
   return (
     <SessionProvider

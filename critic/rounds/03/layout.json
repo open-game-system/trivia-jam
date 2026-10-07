@@ -1,0 +1,842 @@
+{
+  "00-home-host": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"A numbers game for the whole room\"",
+      "20px \"How to Play\"",
+      "24px \"Guess the number. Closest wins.\"",
+      "26px \"Create New Game\""
+    ],
+    "clipped": []
+  },
+  "01-lobby-empty-tv": {
+    "minFontPx": 28,
+    "smallTextSamples": [
+      "28px \"or open\"",
+      "30px \"Scan to join the game\"",
+      "32px \"Waiting for game to start\"",
+      "32px \"Waiting for players\""
+    ],
+    "clipped": []
+  },
+  "01-lobby-empty-host": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Trivia Jam / Host\"",
+      "14px \"Add questions to begin\"",
+      "15px \"How many legs does a spider have?\n8\"",
+      "18px \"Question, then answer. Blank line betwee\""
+    ],
+    "clipped": []
+  },
+  "02-parsing-host": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Trivia Jam / Host\"",
+      "14px \"Share Game Link\"",
+      "14px \"Waiting for a player to join\"",
+      "16px \"Copy link\""
+    ],
+    "clipped": []
+  },
+  "03-join-kid": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Trivia Jam\"",
+      "16px \"Your Name\"",
+      "16px \"How to Play\"",
+      "26px \"Join Game\""
+    ],
+    "clipped": []
+  },
+  "04-lobby-full-tv": {
+    "minFontPx": 28,
+    "smallTextSamples": [
+      "28px \"or open\"",
+      "30px \"Scan to join the game\"",
+      "32px \"Waiting for game to start\"",
+      "32px \"3 players\""
+    ],
+    "clipped": []
+  },
+  "04-lobby-full-host": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Trivia Jam / Host\"",
+      "14px \"Share Game Link\"",
+      "16px \"Copy link\"",
+      "16px \"Show QR\""
+    ],
+    "clipped": []
+  },
+  "04-lobby-full-kid": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Trivia Jam\"",
+      "16px \"How to Play\"",
+      "32.4px \"Waiting for host to start the game...\"",
+      "113.4px \"Welcome, Sam!\""
+    ],
+    "clipped": []
+  },
+  "10a-before-q1-tv": {
+    "minFontPx": 28,
+    "smallTextSamples": [
+      "28px \"Waiting for Question...\"",
+      "32px \"1 of 5 · Phones ready\"",
+      "32px \"Tonight\"",
+      "33px \"S\""
+    ],
+    "clipped": []
+  },
+  "10a-before-q1-host": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question\"",
+      "14px \"0\"",
+      "14px \"of\"",
+      "14px \"5\""
+    ],
+    "clipped": []
+  },
+  "10a-before-q1-kid": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Trivia Jam\"",
+      "16px \"How to Play\"",
+      "32.4px \"Get ready,\"",
+      "32.4px \"Sam\""
+    ],
+    "clipped": []
+  },
+  "10b-q1-asked-tv": {
+    "minFontPx": 32,
+    "smallTextSamples": [
+      "32px \"Question\"",
+      "32px \"1\"",
+      "32px \"of 5\"",
+      "32px \"Guess the number on your phone\""
+    ],
+    "clipped": []
+  },
+  "10b-q1-asked-host": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question\"",
+      "14px \"1\"",
+      "14px \"of\"",
+      "14px \"5\""
+    ],
+    "clipped": []
+  },
+  "10b-q1-asked-kid": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question\"",
+      "14px \"1\"",
+      "14px \"of\"",
+      "14px \"5\""
+    ],
+    "clipped": []
+  },
+  "10c-q1-kid-answered-tv": {
+    "minFontPx": 32,
+    "smallTextSamples": [
+      "32px \"Question\"",
+      "32px \"1\"",
+      "32px \"of 5\"",
+      "32px \"Guess the number on your phone\""
+    ],
+    "clipped": []
+  },
+  "10c-q1-kid-answered-host": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question\"",
+      "14px \"1\"",
+      "14px \"of\"",
+      "14px \"5\""
+    ],
+    "clipped": []
+  },
+  "10c-q1-kid-answered-kid": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question\"",
+      "14px \"1\"",
+      "14px \"of\"",
+      "14px \"5\""
+    ],
+    "clipped": []
+  },
+  "10d-q1-results-tv": {
+    "minFontPx": 32,
+    "smallTextSamples": [
+      "32px \"Question\"",
+      "32px \"1\"",
+      "32px \"of 5\"",
+      "32px \"And the answer is...\""
+    ],
+    "clipped": []
+  },
+  "10d-q1-results-host": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question\"",
+      "14px \"1\"",
+      "14px \"of\"",
+      "14px \"5\""
+    ],
+    "clipped": []
+  },
+  "10d-q1-results-kid": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question\"",
+      "14px \"1\"",
+      "14px \"of\"",
+      "14px \"5\""
+    ],
+    "clipped": []
+  },
+  "10e-q1-reveal-settled-tv": {
+    "minFontPx": 28,
+    "smallTextSamples": [
+      "28px \"pts\"",
+      "28px \"pts\"",
+      "28px \"· fastest\"",
+      "28px \"pts\""
+    ],
+    "clipped": []
+  },
+  "10f-q1-standings-tv": {
+    "minFontPx": 32,
+    "smallTextSamples": [
+      "32px \"After question\"",
+      "32px \"1\"",
+      "32px \"of 5\"",
+      "32px \"Up next\""
+    ],
+    "clipped": []
+  },
+  "11a-before-q2-tv": {
+    "minFontPx": 32,
+    "smallTextSamples": [
+      "32px \"After question\"",
+      "32px \"1\"",
+      "32px \"of 5\"",
+      "32px \"Up next\""
+    ],
+    "clipped": []
+  },
+  "11a-before-q2-host": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question\"",
+      "14px \"1\"",
+      "14px \"of\"",
+      "14px \"5\""
+    ],
+    "clipped": []
+  },
+  "11a-before-q2-kid": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question\"",
+      "14px \"1\"",
+      "14px \"of\"",
+      "14px \"5\""
+    ],
+    "clipped": []
+  },
+  "11b-q2-asked-tv": {
+    "minFontPx": 32,
+    "smallTextSamples": [
+      "32px \"Question\"",
+      "32px \"2\"",
+      "32px \"of 5\"",
+      "32px \"Guess the number on your phone\""
+    ],
+    "clipped": []
+  },
+  "11b-q2-asked-host": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question\"",
+      "14px \"2\"",
+      "14px \"of\"",
+      "14px \"5\""
+    ],
+    "clipped": []
+  },
+  "11b-q2-asked-kid": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question\"",
+      "14px \"2\"",
+      "14px \"of\"",
+      "14px \"5\""
+    ],
+    "clipped": []
+  },
+  "11c-q2-kid-answered-tv": {
+    "minFontPx": 32,
+    "smallTextSamples": [
+      "32px \"Question\"",
+      "32px \"2\"",
+      "32px \"of 5\"",
+      "32px \"Guess the number on your phone\""
+    ],
+    "clipped": []
+  },
+  "11c-q2-kid-answered-host": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question\"",
+      "14px \"2\"",
+      "14px \"of\"",
+      "14px \"5\""
+    ],
+    "clipped": []
+  },
+  "11c-q2-kid-answered-kid": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question\"",
+      "14px \"2\"",
+      "14px \"of\"",
+      "14px \"5\""
+    ],
+    "clipped": []
+  },
+  "11d-q2-results-tv": {
+    "minFontPx": 32,
+    "smallTextSamples": [
+      "32px \"Question\"",
+      "32px \"2\"",
+      "32px \"of 5\"",
+      "32px \"And the answer is...\""
+    ],
+    "clipped": []
+  },
+  "11d-q2-results-host": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question\"",
+      "14px \"2\"",
+      "14px \"of\"",
+      "14px \"5\""
+    ],
+    "clipped": []
+  },
+  "11d-q2-results-kid": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question\"",
+      "14px \"2\"",
+      "14px \"of\"",
+      "14px \"5\""
+    ],
+    "clipped": []
+  },
+  "11e-q2-reveal-settled-tv": {
+    "minFontPx": 28,
+    "smallTextSamples": [
+      "28px \"pts\"",
+      "28px \"· fastest\"",
+      "28px \"pts\"",
+      "28px \"pts\""
+    ],
+    "clipped": []
+  },
+  "11f-q2-standings-tv": {
+    "minFontPx": 32,
+    "smallTextSamples": [
+      "32px \"After question\"",
+      "32px \"2\"",
+      "32px \"of 5\"",
+      "32px \"Up next\""
+    ],
+    "clipped": []
+  },
+  "12a-before-q3-tv": {
+    "minFontPx": 32,
+    "smallTextSamples": [
+      "32px \"After question\"",
+      "32px \"2\"",
+      "32px \"of 5\"",
+      "32px \"Up next\""
+    ],
+    "clipped": []
+  },
+  "12a-before-q3-host": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question\"",
+      "14px \"2\"",
+      "14px \"of\"",
+      "14px \"5\""
+    ],
+    "clipped": []
+  },
+  "12a-before-q3-kid": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question\"",
+      "14px \"2\"",
+      "14px \"of\"",
+      "14px \"5\""
+    ],
+    "clipped": []
+  },
+  "12b-q3-asked-tv": {
+    "minFontPx": 32,
+    "smallTextSamples": [
+      "32px \"Question\"",
+      "32px \"3\"",
+      "32px \"of 5\"",
+      "32px \"Guess the number on your phone\""
+    ],
+    "clipped": []
+  },
+  "12b-q3-asked-host": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question\"",
+      "14px \"3\"",
+      "14px \"of\"",
+      "14px \"5\""
+    ],
+    "clipped": []
+  },
+  "12b-q3-asked-kid": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question\"",
+      "14px \"3\"",
+      "14px \"of\"",
+      "14px \"5\""
+    ],
+    "clipped": []
+  },
+  "12c-q3-kid-answered-tv": {
+    "minFontPx": 32,
+    "smallTextSamples": [
+      "32px \"Question\"",
+      "32px \"3\"",
+      "32px \"of 5\"",
+      "32px \"Guess the number on your phone\""
+    ],
+    "clipped": []
+  },
+  "12c-q3-kid-answered-host": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question\"",
+      "14px \"3\"",
+      "14px \"of\"",
+      "14px \"5\""
+    ],
+    "clipped": []
+  },
+  "12c-q3-kid-answered-kid": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question\"",
+      "14px \"3\"",
+      "14px \"of\"",
+      "14px \"5\""
+    ],
+    "clipped": []
+  },
+  "12d-q3-results-tv": {
+    "minFontPx": 32,
+    "smallTextSamples": [
+      "32px \"Question\"",
+      "32px \"3\"",
+      "32px \"of 5\"",
+      "32px \"And the answer is...\""
+    ],
+    "clipped": []
+  },
+  "12d-q3-results-host": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question\"",
+      "14px \"3\"",
+      "14px \"of\"",
+      "14px \"5\""
+    ],
+    "clipped": []
+  },
+  "12d-q3-results-kid": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question\"",
+      "14px \"3\"",
+      "14px \"of\"",
+      "14px \"5\""
+    ],
+    "clipped": []
+  },
+  "12e-q3-reveal-settled-tv": {
+    "minFontPx": 28,
+    "smallTextSamples": [
+      "28px \"pts\"",
+      "28px \"pts\"",
+      "28px \"pts\"",
+      "30px \"total\""
+    ],
+    "clipped": []
+  },
+  "12f-q3-standings-tv": {
+    "minFontPx": 32,
+    "smallTextSamples": [
+      "32px \"After question\"",
+      "32px \"3\"",
+      "32px \"of 5\"",
+      "32px \"Up next\""
+    ],
+    "clipped": []
+  },
+  "13a-before-q4-tv": {
+    "minFontPx": 32,
+    "smallTextSamples": [
+      "32px \"After question\"",
+      "32px \"3\"",
+      "32px \"of 5\"",
+      "32px \"Up next\""
+    ],
+    "clipped": []
+  },
+  "13a-before-q4-host": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question\"",
+      "14px \"3\"",
+      "14px \"of\"",
+      "14px \"5\""
+    ],
+    "clipped": []
+  },
+  "13a-before-q4-kid": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question\"",
+      "14px \"3\"",
+      "14px \"of\"",
+      "14px \"5\""
+    ],
+    "clipped": []
+  },
+  "13b-q4-asked-tv": {
+    "minFontPx": 32,
+    "smallTextSamples": [
+      "32px \"Question\"",
+      "32px \"4\"",
+      "32px \"of 5\"",
+      "32px \"Answers Submitted: 0 / 3\""
+    ],
+    "clipped": []
+  },
+  "13b-q4-asked-host": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question\"",
+      "14px \"4\"",
+      "14px \"of\"",
+      "14px \"5\""
+    ],
+    "clipped": []
+  },
+  "13b-q4-asked-kid": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question\"",
+      "14px \"4\"",
+      "14px \"of\"",
+      "14px \"5\""
+    ],
+    "clipped": []
+  },
+  "13c-q4-kid-answered-tv": {
+    "minFontPx": 32,
+    "smallTextSamples": [
+      "32px \"Question\"",
+      "32px \"4\"",
+      "32px \"of 5\"",
+      "32px \"Answers Submitted: 2 / 3\""
+    ],
+    "clipped": []
+  },
+  "13c-q4-kid-answered-host": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question\"",
+      "14px \"4\"",
+      "14px \"of\"",
+      "14px \"5\""
+    ],
+    "clipped": []
+  },
+  "13c-q4-kid-answered-kid": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question\"",
+      "14px \"4\"",
+      "14px \"of\"",
+      "14px \"5\""
+    ],
+    "clipped": []
+  },
+  "13d-q4-results-tv": {
+    "minFontPx": 32,
+    "smallTextSamples": [
+      "32px \"Question\"",
+      "32px \"4\"",
+      "32px \"of 5\"",
+      "32px \"And the answer is...\""
+    ],
+    "clipped": []
+  },
+  "13d-q4-results-host": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question\"",
+      "14px \"4\"",
+      "14px \"of\"",
+      "14px \"5\""
+    ],
+    "clipped": []
+  },
+  "13d-q4-results-kid": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question\"",
+      "14px \"4\"",
+      "14px \"of\"",
+      "14px \"5\""
+    ],
+    "clipped": []
+  },
+  "13e-q4-reveal-settled-tv": {
+    "minFontPx": 30,
+    "smallTextSamples": [
+      "30px \"total\"",
+      "30px \"total\"",
+      "32px \"Question\"",
+      "32px \"4\""
+    ],
+    "clipped": []
+  },
+  "13f-q4-standings-tv": {
+    "minFontPx": 32,
+    "smallTextSamples": [
+      "32px \"After question\"",
+      "32px \"4\"",
+      "32px \"of 5\"",
+      "32px \"Up next\""
+    ],
+    "clipped": []
+  },
+  "14a-before-q5-tv": {
+    "minFontPx": 32,
+    "smallTextSamples": [
+      "32px \"After question\"",
+      "32px \"4\"",
+      "32px \"of 5\"",
+      "32px \"Up next\""
+    ],
+    "clipped": []
+  },
+  "14a-before-q5-host": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question\"",
+      "14px \"4\"",
+      "14px \"of\"",
+      "14px \"5\""
+    ],
+    "clipped": []
+  },
+  "14a-before-q5-kid": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question\"",
+      "14px \"4\"",
+      "14px \"of\"",
+      "14px \"5\""
+    ],
+    "clipped": []
+  },
+  "14b-q5-asked-tv": {
+    "minFontPx": 32,
+    "smallTextSamples": [
+      "32px \"Question\"",
+      "32px \"5\"",
+      "32px \"of 5\"",
+      "32px \"Guess the number on your phone\""
+    ],
+    "clipped": []
+  },
+  "14b-q5-asked-host": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question\"",
+      "14px \"5\"",
+      "14px \"of\"",
+      "14px \"5\""
+    ],
+    "clipped": []
+  },
+  "14b-q5-asked-kid": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question\"",
+      "14px \"5\"",
+      "14px \"of\"",
+      "14px \"5\""
+    ],
+    "clipped": []
+  },
+  "14c-q5-kid-answered-tv": {
+    "minFontPx": 32,
+    "smallTextSamples": [
+      "32px \"Question\"",
+      "32px \"5\"",
+      "32px \"of 5\"",
+      "32px \"Guess the number on your phone\""
+    ],
+    "clipped": []
+  },
+  "14c-q5-kid-answered-host": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question\"",
+      "14px \"5\"",
+      "14px \"of\"",
+      "14px \"5\""
+    ],
+    "clipped": []
+  },
+  "14c-q5-kid-answered-kid": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question\"",
+      "14px \"5\"",
+      "14px \"of\"",
+      "14px \"5\""
+    ],
+    "clipped": []
+  },
+  "14d-q5-results-tv": {
+    "minFontPx": 32,
+    "smallTextSamples": [
+      "32px \"Question\"",
+      "32px \"5\"",
+      "32px \"of 5\"",
+      "32px \"And the answer is...\""
+    ],
+    "clipped": []
+  },
+  "14d-q5-results-host": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question\"",
+      "14px \"5\"",
+      "14px \"of\"",
+      "14px \"5\""
+    ],
+    "clipped": []
+  },
+  "14d-q5-results-kid": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Question\"",
+      "14px \"5\"",
+      "14px \"of\"",
+      "14px \"5\""
+    ],
+    "clipped": []
+  },
+  "14e-q5-reveal-settled-tv": {
+    "minFontPx": 28,
+    "smallTextSamples": [
+      "28px \"pts\"",
+      "28px \"· fastest\"",
+      "28px \"pts\"",
+      "28px \"pts\""
+    ],
+    "clipped": []
+  },
+  "14f-q5-standings-tv": {
+    "minFontPx": 32,
+    "smallTextSamples": [
+      "32px \"After question\"",
+      "32px \"5\"",
+      "32px \"of 5\"",
+      "32px \"That was the last question\""
+    ],
+    "clipped": []
+  },
+  "20-game-over-tv": {
+    "minFontPx": 32,
+    "smallTextSamples": [
+      "32px \"Game over\"",
+      "32px \"Final scores\"",
+      "36px \"2nd\"",
+      "36px \"1st\""
+    ],
+    "clipped": []
+  },
+  "20-game-over-host": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Trivia Jam / Host\"",
+      "16px \"with\"",
+      "16px \"20\"",
+      "16px \"points\""
+    ],
+    "clipped": []
+  },
+  "20-game-over-kid": {
+    "minFontPx": 18,
+    "smallTextSamples": [
+      "18px \"pts\"",
+      "18px \"pts\"",
+      "18px \"pts\"",
+      "20px \"Final Scores\""
+    ],
+    "clipped": []
+  },
+  "21-game-over-settled-tv": {
+    "minFontPx": 30,
+    "smallTextSamples": [
+      "30px \"Most exact\"",
+      "30px \"Closest call\"",
+      "32px \"Game over\"",
+      "32px \"Final scores\""
+    ],
+    "clipped": []
+  },
+  "21-game-over-settled-host": {
+    "minFontPx": 14,
+    "smallTextSamples": [
+      "14px \"Trivia Jam / Host\"",
+      "16px \"with\"",
+      "16px \"20\"",
+      "16px \"points\""
+    ],
+    "clipped": []
+  },
+  "21-game-over-settled-kid": {
+    "minFontPx": 18,
+    "smallTextSamples": [
+      "18px \"pts\"",
+      "18px \"pts\"",
+      "18px \"pts\"",
+      "20px \"Final Scores\""
+    ],
+    "clipped": []
+  }
+}

@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { createServerFn } from "@tanstack/react-start";
+import { getRequest } from "@tanstack/react-start/server";
 import { createAccessToken, createActorFetch } from "actor-kit/server";
 import type { Caller } from "actor-kit";
 import { z } from "zod";
@@ -8,6 +9,9 @@ import { PlayerView } from "~/components/player-view";
 import type { gameMachine } from "~/game.machine";
 import { SessionContext } from "~/session.context";
 import { GameProvider } from "~/game.context";
+import { OgsTvUrl } from "~/ogs/ogs-tv-url";
+import { useOgsSitting } from "~/ogs/use-ogs-game";
+import { getRequestSession } from "~/request-session";
 import { getServerEnv, tryGetActorRuntimeEnv } from "../server-env";
 
 const GameRouteInputSchema = z.object({
@@ -18,7 +22,7 @@ const loadGameRoute = createServerFn({ method: "GET" })
   .inputValidator((input: unknown) => GameRouteInputSchema.parse(input))
   .handler(async ({ data }) => {
     const env = getServerEnv();
-    const session = globalThis.__session__;
+    const session = getRequestSession(getRequest());
     if (!session) {
       throw new Error("Session not initialized");
     }
@@ -116,6 +120,14 @@ function GameRouteComponent() {
       initialSnapshot={payload.snapshot}
     >
       {hostId === userId ? <HostView host={host} /> : <PlayerView />}
+      {hostId === userId && <OgsTvUrl gameId={gameId} />}
+      <OgsSitting gameId={gameId} />
     </GameProvider>
   );
+}
+
+/** The OGS sitting label, reported from the phone over the app bridge. Renders nothing. */
+function OgsSitting({ gameId }: { gameId: string }) {
+  useOgsSitting(gameId);
+  return null;
 }

@@ -1,0 +1,34 @@
+This is a functional prototype, not yet a shippable family-party presentation. Nothing reaches the 8/10 Nintendo sign-off bar.
+
+| Area | Grade | Art-direction judgment |
+|---|---:|---|
+| Art direction & cohesion | **4/10** | Cohesive, but only because nearly every screen repeats the same dark navy/purple polygon treatment. `10b-q1-asked-tv`, `13d-q4-results-tv`, and `20-game-over-tv` lack distinct visual identities. It feels like a developer theme, not a game world. |
+| TV staging & couch readability | **3/10** | The TV wastes most of 1920×1080 while critical content remains tiny. The QR code and player list in `01-lobby-empty-tv` are far too small across a room. Questions, submission status, and results occupy roughly the central quarter in `10b-q1-asked-tv` and `10d-q1-results-tv`. The persistent scoreboard is too narrow to read yet consumes valuable width. |
+| Typography & layout | **3/10** | Weak scale hierarchy, cramped cards, and low-contrast secondary copy. Host headlines are visibly clipped in `10d-q1-results-host`, `11d-q2-results-host`, and `14d-q5-results-host`. The kid layouts are cleaner, but question text is still undersized in `10b-q1-asked-kid` and `14b-q5-asked-kid`. |
+| Motion & juice | **2/10** | From the stills, the only evident temporal device is a thin progress bar. Background polygons may move, but they communicate no game event. There is no visible countdown choreography, answer-lock impact, score travel, rank movement, or winner build. |
+| Reveal & payoff drama | **2/10** | Results appear as ordinary stacked rows in `10d-q1-results-tv` through `14d-q5-results-tv`. Correct answer, player guesses, speed, points, and ranking are presented almost simultaneously, eliminating suspense. A round reveal should be an event; this reads like a report. |
+| Kid UX | **5/10** | The landscape iPad flow is the strongest surface: focused question, large timer, and one main action. However, the numeric input is still a desktop text field, answer confirmation in `10c-q1-kid-answered-kid` is emotionally flat, and multiple-choice targets in `13b-q4-asked-kid` are too small and subdued for a five-year-old using thumbs. |
+| Phone UI polish | **2/10** | The host phone is severely overcrowded. It compresses question management, answers, players, scores, and destructive controls into one narrow column. Several result screens clip their headline above the viewport. `00-home-host` appears entirely blank. Cards, borders, and tiny labels create dashboard noise rather than controller clarity. |
+| Host flow | **4/10** | The sequence is understandable—import, share, start, monitor—but operation during play is weak. `10b-q1-asked-host` provides status but little theatrical control or confidence about what the TV and players are seeing. “End Game” remains visually prominent beside routine play controls, inviting mistakes. |
+| Replay & payoff | **1/10** | `20-game-over-tv`, `20-game-over-host`, and `20-game-over-kid` are dead ends: generic crown emoji, static standings, no recap, no player reactions, no rematch, and no “play again with the same group.” The finale is less exciting than an ordinary results screen. |
+
+**Overall: 2.9/10**
+
+The single largest gap is **showmanship**. The game displays state correctly, but it does not stage a shared-room experience. Questions, locks, reveals, scoring, and victory all use essentially the same visual grammar. Jackbox, Buzz!, Mario Party, and Wits & Wagers turn those transitions into the product; here they feel like database views over a wallpaper.
+
+The five highest-impact fixes:
+
+1. **Rebuild the round reveal as a timed dramatic sequence.**  
+   On TV: announce the correct answer, place each player’s guess spatially, reveal closeness or correctness one player at a time, then animate earned points into the scoreboard and show rank changes. Do not begin with the completed table seen in `10d-q1-results-tv`.
+
+2. **Redesign the TV around couch distance.**  
+   Double or triple the scale of the question, timer, answer count, and results. Replace the tiny permanent scoreboard with a compact top-three treatment or reveal it only between rounds. Make `10a-before-q1-tv` a proper “Question 1” anticipation beat instead of “Waiting for Question…” in an empty field.
+
+3. **Give every phase its own unmistakable visual state.**  
+   Waiting, answering, locked, revealing, and winning need different composition, lighting, color, and motion—not the same purple polygon with swapped text. Preserve one art direction, but build distinct stage lighting and transition language around it.
+
+4. **Turn phones and iPad into purpose-built controllers.**  
+   Host: one dominant action per phase, persistent round status, safe placement for “End Game,” and no clipped scrolling dashboard. Kid: large numeric keypad, thumb-reachable submit control, large multiple-choice tiles, unmistakable locked-answer feedback, and celebratory correctness feedback. Fix the clipping visible across the `*-results-host` shots first.
+
+5. **Author an actual finale and replay loop.**  
+   Replace the crown emoji in `20-game-over-*` with original game art. Build a winner entrance, podium/rank animation, amusing round statistics, close-call recap, and prominent rematch controls. The TV should celebrate everyone while the host chooses “Rematch,” “New Questions,” or “End Session.”

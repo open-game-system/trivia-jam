@@ -1,0 +1,10 @@
+{
+  "kid": "trivia-jam-e2e-1",
+  "privateJwk": {
+    "kty": "EC",
+    "crv": "P-256",
+    "x": "qyUwd-C7Cn_OmqPz9IVdCUZY00QT9ecYgMo8M9EOBe8",
+    "y": "EVJzaOHrCPodvVQJq0YMJDffMMehzjSpB3CotNUTMQA",
+    "d": "8t0GtUDf0ZpTtBUD_jU-_7DwUb5zGC9JMQLVxSxS9QA"
+  }
+}

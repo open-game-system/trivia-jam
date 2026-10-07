@@ -1,0 +1,129 @@
+{
+  "videos": [
+    "recordings/raw/cast-tv.mp4",
+    "recordings/raw/cast-host.mp4",
+    "recordings/raw/cast-player.mp4"
+  ],
+  "startedAt": [
+    1791270826040,
+    1791270826162,
+    1791270826282
+  ],
+  "audio": "recordings/raw/tv-audio.webm",
+  "hasAudio": true,
+  "fault": null,
+  "marks": [
+    {
+      "label": "lobby",
+      "t": 2.8
+    },
+    {
+      "label": "host imports questions",
+      "t": 5.7
+    },
+    {
+      "label": "questions ready",
+      "t": 7.1
+    },
+    {
+      "label": "player joined",
+      "t": 9.2
+    },
+    {
+      "label": "everyone joined",
+      "t": 13.6
+    },
+    {
+      "label": "game started",
+      "t": 15.5
+    },
+    {
+      "label": "question 1",
+      "t": 17.6
+    },
+    {
+      "label": "player answers q1",
+      "t": 24.1
+    },
+    {
+      "label": "results q1",
+      "t": 29.1
+    },
+    {
+      "label": "standings q1",
+      "t": 40.9
+    },
+    {
+      "label": "question 2",
+      "t": 42
+    },
+    {
+      "label": "player answers q2",
+      "t": 48.5
+    },
+    {
+      "label": "results q2",
+      "t": 53.5
+    },
+    {
+      "label": "standings q2",
+      "t": 65.2
+    },
+    {
+      "label": "question 3",
+      "t": 66.4
+    },
+    {
+      "label": "player answers q3",
+      "t": 73.4
+    },
+    {
+      "label": "results q3",
+      "t": 78.7
+    },
+    {
+      "label": "standings q3",
+      "t": 90.4
+    },
+    {
+      "label": "question 4",
+      "t": 91.6
+    },
+    {
+      "label": "player answers q4",
+      "t": 97.5
+    },
+    {
+      "label": "results q4",
+      "t": 102.2
+    },
+    {
+      "label": "standings q4",
+      "t": 113.9
+    },
+    {
+      "label": "question 5",
+      "t": 115.1
+    },
+    {
+      "label": "player answers q5",
+      "t": 122.4
+    },
+    {
+      "label": "results q5",
+      "t": 127.6
+    },
+    {
+      "label": "standings q5",
+      "t": 139.4
+    },
+    {
+      "label": "game over",
+      "t": 140.1
+    },
+    {
+      "label": "end",
+      "t": 156.3
+    }
+  ]
+}

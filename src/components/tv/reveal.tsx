@@ -1,0 +1,398 @@
+import { tvAudio } from "~/audio/engine";
+import { motion, useReducedMotion } from "framer-motion";
+import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import type { Question, QuestionResult } from "~/game.types";
+import { FitName } from "./fit-name";
+import { EASE_OUT, EASE_POP, Label } from "./glass";
+import { GHOST_AXIS_KEY, QuestionSlug, questionFontSize, questionMeasure, questionTextKey } from "./question";
+import { flipFrom, peekBox } from "./flip";
+import { takeoverLayout, type TakeoverLayout } from "./takeover-layout";
+import { type ChoicePick, ChoiceColumns } from "./choice-reveal";
+import { layoutChoiceColumns } from "./choice-columns";
+import { type LineGuess, layoutNumberLine, memberChipCentres, REVEAL_FRAME, sweepStops } from "./number-line-layout";
+import { GuessGroupView, LandingGlows, Leaders, NumberLineAxis } from "./number-line-reveal";
+import { AnswerSpotlight, RevealStage } from "./brand-axis";
+import {
+  choiceWinners,
+  findHighlights,
+  formatTick,
+  matchOptionIndex,
+  optionLetter,
+  revealSchedule,
+  toNumber,
+} from "./tv-model";
+import { choiceMisses, numericMisses } from "./misses";
+import { MissesStrip } from "./misses-strip";
+import { choiceAnswerText, PUCK } from "./reveal-geometry";
+import { PHASE, useRevealPhase } from "./use-reveal-phase";
+import { type Winner, WinnersCard, type WinnersKind } from "./winners-card";
+
+type TvPlayer = { id: string; name: string; score: number };
+
+const AXIS_Y = REVEAL_FRAME.axisY;
+
+/** Exact answers give the stage a short jolt as the answer lands. Nothing else does. */
+const Shake = ({ on, children }: { on: boolean; children: ReactNode }) => (
+  <motion.div className="absolute inset-0" animate={on ? { x: [0, -14, 11, -6, 0], y: [0, 6, -5, 2, 0] } : { x: 0, y: 0 }} transition={{ duration: 0.11, delay: on ? 0.16 : 0 }}>
+    {children}
+  </motion.div>
+);
+
+/**
+ * When the winners break forward, the line (or the tiles) fades back and sinks away: no translucent
+ * ghost of it stays under the takeover. A TV that loads late starts cleared.
+ */
+const LineLayer = ({ back, live, children }: { back: boolean; live: boolean; children: ReactNode }) => (
+  <motion.div
+    className="absolute inset-0"
+    initial={false}
+    animate={back ? { opacity: 0, y: 24, scale: 0.98 } : { opacity: 1, y: 0, scale: 1 }}
+    transition={{ duration: back && live ? 0.4 : 0, ease: EASE_OUT }}
+  >
+    {children}
+  </motion.div>
+);
+
+const answerCenter = (x: number) => Math.min(REVEAL_FRAME.right - 260, Math.max(REVEAL_FRAME.left + 240, x));
+
+/** The pin where the answer lands on the line: a glowing white-to-lavender stem and a bright point of light. */
+const AnswerPin = ({ x, live }: { x: number; live: boolean }) => (
+  <>
+    <motion.div
+      aria-hidden="true"
+      className="absolute"
+      style={{ left: x - 4, width: 8, top: AXIS_Y - 64, height: 64, borderRadius: 8, background: "linear-gradient(180deg, rgba(255,255,255,0), #ffffff 40%, var(--glow))", boxShadow: "0 0 18px rgba(196, 181, 253, 0.9)", transformOrigin: "bottom", zIndex: 3 }}
+      initial={live ? { scaleY: 0 } : false}
+      animate={{ scaleY: 1 }}
+      transition={{ duration: 0.22, ease: "easeIn" }}
+    />
+    <motion.div
+      aria-hidden="true"
+      className="absolute"
+      style={{ left: x - 22, top: AXIS_Y - 22, width: 44, height: 44, borderRadius: 999, background: "radial-gradient(circle, #ffffff 30%, var(--glow) 60%, rgba(196,181,253,0) 72%)", boxShadow: "0 0 40px 10px rgba(196, 181, 253, 0.55)", zIndex: 5 }}
+      initial={live ? { scale: 0 } : false}
+      animate={{ scale: 1 }}
+      transition={{ delay: 0.2, duration: 0.4, ease: EASE_POP }}
+    />
+  </>
+);
+
+/** The numeral's authored size; the takeover scales it to its hero size. */
+const ANSWER_PX = 252;
+
+/**
+ * The answer, huge and glowing: it lands under the line at its value, then (`hero`) travels once to its
+ * place in the takeover, where it stays the biggest thing on the screen.
+ */
+const AnswerNumeral = ({ value, x, live, hero }: { value: string; x: number; live: boolean; hero?: TakeoverLayout["answer"] }) => {
+  const landing = { cx: answerCenter(x), top: AXIS_Y + 58, size: ANSWER_PX };
+  const at = hero ?? landing;
+  return (
+    <motion.div
+      className="absolute"
+      style={{ x: "-50%", zIndex: 35, transformOrigin: "50% 0" }}
+      initial={live ? { left: landing.cx, top: landing.top, scale: 1 } : false}
+      animate={{ left: at.cx, top: at.top, scale: at.size / ANSWER_PX }}
+      transition={{ type: "spring", stiffness: 190, damping: 24 }}
+      data-testid="correct-answer"
+    >
+      <motion.div>
+        <motion.div
+          className="tv-display tv-hero"
+          style={{ fontSize: ANSWER_PX, lineHeight: 0.8, letterSpacing: "-0.045em", transformOrigin: "50% 0" }}
+          initial={live ? { scale: 1.4, opacity: 0 } : false}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.5, delay: 0.12, ease: EASE_OUT }}
+        >
+          <motion.span
+            aria-hidden="true"
+            className="tv-bloom"
+            style={{ left: "50%", top: "50%", width: 760, height: 520, marginLeft: -380, marginTop: -260, background: "radial-gradient(closest-side, rgba(196, 181, 253, 0.4), transparent)", zIndex: -1 }}
+            initial={live ? { scale: 0.2, opacity: 0 } : false}
+            animate={{ scale: [0.2, 1.25, 1], opacity: [0, 1, 0.75] }}
+            transition={{ duration: 0.9, delay: 0.25, ease: EASE_OUT }}
+          />
+          <span className="glow-text relative" style={{ paddingInline: "0.06em" }}>
+            {value}
+          </span>
+        </motion.div>
+      </motion.div>
+    </motion.div>
+  );
+};
+
+const ChoiceAnswerLine = ({ letter, text, live, take }: { letter: string; text: string; live: boolean; take: TakeoverLayout }) => {
+  const size = text.length <= 10 ? 180 : text.length <= 18 ? 130 : 88;
+  const full = choiceAnswerText(letter, text);
+  // Centred on the answer's column of the takeover (the left two-thirds when the misses take the right).
+  const box = take.misses ? (take.answer.cx - 96) * 2 : 1728;
+  return (
+    <motion.div className="absolute" style={{ left: take.answer.cx - box / 2, width: box, top: take.answer.top + 10, zIndex: 35 }} data-testid="correct-answer">
+      <motion.div
+        className="flex items-end justify-center gap-10"
+        style={{ transformOrigin: "50% 0" }}
+        initial={live ? { scale: 1.4, opacity: 0 } : false}
+        animate={{ scale: 1, opacity: 1 }}
+        transition={{ duration: 0.5, ease: EASE_OUT }}
+      >
+        <FitName text={full} max={size} floor={72} box={box} lineHeight={1.02} className="tv-display tv-hero text-center glow-text" style={{ letterSpacing: "-0.035em", paddingBottom: "0.06em" }}>
+          {letter}
+          <span style={{ margin: "0 0.28em" }}>{"\u00b7"}</span>
+          {text}
+        </FitName>
+      </motion.div>
+    </motion.div>
+  );
+};
+
+/**
+ * The "?" puck sweeps between the guesses while the room holds its breath. It travels UNDER the axis,
+ * below the tick labels and pointing up at the line, so it never sits over a guess or its numeral;
+ * the answer numeral lands in the same place.
+ */
+const SuspenseMarker = ({ stops, seconds }: { stops: number[]; seconds: number }) => {
+  const path = stops.length > 0 ? stops : [960];
+  const size = PUCK.size;
+  return (
+    <motion.span
+      aria-hidden="true"
+      className="absolute"
+      style={{ left: -size / 2, top: PUCK.top, width: size, height: size + 24, zIndex: 8 }}
+      initial={{ x: path[0], scale: 0 }}
+      animate={{ x: path, scale: 1 }}
+      transition={{ x: { duration: seconds, ease: "easeInOut" }, scale: { type: "spring", stiffness: 500, damping: 15 } }}
+      data-testid="tv-suspense-puck"
+    >
+      <svg className="absolute" style={{ left: size / 2 - 12, top: 2 }} width={24} height={20} viewBox="0 0 24 20">
+        <polygon points="12,0 24,18 0,18" fill="var(--glow)" style={{ filter: "drop-shadow(0 0 6px rgba(196,181,253,.9))" }} />
+      </svg>
+      <span
+        className="tv-display tv-glass-pill absolute flex items-center justify-center"
+        style={{ left: 0, top: 22, width: size, height: size, fontSize: 54, color: "var(--glow)", borderColor: "var(--glow)", background: "rgba(30, 27, 75, 0.7)", boxShadow: "0 0 36px rgba(196, 181, 253, 0.5)" }}
+      >
+        ?
+      </span>
+    </motion.span>
+  );
+};
+
+/** The question stays readable while the guesses land; when the winners break forward it clears the stage. */
+const TopBand = ({
+  question,
+  number,
+  total,
+  phase,
+  live,
+  isChoice,
+}: {
+  question: Question;
+  number: number;
+  total: number;
+  phase: number;
+  live: boolean;
+  isChoice: boolean;
+}) => {
+  const clear = phase >= PHASE.spotlight;
+  const caption = phase < PHASE.suspense ? "The guesses" : phase < PHASE.answer ? "And the answer is..." : "The answer";
+  const qSize = question.text.length <= 56 ? 72 : question.text.length <= 90 ? 60 : 56;
+  // Set to the question screen's measure, scaled: the header wraps exactly as the question did, so the
+  // question text can move here as one shared element (a uniform scale, no re-wrap).
+  const width = Math.min(1728, (questionMeasure(isChoice) * qSize) / questionFontSize(question.text, isChoice));
+  const [from] = useState(() => (live ? peekBox(questionTextKey(question.text)) : undefined));
+  const flip = from ? flipFrom(from, { x: 96, y: 136, w: width, h: 0 }) : undefined;
+  return (
+    <>
+      {/* Cleared with a hard cut as the winners take over (it stays in the DOM, unprinted). */}
+      <motion.div
+        className="absolute flex items-center gap-6"
+        style={{ left: 96, top: 56, zIndex: 40 }}
+        initial={flip ? { opacity: 0 } : false}
+        animate={{ opacity: clear ? 0 : 1 }}
+        transition={{ duration: clear ? 0 : 0.35, delay: clear ? 0 : 0.35 }}
+      >
+        <QuestionSlug number={number} total={total} />
+        <motion.span key={caption} initial={live ? { opacity: 0, x: -20 } : false} animate={{ opacity: 1, x: 0 }}>
+          <Label className="lav-text">{caption}</Label>
+        </motion.span>
+      </motion.div>
+      <motion.h2
+        className="absolute tv-display lav-text"
+        style={{ left: 96, top: 136, width, fontSize: qSize, lineHeight: 1.08, letterSpacing: "-0.025em", paddingBottom: "0.08em", transformOrigin: "0 0" }}
+        initial={flip ? { x: flip.x, y: flip.y, scale: flip.scale } : false}
+        animate={{ x: 0, y: 0, scale: 1, opacity: clear ? 0 : 1 }}
+        transition={{ default: { duration: 0.6, ease: EASE_OUT }, opacity: { duration: 0 } }}
+      >
+        {question.text}
+      </motion.h2>
+    </>
+  );
+};
+
+const NoGuessNote = ({ names }: { names: string[] }) =>
+  names.length > 0 ? (
+    <div className="absolute tv-label" style={{ right: 96, top: 72, fontSize: 28 }} data-testid="tv-no-guess">
+      No guess: {names.length > 3 ? `${names.length} players` : names.join(", ")}
+    </div>
+  ) : null;
+
+export const TvReveal = ({
+  question,
+  result,
+  players,
+  number,
+  total,
+  live,
+}: {
+  question: Question;
+  result: QuestionResult;
+  players: TvPlayer[];
+  number: number;
+  total: number;
+  live: boolean;
+}) => {
+  const reduced = useReducedMotion() ?? false;
+  const inkOf = useMemo(() => {
+    const map = new Map(players.map((p, i) => [p.id, i]));
+    return (id: string, fallback: number) => map.get(id) ?? players.length + fallback;
+  }, [players]);
+  const pointsOf = useMemo(() => new Map(result.scores.map((s) => [s.playerId, Math.round(s.points)])), [result.scores]);
+  const answeredIds = new Set(result.answers.map((a) => a.playerId));
+  const noGuess = players.filter((p) => !answeredIds.has(p.id)).map((p) => p.name);
+  const isChoice = question.questionType === "multiple-choice" && question.options !== undefined && question.options.length > 0;
+  const guessCount = result.answers.length;
+  const schedule = useMemo(() => revealSchedule(guessCount, reduced), [guessCount, reduced]);
+  const phase = useRevealPhase(live, schedule, guessCount);
+  const exact = result.answers.some((a) => String(a.value) === String(question.correctAnswer));
+  // Score the reveal once, when it plays live (a TV that loads late stays quiet).
+  const scored = useRef(false);
+  useEffect(() => {
+    if (!live || scored.current) return;
+    scored.current = true;
+    tvAudio().revealScore({ ...schedule, guesses: guessCount, exact });
+  }, [live, schedule, guessCount, exact]);
+  const stagger = schedule.stagger / 1000;
+  const firstDrop = schedule.firstDrop / 1000;
+  const scoreOf = new Map(players.map((p) => [p.id, p.score]));
+  const winner = (id: string, name: string, inkIndex: number, from?: Winner["from"]): Winner => {
+    const points = pointsOf.get(id) ?? 0;
+    return { id, name, inkIndex, points, prevScore: (scoreOf.get(id) ?? points) - points, from };
+  };
+  const forward = phase >= PHASE.spotlight;
+  /** The misses beat: winners and answer step up, everyone else slides in with how far off they were. */
+  const settling = phase >= PHASE.standings;
+  const shaking = live && exact && phase === PHASE.answer;
+  const [ghostAxis] = useState(() => (live && !isChoice ? peekBox(GHOST_AXIS_KEY) : undefined));
+  // Live results grow out of the question screen (shared elements), so the stage itself does not fade in.
+  const enter = live ? { initial: false as const } : { initial: { opacity: 0 } };
+
+  if (isChoice && question.options) {
+    const options = question.options;
+    const correctIndex = matchOptionIndex(question.correctAnswer, options);
+    const winnerIds = new Set(choiceWinners(result.answers, question.correctAnswer, options));
+    const byOption: ChoicePick[][] = options.map(() => []);
+    result.answers.forEach((a, order) => {
+      const idx = matchOptionIndex(a.value, options);
+      if (idx >= 0) byOption[idx].push({ playerId: a.playerId, name: a.playerName, inkIndex: inkOf(a.playerId, order), order });
+    });
+    const columns = layoutChoiceColumns(options.length, byOption.map((l) => l.length));
+    const lastDropEndMs = schedule.firstDrop + Math.max(0, guessCount - 1) * schedule.stagger + schedule.dropDuration;
+    // Where each winner's chip sat on its column, so they can break forward from there.
+    const winners: Winner[] = byOption.flatMap((list, oi) =>
+      list.flatMap((t, k) => (winnerIds.has(t.playerId) ? [winner(t.playerId, t.name, t.inkIndex, { ...columns.chipAt(oi, k), size: columns.chip })] : [])),
+    );
+    const kind: WinnersKind = winners.length > 0 ? "right" : "nobody";
+    const misses = choiceMisses(result.answers.map((a, i) => ({ playerId: a.playerId, name: a.playerName, inkIndex: inkOf(a.playerId, i), value: a.value })), options, correctIndex);
+    const take = takeoverLayout(correctIndex >= 0 ? misses.rows.length : 0);
+    return (
+      <motion.div key="reveal" className="absolute inset-0" {...enter} animate={{ opacity: 1 }}>
+        <TopBand question={question} number={number} total={total} phase={phase} live={live} isChoice />
+        <LineLayer back={forward && correctIndex >= 0} live={live}>
+          <NoGuessNote names={noGuess} />
+          <ChoiceColumns
+            options={options}
+            picks={byOption}
+            layout={columns}
+            correctIndex={correctIndex}
+            winnerIds={winnerIds}
+            phase={phase}
+            live={live}
+            firstDrop={firstDrop}
+            stagger={stagger}
+            suspenseMs={Math.max(0, schedule.answer - lastDropEndMs)}
+          />
+        </LineLayer>
+        {/* The answer line takes the stage with the winners (the columns hold it until then). */}
+        {forward && correctIndex >= 0 ? (
+          <ChoiceAnswerLine letter={optionLetter(correctIndex)} text={options[correctIndex]} live={live} take={take} />
+        ) : null}
+        {forward && correctIndex >= 0 ? <WinnersCard kind={kind} winners={winners} scoring={phase >= PHASE.points} live={live} place={take.card} /> : null}
+        {forward && correctIndex >= 0 && take.misses ? <MissesStrip misses={misses} live={live} slot={take.misses} rowsIn={settling} /> : null}
+      </motion.div>
+    );
+  }
+
+  const correct = toNumber(question.correctAnswer) ?? 0;
+  const highlights = findHighlights(result.answers, question.correctAnswer);
+  const guesses: LineGuess[] = result.answers.flatMap((a, i) => {
+    const v = toNumber(a.value);
+    return v === null
+      ? []
+      : [{ playerId: a.playerId, name: a.playerName, value: v, inkIndex: inkOf(a.playerId, i), points: pointsOf.get(a.playerId) ?? 0, highlight: highlights.get(a.playerId) }];
+  });
+  const layout = layoutNumberLine(guesses, correct, REVEAL_FRAME);
+  // Farthest guess drops first, so the closest lands last, right before the answer.
+  const dropOrder = [...layout.groups].sort((a, b) => Math.abs(b.value - correct) - Math.abs(a.value - correct));
+  const delays = new Map(dropOrder.map((g, i) => [g.key, firstDrop + i * stagger]));
+  const lastDropEnd = schedule.firstDrop + Math.max(0, guessCount - 1) * schedule.stagger + schedule.dropDuration;
+  const suspenseSeconds = Math.max(0.4, (schedule.answer - lastDropEnd) / 1000 - 0.1);
+  const suspenseStops = sweepStops(layout.groups.map((g) => g.axisX));
+  const litGroups = layout.groups.filter((g) => g.highlight !== undefined);
+  const litKind = litGroups[0]?.highlight;
+  const winners: Winner[] = litGroups.flatMap((g) => {
+    const chips = memberChipCentres(g, layout.size);
+    return g.members.map((m) => {
+      const at = chips.get(m.playerId);
+      return winner(m.playerId, m.name, m.inkIndex, at ? { ...at, size: layout.size.chip } : undefined);
+    });
+  });
+  const miss = litGroups[0] ? Math.abs(litGroups[0].value - correct) : 0;
+  const detail = litKind === "closest" ? `off by ${formatTick(Number(miss.toFixed(4)))}` : undefined;
+  const misses = numericMisses(guesses, correct, new Set(winners.map((w) => w.id)));
+  const take = takeoverLayout(litKind ? misses.rows.length : 0);
+
+  return (
+    <motion.div key="reveal" className="absolute inset-0" {...enter} animate={{ opacity: 1 }}>
+      <Shake on={shaking}>
+        <TopBand question={question} number={number} total={total} phase={phase} live={live} isChoice={false} />
+        <LineLayer back={forward && winners.length > 0} live={live}>
+          <NoGuessNote names={noGuess} />
+          <RevealStage axisY={AXIS_Y} left={layout.axisLeft - 36} right={layout.axisRight + 36} live={live} />
+          {phase >= PHASE.answer ? <AnswerSpotlight x={layout.correctX} axisY={AXIS_Y} live={live} /> : null}
+          <LandingGlows groups={layout.groups} axisY={AXIS_Y} delays={delays} live={live} />
+          <NumberLineAxis layout={layout} axisY={AXIS_Y} live={live} from={ghostAxis} />
+          {phase === PHASE.suspense ? <SuspenseMarker stops={suspenseStops} seconds={suspenseSeconds} /> : null}
+          <Leaders groups={layout.groups} axisY={AXIS_Y} delays={delays} live={live} />
+          {layout.groups.map((g) => (
+            <GuessGroupView
+              key={g.key}
+              group={g}
+              size={layout.size}
+              showPoints={phase >= PHASE.points}
+              lit={g.highlight !== undefined && phase >= PHASE.answer}
+              dim={phase >= PHASE.answer && g.highlight === undefined}
+              shiver={phase === PHASE.suspense}
+              live={live}
+              delay={delays.get(g.key) ?? 0}
+            />
+          ))}
+          {phase >= PHASE.answer ? <AnswerPin x={layout.correctX} live={live} /> : null}
+        </LineLayer>
+        {phase >= PHASE.answer ? (
+          <AnswerNumeral value={String(question.correctAnswer)} x={layout.correctX} live={live} hero={forward && winners.length > 0 ? take.answer : undefined} />
+        ) : null}
+        {forward && litKind ? <WinnersCard kind={litKind} winners={winners} detail={detail} scoring={phase >= PHASE.points} live={live} place={take.card} /> : null}
+        {forward && litKind && take.misses ? <MissesStrip misses={misses} live={live} slot={take.misses} rowsIn={settling} /> : null}
+      </Shake>
+    </motion.div>
+  );
+};

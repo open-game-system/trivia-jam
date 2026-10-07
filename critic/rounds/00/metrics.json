@@ -1,0 +1,132 @@
+{
+  "tvMeanLumaPerShot(0-255)": {
+    "01-lobby-empty-tv": 37.1,
+    "04-lobby-full-tv": 37.1,
+    "10a-before-q1-tv": 32.8,
+    "10b-q1-asked-tv": 33.1,
+    "10c-q1-kid-answered-tv": 32.9,
+    "10d-q1-results-tv": 34.6,
+    "11a-before-q2-tv": 34.5,
+    "11b-q2-asked-tv": 33.1,
+    "11c-q2-kid-answered-tv": 32.9,
+    "11d-q2-results-tv": 34.5,
+    "12a-before-q3-tv": 34.4,
+    "12b-q3-asked-tv": 33.3,
+    "12c-q3-kid-answered-tv": 33.3,
+    "12d-q3-results-tv": 34.8,
+    "13a-before-q4-tv": 34.7,
+    "13b-q4-asked-tv": 33.6,
+    "13c-q4-kid-answered-tv": 33.2,
+    "13d-q4-results-tv": 34.8,
+    "14a-before-q5-tv": 34.7,
+    "14b-q5-asked-tv": 33.3,
+    "14c-q5-kid-answered-tv": 33.4,
+    "14d-q5-results-tv": 34.8,
+    "20-game-over-tv": 34.3
+  },
+  "audio": {
+    "hasAudio": false
+  },
+  "perf": {
+    "frames": 5912,
+    "p50": 16.7,
+    "p95": 16.7,
+    "p99": 16.8,
+    "max": 233.4,
+    "lastKidPressAt": 1791177936776
+  },
+  "marks": [
+    {
+      "label": "lobby",
+      "t": 2.8
+    },
+    {
+      "label": "host imports questions",
+      "t": 5.5
+    },
+    {
+      "label": "questions ready",
+      "t": 6.8
+    },
+    {
+      "label": "kid joined",
+      "t": 9.4
+    },
+    {
+      "label": "everyone joined",
+      "t": 14.8
+    },
+    {
+      "label": "game started",
+      "t": 16.6
+    },
+    {
+      "label": "question 1",
+      "t": 18.5
+    },
+    {
+      "label": "kid answers q1",
+      "t": 25
+    },
+    {
+      "label": "results q1",
+      "t": 29.9
+    },
+    {
+      "label": "question 2",
+      "t": 33.9
+    },
+    {
+      "label": "kid answers q2",
+      "t": 40.3
+    },
+    {
+      "label": "results q2",
+      "t": 45.2
+    },
+    {
+      "label": "question 3",
+      "t": 49.3
+    },
+    {
+      "label": "kid answers q3",
+      "t": 56.2
+    },
+    {
+      "label": "results q3",
+      "t": 61.3
+    },
+    {
+      "label": "question 4",
+      "t": 65.4
+    },
+    {
+      "label": "kid answers q4",
+      "t": 71.2
+    },
+    {
+      "label": "results q4",
+      "t": 75.9
+    },
+    {
+      "label": "question 5",
+      "t": 79.9
+    },
+    {
+      "label": "kid answers q5",
+      "t": 87.1
+    },
+    {
+      "label": "results q5",
+      "t": 92.2
+    },
+    {
+      "label": "game over",
+      "t": 96
+    },
+    {
+      "label": "end",
+      "t": 102.8
+    }
+  ]
+}
