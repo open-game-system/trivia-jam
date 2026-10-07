@@ -18,6 +18,12 @@ import type {
 import { parseQuestions } from "./gemini";
 import { calculateScores } from "./game/scoring";
 
+/** A seated player who has not answered the open question yet. */
+const canAnswer = (context: GameServerContext, callerId: string) =>
+  context.public.currentQuestion !== null &&
+  context.public.players.some((p) => p.id === callerId) &&
+  !context.public.currentQuestion.answers.some((a) => a.playerId === callerId);
+
 const parsingErrorParams = ({ event }: { event: ErrorActorEvent<unknown, string> }) => ({
   error: event.error instanceof Error ? event.error : new Error(String(event.error)),
 });
@@ -96,9 +102,9 @@ export const gameMachine = setup({
     ),
     setWinner: assign(({ context }) => ({
       public: produce(context.public, (draft) => {
-        draft.winner = draft.players.reduce((a, b) =>
-          a.score > b.score ? a : b
-        ).id;
+        // Nobody left (every player removed): the game still ends, with no winner.
+        draft.winner =
+          draft.players.length === 0 ? null : draft.players.reduce((a, b) => (a.score > b.score ? a : b)).id;
       }),
     })),
     removePlayer: assign(({ context }, { playerId }: { playerId: string }) => ({
@@ -162,8 +168,7 @@ export const gameMachine = setup({
         // Check if game should end
         if (draft.questionNumber >= Object.keys(draft.questions).length) {
           const maxScore = Math.max(...draft.players.map((p) => p.score));
-          const winners = draft.players.filter((p) => p.score === maxScore);
-          draft.winner = winners[0].id;
+          draft.winner = draft.players.find((p) => p.score === maxScore)?.id ?? null;
         }
       }),
     })),
@@ -401,18 +406,19 @@ export const gameMachine = setup({
             SUBMIT_ANSWER: [
               {
                 guard: ({ context, event }: { context: GameServerContext; event: GameEvent }) => {
-                  if (!context.public.currentQuestion || context.public.players.length === 0) return false;
-                  const answeredPlayerIds = new Set(
-                    context.public.currentQuestion.answers.map((a) => a.playerId)
-                  );
-                  // Add the current submitter
-                  answeredPlayerIds.add(event.caller.id);
-                  return answeredPlayerIds.size === context.public.players.length;
+                  if (!canAnswer(context, event.caller.id)) return false;
+                  const answered = new Set(context.public.currentQuestion?.answers.map((a) => a.playerId));
+                  answered.add(event.caller.id);
+                  return answered.size === context.public.players.length;
                 },
                 target: "questionPrep",
                 actions: ["submitAnswer", "processQuestionResults"]
               },
               {
+                // One answer per seated player per question: a second tap, a second tab or an
+                // answer resent after a reconnect is ignored, and so is anyone without a seat.
+                guard: ({ context, event }: { context: GameServerContext; event: GameEvent }) =>
+                  canAnswer(context, event.caller.id),
                 actions: "submitAnswer"
               }
             ],
