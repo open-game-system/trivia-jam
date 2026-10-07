@@ -12,6 +12,7 @@ import { SessionContext } from "~/session.context";
 import { HelpModal } from "./help-modal";
 import { QuestionProgress } from "./question-progress";
 import { ChoiceTiles } from "./phone/ChoiceTiles";
+import { FinalScores } from "./phone/FinalScores";
 import { PlayerFinish } from "./phone/PlayerFinish";
 import { PlayerResult } from "./phone/PlayerResult";
 import { useResultArrival } from "./phone/useResultArrival";
@@ -411,6 +412,26 @@ const NameEntryForm = ({ taken }: { taken?: string }) => {
   );
 };
 
+/** Someone not in the game opens its link after it ended: nothing to join, so its final table and a way on. */
+const GameEndedForVisitor = ({ players }: { players: Player[] }) => (
+  <PhoneShell className="pb-8">
+    <div className="mx-auto w-full max-w-5xl px-4 pt-6">
+      <div className="grid grid-cols-1 gap-6">
+        <div className="flex flex-col items-center gap-3 text-center">
+          <span className="pslug">Trivia Jam</span>
+          <h1 className="lav-text font-extrabold leading-none" style={{ fontSize: "clamp(32px, 7dvh, 52px)" }}>
+            This game has ended
+          </h1>
+          <a href="/" className="pbtn pbtn-primary pbtn-lg mt-2">
+            Start a new game
+          </a>
+        </div>
+        <FinalScores players={players} />
+      </div>
+    </div>
+  </PhoneShell>
+);
+
 /** Plain browser: the name form. Inside the OGS app: join at once under the OGS profile. */
 const JoinGate = () => {
   const playerNames = GameContext.useSelector((state) => state.public.players.map((p) => p.name));
@@ -450,7 +471,7 @@ export const PlayerView = () => {
 
   const player = players.find((p) => p.id === userId);
 
-  if (!player) return <JoinGate />;
+  if (!player) return isFinished ? <GameEndedForVisitor players={players} /> : <JoinGate />;
 
   return (
     <>
