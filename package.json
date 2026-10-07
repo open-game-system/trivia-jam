@@ -69,6 +69,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@ai-sdk/openai": "^4.0.86",
     "@cloudflare/workers-types": "^4.20240925.0",
     "@e2e-dev/web": "^0.12.0",
     "@playwright/test": "^1.58.2",
