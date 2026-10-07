@@ -58,7 +58,11 @@ export function serveOgsJwks(): Promise<() => Promise<void>> {
     if (req.url !== "/.well-known/jwks.json") return void res.writeHead(404).end();
     res.writeHead(200, { "Content-Type": "application/json" }).end(JSON.stringify(ogsJwks()));
   });
-  return new Promise((resolve) =>
+  // The key set is a fixed fixture: when another Playwright run already serves it, share that one.
+  return new Promise((resolve, reject) => {
+    server.once("error", (e: NodeJS.ErrnoException) =>
+      e.code === "EADDRINUSE" ? resolve(() => Promise.resolve()) : reject(e),
+    );
     server.listen(OGS_JWKS_PORT, () =>
       resolve(
         () =>
@@ -67,8 +71,8 @@ export function serveOgsJwks(): Promise<() => Promise<void>> {
             server.closeAllConnections();
           }),
       ),
-    ),
-  );
+    );
+  });
 }
 
 /**
