@@ -312,7 +312,8 @@ const GameFinishedDisplay = ({ player }: { player: Player }) => {
   return <PlayerFinish me={player} players={players} />;
 };
 
-const NameEntryForm = () => {
+/** `taken`: the OGS name this phone would have joined under, already used by a player in the room. */
+const NameEntryForm = ({ taken }: { taken?: string }) => {
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -356,6 +357,11 @@ const NameEntryForm = () => {
             >
               Join Game
             </h1>
+            {taken && (
+              <p role="status" className="pnotice mb-5">
+                {taken} is already taken in this game. Pick another name.
+              </p>
+            )}
             <form onSubmit={handleSubmit} className="space-y-5">
               <div>
                 <label htmlFor="playerName" className="pslug mb-2 block" style={{ fontSize: 16 }}>
@@ -407,8 +413,9 @@ const NameEntryForm = () => {
 
 /** Plain browser: the name form. Inside the OGS app: join at once under the OGS profile. */
 const JoinGate = () => {
-  const gate = nameGate(useOgsProfile());
-  if (gate.kind === "form") return <NameEntryForm />;
+  const playerNames = GameContext.useSelector((state) => state.public.players.map((p) => p.name));
+  const gate = nameGate(useOgsProfile(), playerNames);
+  if (gate.kind === "form") return <NameEntryForm taken={gate.taken} />;
   if (gate.kind === "waiting") return <PhoneShell className="min-h-[100dvh]">{null}</PhoneShell>;
   return <OgsAutoJoin event={gate.event} />;
 };

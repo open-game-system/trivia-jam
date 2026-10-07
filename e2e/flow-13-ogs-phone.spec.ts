@@ -1,5 +1,5 @@
 import { expect, test, type Browser } from "@playwright/test";
-import { hostPlayerRows, openRoom, tvSeatName } from "./helpers/lobby";
+import { hostPlayerRows, joinAndWait, openRoom, tvSeatName } from "./helpers/lobby";
 import { fakeOgsWebView, gameClaims, signOgsToken, type OgsPerson } from "./helpers/ogs";
 
 /**
@@ -16,13 +16,13 @@ test.skip(!!process.env.CI, "CI's server verifies OGS tokens against production 
 const DAD: OgsPerson = { id: "p_dad", handle: "dad", name: "Dad" };
 
 /** A phone in the OGS app showing `shown` as its profile, holding a token signed for `claims`. */
-async function phoneInOgsApp(browser: Browser, gamePath: string, shown: OgsPerson, claims: unknown) {
+async function phoneInOgsApp(browser: Browser, gamePath: string, shown: OgsPerson, claims: unknown, { watchForm = true } = {}) {
   const token = await signOgsToken(claims);
   const profile = { ...shown, avatar: `https://tv.opengame.org/art/trivia-jam/char-${shown.handle}.webp`, token };
   const context = await browser.newContext();
   await context.addInitScript(fakeOgsWebView({ ogs: { reported: [] }, profile: { status: "ready", profile } }));
   // The name form must never appear: watch for it from the first paint.
-  await context.addInitScript(() => {
+  if (watchForm) await context.addInitScript(() => {
     new MutationObserver(() => {
       if (document.querySelector("form input") || /Join Game|Your Name/i.test(document.body?.textContent ?? ""))
         Reflect.set(window, "__sawNameForm", true);
@@ -76,6 +76,25 @@ test.describe("Flow 13: a phone in the OGS app joins under its OGS profile", () 
       await expect(hostPlayerRows(room.hostPage, "Dad")).toHaveCount(0);
     } finally {
       await phone.context.close();
+      await room.close();
+    }
+  });
+
+  test("a player already has the OGS name: the phone gets the name form instead, and joins as what it types", async ({ browser }) => {
+    const room = await openRoom(browser);
+    const other = await joinAndWait(browser, room.gamePath, "Dad");
+    const phone = await phoneInOgsApp(browser, room.gamePath, DAD, gameClaims("trivia-jam", DAD), { watchForm: false });
+    try {
+      await expect(phone.page.getByText(/Dad is already taken/i)).toBeVisible({ timeout: 15_000 });
+      await phone.page.getByLabel(/your name/i).fill("Papa");
+      await phone.page.getByRole("button", { name: "Join Game" }).click();
+
+      await expect(phone.page.getByRole("heading", { name: "Welcome, Papa!" })).toBeVisible({ timeout: 15_000 });
+      await expect(hostPlayerRows(room.hostPage, "Papa")).toHaveCount(1);
+      await expect(hostPlayerRows(room.hostPage, "Dad")).toHaveCount(1);
+    } finally {
+      await phone.context.close();
+      await other.playerPage.context().close();
       await room.close();
     }
   });
