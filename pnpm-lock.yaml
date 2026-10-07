@@ -7,6 +7,11 @@ settings:
 overrides:
   '@open-game-system/cast-kit-core': file:./vendor/open-game-system-cast-kit-core-0.2.0.tgz
 
+patchedDependencies:
+  actor-kit@0.52.5:
+    hash: 02418466b8e3ab46ae813bd87495996df46920e9bcd9a9cc3b748c6a10d0e6f2
+    path: patches/actor-kit@0.52.5.patch
+
 importers:
 
   .:
@@ -55,7 +60,7 @@ importers:
         version: 1.166.7(@tanstack/react-router@1.166.7(react-dom@19.2.4(react@19.2.4))(react@19.2.4))(vite@7.3.1(@types/node@25.5.0)(jiti@1.21.7)(less@4.6.4)(terser@5.46.0)(tsx@4.23.14)(yaml@2.8.2))(webpack@5.105.4(@swc/core@1.15.18)(esbuild@0.25.12))
       actor-kit:
         specifier: ^0.52.5
-        version: 0.52.5(@cloudflare/workers-types@4.20260313.1)(react@19.2.4)(xstate@5.28.0)(zod@3.25.76)
+        version: 0.52.5(patch_hash=02418466b8e3ab46ae813bd87495996df46920e9bcd9a9cc3b748c6a10d0e6f2)(@cloudflare/workers-types@4.20260313.1)(react@19.2.4)(xstate@5.28.0)(zod@3.25.76)
       ai:
         specifier: ^6.0.116
         version: 6.0.116(zod@3.25.76)
@@ -9252,7 +9257,7 @@ snapshots:
 
   acorn@8.16.0: {}
 
-  actor-kit@0.52.5(@cloudflare/workers-types@4.20260313.1)(react@19.2.4)(xstate@5.28.0)(zod@3.25.76):
+  actor-kit@0.52.5(patch_hash=02418466b8e3ab46ae813bd87495996df46920e9bcd9a9cc3b748c6a10d0e6f2)(@cloudflare/workers-types@4.20260313.1)(react@19.2.4)(xstate@5.28.0)(zod@3.25.76):
     dependencies:
       '@cloudflare/workers-types': 4.20260313.1
       cloudflare: 5.2.0

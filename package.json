@@ -118,6 +118,9 @@
     ],
     "overrides": {
       "@open-game-system/cast-kit-core": "file:./vendor/open-game-system-cast-kit-core-0.2.0.tgz"
+    },
+    "patchedDependencies": {
+      "actor-kit@0.52.5": "patches/actor-kit@0.52.5.patch"
     }
   }
 }
