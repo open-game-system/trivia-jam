@@ -252,26 +252,31 @@ const ActiveStateContent = ({
   const questionId = currentQuestion?.questionId ?? null;
   const answerInput = draftFor(draft, questionId);
   const setAnswerInput = (value: string) => setDraft({ questionId, value });
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  // The question an answer was just sent for: locked until the server confirms it, or for 5 s
+  // (offline, the tap can be retried; the server keeps only a player's first answer).
+  const [sentFor, setSentFor] = useState<string | null>(null);
   const timeLeft = useQuestionTimer(currentQuestion, answerTimeWindow, currentQuestion !== null);
   const latestResultId = questionResults[questionResults.length - 1]?.questionId ?? null;
   const arrivedAt = useResultArrival(questionId, latestResultId);
   const hasAnswered = !!currentQuestion?.answers.some((a) => a.playerId === userId);
+  const isSubmitting = sentFor !== null && sentFor === questionId && !hasAnswered;
+  useEffect(() => {
+    if (!isSubmitting) return;
+    const retry = setTimeout(() => setSentFor(null), 5000);
+    return () => clearTimeout(retry);
+  }, [isSubmitting]);
 
   const handleSubmitNumeric = () => {
     const numericAnswer = toAnswerNumber(answerInput);
-    if (!currentQuestion || hasAnswered || numericAnswer === null) return;
-    setIsSubmitting(true);
+    if (!currentQuestion || hasAnswered || isSubmitting || numericAnswer === null) return;
+    setSentFor(currentQuestion.questionId);
     send({ type: "SUBMIT_ANSWER", value: numericAnswer });
-    setAnswerInput("");
-    setIsSubmitting(false);
   };
 
   const handleChoose = (value: string) => {
-    if (!currentQuestion || hasAnswered) return;
-    setIsSubmitting(true);
+    if (!currentQuestion || hasAnswered || isSubmitting) return;
+    setSentFor(currentQuestion.questionId);
     send({ type: "SUBMIT_ANSWER", value });
-    setIsSubmitting(false);
   };
 
   if (!currentQuestion && questionResults.length === 0) {
