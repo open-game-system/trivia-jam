@@ -59,5 +59,16 @@ on the TV; the aurora drifts underneath. `prefers-reduced-motion`: shorter and c
 
 ## Generated art
 
-None needed in the game. The OGS art kit (icon, cover, logo, clean hero) is rendered from HTML/CSS in this style
-(Jon prefers live HTML/CSS over image generation for this game).
+None in the game itself. The **OGS art kit** (icon, cover, logo, clean hero, alt) is painted key art, like the other
+OGS games' kits. This changes the 2026-10-06 note that it was rendered from HTML/CSS only: on 2026-10-07 Jon asked for
+Trivia Jam's kit to match the other games' painted art, because next to them the flat render read as a placeholder.
+
+- **Painted plates:** `scripts/art-kit/paint.mjs` (Codex via `codex.mjs`, budget-guarded) writes
+  `assets/art/paint/{hero-clean,cover-art,alt,icon}.png`. Prompt prefix: premium cinematic key art, glossy stylized
+  3D with volumetric light, the Aurora Glass night (indigo / violet / pink aurora on `--night`), frosted glass with
+  rim light, one `--win` green glow as the focus. The motif is the game: round glass guess markers on a glowing
+  number line, the closest one glowing green. Grown-ups seen from behind, never faces on objects, no lettering.
+- **Type in code, never painted:** `scripts/art-kit/render.mts` sets the title in Unbounded 900 with the
+  white → lavender answer gradient, a violet extrusion and an aurora glow, composes the cover and writes the kit;
+  `finish.py` trims the logo and writes the jpgs. Copy `assets/art/kit/*` (not `tv.jpg`, which is a real TV shot) to
+  `~/src/open-game-system/apps/tv/public/art/trivia-jam/` and check `KIT-SHEET.jpg` there.
