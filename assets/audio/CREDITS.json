@@ -19,5 +19,12 @@
     "kind": "music",
     "prompt": "game show winner celebration, 120 BPM, bright brass stabs, marimba, glockenspiel, hand claps, joyful big finish feel then steady loop, family friendly, instrumental, no vocals, no intro",
     "date": "2026-10-05"
+  },
+  {
+    "file": "assets/audio/ogs-theme.mp3",
+    "source": "ElevenLabs (generated)",
+    "kind": "music",
+    "prompt": "Instrumental only, no vocals. Late-night game show lounge for grown-ups under an aurora: smooth neo-soul electric piano chords, warm round sub bass, soft brushed drums with a light swing, shimmering airy synth pads that glow and drift, and a playful plucked synth motif that hints at a ticking countdown without urgency. Stylish, confident and relaxed, inviting friends to play. 94 BPM, A minor. Steady the whole way, no intro, no ending, no fade, seamless loop.",
+    "date": "2026-10-08"
   }
 ]
