@@ -23,12 +23,12 @@ test.describe("Multiple players competing", () => {
     const { playerPage: charliePage } = await joinPlayer(browser, gamePath, "Charlie");
 
     // Wait for host to see all 3 players in the lobby
-    await expect(hostPage.getByText(/Players\s*\(3\/\d+\)/i)).toBeVisible({
+    await expect(hostPage.getByRole("heading", { name: "Players (3/30)" })).toBeVisible({
       timeout: 15_000,
     });
 
     // 2. Host starts the game
-    const startBtn = hostPage.getByRole("button", { name: /start game/i });
+    const startBtn = hostPage.getByRole("button", { name: "Start Game" });
     await expect(startBtn).toBeEnabled({ timeout: 5_000 });
     await startBtn.click();
 
@@ -36,7 +36,7 @@ test.describe("Multiple players competing", () => {
 
     // 3. Host starts question 1
     const startQuestionBtn = hostPage.getByRole("button", {
-      name: /start.*question|next.*question/i,
+      name: "Start First Question",
     });
     await expect(startQuestionBtn).toBeVisible({ timeout: 10_000 });
     await startQuestionBtn.click();
@@ -53,29 +53,30 @@ test.describe("Multiple players competing", () => {
     });
 
     // 5. Each player submits a different numeric answer
-    await alicePage.getByLabel(/answer/i).fill("4");
-    await alicePage.getByRole("button", { name: /submit/i }).click();
+    await alicePage.getByLabel("Your Answer").fill("4");
+    await alicePage.getByRole("button", { name: "Submit answer" }).click();
 
-    await bobPage.getByLabel(/answer/i).fill("5");
-    await bobPage.getByRole("button", { name: /submit/i }).click();
+    await bobPage.getByLabel("Your Answer").fill("5");
+    await bobPage.getByRole("button", { name: "Submit answer" }).click();
 
-    await charliePage.getByLabel(/answer/i).fill("3");
-    await charliePage.getByRole("button", { name: /submit/i }).click();
+    await charliePage.getByLabel("Your Answer").fill("3");
+    await charliePage.getByRole("button", { name: "Submit answer" }).click();
 
     // 6. Host sees results with all 3 players listed
-    await expect(
-      hostPage.getByText(/results|correct answer|next.*question|start.*question/i)
-    ).toBeVisible({ timeout: 35_000 });
+    await expect(hostPage.getByRole("heading", { name: "Results" })).toBeVisible({
+      timeout: 35_000,
+    });
 
-    await expect(hostPage.getByText("Alice")).toBeVisible({ timeout: 10_000 });
-    await expect(hostPage.getByText("Bob")).toBeVisible();
-    await expect(hostPage.getByText("Charlie")).toBeVisible();
+    const hostResults = hostPage.getByRole("region", { name: "Results" });
+    await expect(hostResults.getByText("Alice", { exact: true })).toBeVisible({ timeout: 10_000 });
+    await expect(hostResults.getByText("Bob", { exact: true })).toBeVisible();
+    await expect(hostResults.getByText("Charlie", { exact: true })).toBeVisible();
 
     // === Question 2 (MC: "What color is the sky on a clear day?") ===
 
     // 7. Host starts question 2
     const nextQuestionBtn = hostPage.getByRole("button", {
-      name: /start.*question|next.*question/i,
+      name: "Start Next Question",
     });
     await expect(nextQuestionBtn).toBeVisible({ timeout: 15_000 });
     await nextQuestionBtn.click();
@@ -91,30 +92,30 @@ test.describe("Multiple players competing", () => {
       timeout: 10_000,
     });
 
-    // 9. Each player picks an MC option (or fills numeric if needed)
-    // Helper: click first MC button if available, otherwise fill text input
-    async function answerQuestion2(playerPage: typeof alicePage, fallbackAnswer: string) {
-      const mcOption = playerPage.getByRole("button", { name: /^[A-D]\)/ });
-      if (await mcOption.first().isVisible({ timeout: 2_000 }).catch(() => false)) {
-        await mcOption.first().click();
-      } else {
-        await playerPage.getByLabel(/answer/i).fill(fallbackAnswer);
-        await playerPage.getByRole("button", { name: /submit/i }).click();
-      }
+    // 9. Each player taps the first MC option (q2 is multiple choice)
+    for (const playerPage of [alicePage, bobPage, charliePage]) {
+      await playerPage
+        .getByRole("group", { name: "Choices" })
+        .getByRole("button", { name: "A) Red" })
+        .click();
     }
 
-    await answerQuestion2(alicePage, "Blue");
-    await answerQuestion2(bobPage, "Blue");
-    await answerQuestion2(charliePage, "Blue");
-
-    // 10. Game ends — verify final scoreboard on host shows all 3 players
-    await expect(hostPage.getByText(/Game Over/i)).toBeVisible({
+    // 10. After the last question the host ends the game (it no longer ends by itself)
+    await expect(hostPage.getByRole("heading", { name: "Results" })).toBeVisible({
       timeout: 35_000,
     });
-    await expect(hostPage.getByText(/Final Scores/i)).toBeVisible();
+    await hostPage.getByRole("button", { name: "End Game", exact: true }).click();
 
-    await expect(hostPage.getByText("Alice")).toBeVisible();
-    await expect(hostPage.getByText("Bob")).toBeVisible();
-    await expect(hostPage.getByText("Charlie")).toBeVisible();
+    // Final scoreboard on host shows all 3 players
+    await expect(hostPage.getByRole("heading", { name: "Game Over!" })).toBeVisible({
+      timeout: 35_000,
+    });
+    await expect(hostPage.getByRole("heading", { name: "Final Scores" })).toBeVisible();
+
+    const finalScores = hostPage.getByTestId(/^player-score-/);
+    await expect(finalScores).toHaveCount(3);
+    await expect(finalScores.filter({ hasText: "Alice" })).toBeVisible();
+    await expect(finalScores.filter({ hasText: "Bob" })).toBeVisible();
+    await expect(finalScores.filter({ hasText: "Charlie" })).toBeVisible();
   });
 });
